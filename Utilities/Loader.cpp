@@ -14,6 +14,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "utilities.h"
 
 std::string dataVersionOfFilename(const std::string& filename) {
     std::string ext(filename.substr(filename.rfind(".")));
@@ -708,6 +709,15 @@ Loader::getAttributeMap(const std::string &file_name) {
   //	https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61582
   std::string org_details;
   while (getline(file, org_details)) {
+	  std::map<std::string, std::string> temp_result;
+	  std::vector<std::string> temp_data;
+	  convertCSVListToVector(org_details, temp_data);
+	  //std::cout << org_details << std::endl;
+	  for (int key_id = 0; key_id < attribute_names.size(); key_id++) {
+		  temp_result[attribute_names[key_id]] = temp_data[key_id];
+	  }
+	/*
+	// old version....
     std::map<std::string, std::string> temp_result;
     long k = 0;
     auto in_quotes = false;
@@ -736,8 +746,10 @@ Loader::getAttributeMap(const std::string &file_name) {
                   << std::endl;
         exit(1);
       }
+
     }
-    auto orig_ID = std::stol(temp_result.at("ID"));
+	*/    
+	auto orig_ID = std::stol(temp_result.at("ID"));
     temp_result.erase("ID");
     result[orig_ID] = temp_result;
   }
