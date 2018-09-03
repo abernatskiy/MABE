@@ -14,7 +14,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "utilities.h"
+#include "Utilities.h"
 
 std::string dataVersionOfFilename(const std::string& filename) {
     std::string ext(filename.substr(filename.rfind(".")));
