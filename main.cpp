@@ -380,8 +380,8 @@ constructAllGroupsFrom(const std::shared_ptr<AbstractWorld> &world,
         } else {
 			// if population is being loaded...
           auto name = genome.first;
-          genome.second->deserialize(genome.second->PT, org.second, name);
-          newGenomes[genome.first] = genome.second;
+          newGenomes[genome.first] = genome.second->makeLike();
+          newGenomes[genome.first]->deserialize(genome.second->PT, org.second, name);
         }
       }
       for (auto const &brain : templateBrains) {
