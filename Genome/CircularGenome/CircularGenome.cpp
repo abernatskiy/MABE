@@ -660,7 +660,7 @@ void CircularGenome<T>::deserialize(std::shared_ptr<ParametersTable> PT, std::un
 	int genomeLength;
 	load_value(orgData["GENOME_" + name + "_genomeLength"], genomeLength);
 
-	std::string allSites = orgData["GENOME_" + name + "_sites"].substr(1, orgData["GENOME_" + name + "_sites"].size() - 1);
+	std::string allSites = orgData["GENOME_" + name + "_sites"];
 	std::stringstream ss(allSites);
 
 	sites.clear();
@@ -693,7 +693,7 @@ void CircularGenome<unsigned char>::deserialize(std::shared_ptr<ParametersTable>
 	int genomeLength;
 	load_value(orgData["GENOME_" + name + "_genomeLength"], genomeLength);
 
-	std::string allSites = orgData["GENOME_" + name + "_sites"].substr(1, orgData["GENOME_" + name + "_sites"].size() - 1);
+	std::string allSites = orgData["GENOME_" + name + "_sites"];
 	std::stringstream ss(allSites);
 
 	sites.clear();
