@@ -1,24 +1,26 @@
 % World
-  + Berry
-  + Xor
+  - Berry
+  - Xor
   * Test
+  + ComplexiPhi
+  + EdlundMaze
 
 % Genome
   + Multi
   * Circular
   
 % Brain
-  - Markov
-  * CGP
+  * Markov
+  - CGP
   - LSTM
-  + ConstantValues
-  + Human
+  - ConstantValues
+  - Human
   - Wire
 	
 % Optimizer
   * Simple
-  - Islands
-  - Lexicase
+  + Islands
+  + Lexicase
 
 % Archivist
   + Default
