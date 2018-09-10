@@ -4,6 +4,7 @@
   * Test
   + ComplexiPhi
   + EdlundMaze
+	+ Mixture
 
 % Genome
   + Multi
