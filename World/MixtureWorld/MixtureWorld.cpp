@@ -8,11 +8,7 @@
 //     to view the full license, visit:
 //         github.com/Hintzelab/MABE/wiki/License
 
-// Evaluates agents on how many '1's they can output. This is a purely fixed
-// task
-// that requires to reactivity to stimuli.
-// Each correct '1' confers 1.0 point to score, or the decimal output determined
-// by 'mode'.
+// Evaluates the organism in two worlds EdlundMaze and ComplexiPhi and sets the resulting scores appropriately
 
 #include "MixtureWorld.h"
 
@@ -22,17 +18,13 @@ std::shared_ptr<ParameterLink<int>> MixtureWorld::environmentChangePeriodPL =
 	                               "evaluate the parameter changes");
 std::shared_ptr<ParameterLink<int>> MixtureWorld::firstEnvironmentTypePL =
 	Parameters::register_parameter("WORLD_MIXTURE-firstEnvironmentType", 1,
-	                               "1 - first task only, 2 - second task only, "
+	                               "1 - ComplexiPhi only, 2 - EdlundMaze only,"
 	                               "3 - average, 4 - minimum");
-std::shared_ptr<ParameterLink<int>> MixtureWorld::firstEnvironmentTypePL =
-	Parameters::register_parameter("WORLD_MIXTURE-firstEnvironmentType", 1,
-	                               "1 - first task only, 2 - second task only, "
+std::shared_ptr<ParameterLink<int>> MixtureWorld::secondEnvironmentTypePL =
+	Parameters::register_parameter("WORLD_MIXTURE-secondEnvironmentType", 2,
+	                               "1 - ComplexiPhi only, 2 - EdlundMaze only,"
 	                               "3 - average, 4 - minimum");
-//std::shared_ptr<ParameterLink<int>> MixtureWorld::evaluationsPerGenerationPL =
-//    Parameters::register_parameter("WORLD_TEST-evaluationsPerGeneration", 1,
-//                                   "Number of times to test each Genome per "
-//                                   "generation (useful with non-deterministic "
-//                                   "brains)");
+
 std::shared_ptr<ParameterLink<std::string>> MixtureWorld::groupNamePL =
     Parameters::register_parameter("WORLD_MIXTURE_NAMES-groupNameSpace",
                                    (std::string) "root::",
@@ -46,11 +38,11 @@ MixtureWorld::MixtureWorld(std::shared_ptr<ParametersTable> PT_)
     : AbstractWorld(PT_), cpw(PT_), emw(PT_) {
 
 	// localization
-	groupName = groupNamePL->get(_PT);
-	brainName = brainNamePL->get(_PT);
-	environmentChangePeriod = environmentChangePeriodPL->get(_PT);
-	firstEnvironmentType = firstEnvironmentTypePL->get(_PT);
-	secondEnvironmentType = secondEnvironmentTypePL->get(_PT);
+	groupName = groupNamePL->get(PT_);
+	brainName = brainNamePL->get(PT_);
+	environmentChangePeriod = environmentChangePeriodPL->get(PT_);
+	firstEnvironmentType = 1; // firstEnvironmentTypePL->get(PT_);
+	secondEnvironmentType = 2; // secondEnvironmentTypePL->get(PT_);
 
   // columns to be added to ave file
   popFileColumns.clear();
@@ -75,7 +67,7 @@ void MixtureWorld::evaluateSolo(std::shared_ptr<Organism> org, int analyze, int 
 
 	// saving the existing score data
 	std::vector<double> oldScores;
-	std::copy(org->dataMap.GetDoubleVector("score").begin(), org->dataMap.GetDoubleVector("score").end(), oldScores.begin());
+	std::copy(org->dataMap.getDoubleVector("score").begin(), org->dataMap.getDoubleVector("score").end(), oldScores.begin());
 
 	// localizing the brain so that we can reset it between the worlds
 	auto brain = org->brains[brainName];
@@ -84,19 +76,19 @@ void MixtureWorld::evaluateSolo(std::shared_ptr<Organism> org, int analyze, int 
 	brain->resetBrain();
 	if (visualize) std::cout << "Evaluating organism " << org->ID << " in ComplexiPhi world" << std::endl;
 	cpw.evaluateSolo(org, analyze, visualize, debug);
-	double cpwScore = org->dataMap.GetDoubleVector("score").back();
+	double cpwScore = org->dataMap.getDoubleVector("score").back();
 	if (visualize) std::cout << "ComplexiPhi world score is " << cpwScore << " for " << org->ID << std::endl;
 	org->dataMap.append("scoreComplexiPhi", cpwScore);
 
 	brain->resetBrain();
 	if (visualize) std::cout << "Evaluating organism " << org->ID << " in EdlundMaze world" << std::endl;
 	emw.evaluateSolo(org, analyze, visualize, debug);
-	double emwScore = org->dataMap.GetDoubleVector("score").back();
+	double emwScore = org->dataMap.getDoubleVector("score").back();
 	if (visualize) std::cout << "EdlundMaze world score is " << cpwScore << " for " << org->ID << std::endl;
 	org->dataMap.append("scoreEdlundMaze", cpwScore);
 
 	// restoring the score data
-	org->dataMap.Clear("score");
+	org->dataMap.clear("score");
 	for(auto s : oldScores)
 		org->dataMap.append("score", s);
 

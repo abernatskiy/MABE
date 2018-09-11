@@ -23,12 +23,12 @@
 class MixtureWorld : public AbstractWorld {
 
 public:
-	ComplexiPhiWorld cpw;
-	EdlundMazeWorld emw;
-
 	static std::shared_ptr<ParameterLink<int>> environmentChangePeriodPL; // number of iterations between environment changes
 	static std::shared_ptr<ParameterLink<int>> firstEnvironmentTypePL; // 1 - ComplexiPhi only, 2 - EdlundMaze only, 3 - average, 4 - minimum
 	static std::shared_ptr<ParameterLink<int>> secondEnvironmentTypePL; // same for the second environment
+
+	ComplexiPhiWorld cpw;
+	EdlundMazeWorld emw;
 
 	int environmentChangePeriod, firstEnvironmentType, secondEnvironmentType;
 
