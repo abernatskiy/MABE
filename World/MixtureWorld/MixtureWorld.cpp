@@ -41,8 +41,8 @@ MixtureWorld::MixtureWorld(std::shared_ptr<ParametersTable> PT_)
 	groupName = groupNamePL->get(PT_);
 	brainName = brainNamePL->get(PT_);
 	environmentChangePeriod = environmentChangePeriodPL->get(PT_);
-	firstEnvironmentType = 1; // firstEnvironmentTypePL->get(PT_);
-	secondEnvironmentType = 2; // secondEnvironmentTypePL->get(PT_);
+	firstEnvironmentType = firstEnvironmentTypePL->get(PT_);
+	secondEnvironmentType = secondEnvironmentTypePL->get(PT_);
 
   // columns to be added to ave file
   popFileColumns.clear();
@@ -56,6 +56,8 @@ MixtureWorld::MixtureWorld(std::shared_ptr<ParametersTable> PT_)
 
 void MixtureWorld::evaluateSolo(std::shared_ptr<Organism> org, int analyze, int visualize, int debug) {
 
+	if (debug) std::cerr << "evaluateSolo called on organism " << org->ID << std::endl << std::flush;
+
 	// determining which mode of operation should be used in this epoch
 	// important to do that early so that we can forgo evaluating in the irrelevant world, if there is one
 	// (note: this optimization is not implemented at the moment)
@@ -65,9 +67,14 @@ void MixtureWorld::evaluateSolo(std::shared_ptr<Organism> org, int analyze, int 
 	else
 		mode = secondEnvironmentType;
 
+	if (debug) std::cerr << "Mode determined to be " << mode << std::endl << std::flush;
+
 	// saving the existing score data
 	std::vector<double> oldScores;
-	std::copy(org->dataMap.getDoubleVector("score").begin(), org->dataMap.getDoubleVector("score").end(), oldScores.begin());
+	if(org->dataMap.fieldExists("score")) {
+		std::copy(org->dataMap.getDoubleVector("score").begin(), org->dataMap.getDoubleVector("score").end(), oldScores.begin());
+		if (debug) std::cerr << "Old scores saved" << std::endl << std::flush;
+	}
 
 	// localizing the brain so that we can reset it between the worlds
 	auto brain = org->brains[brainName];

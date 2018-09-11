@@ -49,7 +49,7 @@ public:
 	};
 
 	virtual std::unordered_map<std::string, std::unordered_set<std::string>> requiredGroups() override {
-		return {{ groupNamePL->get(PT), {"B:" + brainNamePL->get(PT) + ",,"} }};
+		return {{ groupNamePL->get(PT), {"B:" + brainNamePL->get(PT) + ",6,3"} }};
     // requires a root group and a brain (in root namespace) and no addtional
     // genome,
     // the brain must have 1 input, and the variable numberOfOutputs outputs
