@@ -44,13 +44,11 @@ ComplexiPhiWorld::ComplexiPhiWorld(shared_ptr<ParametersTable> _PT) : AbstractWo
 
 // score is number of outputs set to 1 (i.e. output > 0) squared
 void ComplexiPhiWorld::evaluateSolo(shared_ptr<Organism> org, int analyse, int visualize, int debug) {
-
 	int correct=0;
 	int incorrect=0;
 	double fitness=1.0;
 	int paddleWidth=nrOfRightSensors+nrOfLeftSensors+gapWidth;
 	auto brain = org->brains[brainName];
-
 	for(int i=0;i<patterns.size();i++){
 		for(int j=-1;j<2;j+=2){
 			for(int k=0;k<16;k++){
@@ -58,7 +56,6 @@ void ComplexiPhiWorld::evaluateSolo(shared_ptr<Organism> org, int analyse, int v
 				brain->resetBrain();
 				int botPos=k;
 				//loop the world
-				int height(20);
 				bool hit(false);
 				timeToCatch = 0;
 				for(int l=0;l<34;l++){ // you only have 34 updates to figure this out
@@ -87,44 +84,29 @@ void ComplexiPhiWorld::evaluateSolo(shared_ptr<Organism> org, int analyse, int v
 							break;
 					}
 					if(j==-1){
-						world=((world>>1)&65535)+((world&1)<<15);
+							world=((world>>1)&65535)+((world&1)<<15);
 					} else {
-						world=((world<<1)&65535)+((world>>15)&1);
-					}
-					//check for hit
-					if (height == 0) { /// if block is on your same x-axis
-						hit=false;
-						for(int m=0;m<paddleWidth;m++)
-							if(((world>>((botPos+m)&15))&1)==1)
-								hit=true;
-						if((i&1)==0){
-							if(hit){
-								correct++;
-								fitness*=1.05;
-								break;
-							}
-						} else {
-							if(hit){
-								incorrect++;
-								fitness/=1.05;
-								break;
-							}
-						}
-					}
-					if ((Bit(brain->readOutput(2))&1) == 1) {
-						++height;
-					} else {
-						--height;
+							world=((world<<1)&65535)+((world>>15)&1);
 					}
 				}
-				/// if time ran out and not caught the block
-				if ((i&1)==0){
-					if (not hit){
-						incorrect++;
+				//check for hit
+				hit=false;
+				for(int m=0;m<paddleWidth;m++)
+					if(((world>>((botPos+m)&15))&1)==1)
+						hit=true;
+				if((i&1)==0){
+					if(hit){
+						correct++;
+						fitness*=1.05;
+					} else {
 						fitness/=1.05;
+						incorrect++;
 					}
 				} else {
-					if (not hit) {
+					if(hit){
+						incorrect++;
+						fitness/=1.05;
+					} else {
 						correct++;
 						fitness*=1.05;
 					}
@@ -132,7 +114,9 @@ void ComplexiPhiWorld::evaluateSolo(shared_ptr<Organism> org, int analyse, int v
 			}
 		}
 	}
-	org->dataMap.set("score",fitness);
+	org->dataMap.append("score",fitness);
+	org->dataMap.append("correct", correct);
+	org->dataMap.append("incorrect", incorrect);
 }
 
 
