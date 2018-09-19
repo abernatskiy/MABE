@@ -68,7 +68,7 @@ void MarkovBrain::readParameters() {
 MarkovBrain::MarkovBrain(std::vector<std::shared_ptr<AbstractGate>> _gates,
                          int _nrInNodes, int _nrOutNodes,
                          std::shared_ptr<ParametersTable> PT_)
-    : AbstractBrain(_nrInNodes, _nrOutNodes, PT_) {
+    : AbstractBrain(_nrInNodes, _nrOutNodes, PT_), log("markov_log.log") {
 
   readParameters();
 
@@ -88,7 +88,7 @@ MarkovBrain::MarkovBrain(std::vector<std::shared_ptr<AbstractGate>> _gates,
 MarkovBrain::MarkovBrain(std::shared_ptr<AbstractGateListBuilder> GLB_,
                          int _nrInNodes, int _nrOutNodes,
                          std::shared_ptr<ParametersTable> PT_)
-    : AbstractBrain(_nrInNodes, _nrOutNodes, PT_) {
+    : AbstractBrain(_nrInNodes, _nrOutNodes, PT_), log("markov_log.log") {
 	GLB = GLB_;
 	// make a node map to handle genome value to brain state address look up.
 
@@ -143,7 +143,7 @@ void MarkovBrain::resetInputs() {
 
 void MarkovBrain::resetOutputs() {
 	// note nrInputValues+i gets us the index for the node related to each output
-	for (int i = 0; i < nrOutputValues; i++) 
+	for (int i = 0; i < nrOutputValues; i++)
 		nodes[nrInputValues + i] = 0.0;
 }
 
@@ -152,7 +152,7 @@ void MarkovBrain::update() {
 	nextNodes.assign(nrNodes, 0.0);
 	DataMap IOMap;
 
-	for (int i = 0; i < nrInputValues; i++)  
+	for (int i = 0; i < nrInputValues; i++)
 		nodes[i] = inputValues[i];
 
 	if (recordIOMapPL->get())
@@ -165,15 +165,15 @@ void MarkovBrain::update() {
 	if (randomizeUnconnectedOutputs) {
 		switch (randomizeUnconnectedOutputsType) {
 		case 0:
-			for (int i = 0; i < nrOutputValues; i++) 
-				if (nextNodesConnections[nrInputValues + i] == 0) 
+			for (int i = 0; i < nrOutputValues; i++)
+				if (nextNodesConnections[nrInputValues + i] == 0)
 					nextNodes[nrInputValues + i] =
 					   Random::getInt((int)randomizeUnconnectedOutputsMin,
 					                  (int)randomizeUnconnectedOutputsMax);
 			break;
 		case 1:
-			for (int i = 0; i < nrOutputValues; i++) 
-				if (nextNodesConnections[nrInputValues + i] == 0) 
+			for (int i = 0; i < nrOutputValues; i++)
+				if (nextNodesConnections[nrInputValues + i] == 0)
 					nextNodes[nrInputValues + i] = Random::getDouble(
 					    randomizeUnconnectedOutputsMin, randomizeUnconnectedOutputsMax);
 			//break;
@@ -194,7 +194,7 @@ void MarkovBrain::update() {
 		for (int i = 0; i < nrOutputValues; i++ )
 			IOMap.append("output", Bit(nodes[nrInputValues + i]));
 
-		for (int i = nrInputValues + nrOutputValues ; i < nodes.size() ; i++) 
+		for (int i = nrInputValues + nrOutputValues ; i < nodes.size() ; i++)
 			IOMap.append("hidden", Bit(nodes[i]));
 		IOMap.setOutputBehavior("input", DataMap::LIST);
 		IOMap.setOutputBehavior("output", DataMap::LIST);
@@ -222,9 +222,9 @@ void MarkovBrain::fillInConnectionsLists() {
 	nextNodesConnections.resize(nrNodes);
 	for (auto &g : gates) {
 		auto gateConnections = g->getConnectionsLists();
-		for (auto c : gateConnections.first) 
+		for (auto c : gateConnections.first)
 			nodesConnections[c]++;
-		for (auto c : gateConnections.second) 
+		for (auto c : gateConnections.second)
 			nextNodesConnections[c]++;
 	}
 }
@@ -286,7 +286,7 @@ int MarkovBrain::numGates() { return brainSize(); }
 
 std::vector<int> MarkovBrain::getHiddenNodes() {
 	std::vector<int> temp ;
-	for (size_t i = nrInputValues + nrOutputValues; i < nodes.size(); i++) 
+	for (size_t i = nrInputValues + nrOutputValues; i < nodes.size(); i++)
 		temp.push_back(Bit(nodes[i]));
 
 	return temp;
@@ -302,7 +302,7 @@ void MarkovBrain::initializeGenomes(
 	for (auto gateType : GLB->gateBuilder.inUseGateTypes) {
 		for (int i = 0; i < GLB->gateBuilder.intialGateCounts[gateType]; i++) {
 			genomeHandler->randomize();
-			for (auto value : GLB->gateBuilder.gateStartCodes[gateType]) 
+			for (auto value : GLB->gateBuilder.gateStartCodes[gateType])
 				genomeHandler->writeInt(value, 0, codonMax);
 		}
 	}

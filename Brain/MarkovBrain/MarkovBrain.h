@@ -23,9 +23,21 @@
 
 #include "../AbstractBrain.h"
 
+class LogFile {
+	private:
+		std::ofstream fs;
+	public:
+		LogFile() = delete;
+		LogFile(std::string fn) { fs.open(fn, std::ios::out|std::ios::app); };
+		~LogFile() { fs.close(); };
+		void log(std::string s) { fs << s; };
+};
+
 class MarkovBrain : public AbstractBrain {
 
 public:
+	LogFile log;
+
 	std::vector<std::shared_ptr<AbstractGate>> gates;
 
 	//	static shared_ptr<ParameterLink<int>> bitsPerBrainAddressPL;  // how
