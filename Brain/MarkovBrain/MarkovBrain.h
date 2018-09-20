@@ -25,18 +25,22 @@
 
 class LogFile {
 	private:
+		bool isOpen;
 		std::ofstream fs;
 	public:
-		LogFile() = delete;
-		LogFile(std::string fn) { fs.open(fn, std::ios::out|std::ios::app); };
-		~LogFile() { fs.close(); };
-		void log(std::string s) { fs << s; };
+		LogFile() : isOpen(false) {};
+		void open(std::string fn) { if (!isOpen) {fs.open(fn, std::ios::out); isOpen = true; }}; // std::ios::out|std::ios::app for multiple brains in the same file
+		~LogFile() { if (isOpen) fs.close(); };
+		void log(std::string s) { if (isOpen) fs << s; };
 };
 
 class MarkovBrain : public AbstractBrain {
 
 public:
 	LogFile log;
+	const bool visualize;
+	void logBrainStructure();
+	void logNote(std::string note) override { log.log("External note: " + note + "\n"); };
 
 	std::vector<std::shared_ptr<AbstractGate>> gates;
 
@@ -144,7 +148,7 @@ public:
 	}
 
 
-	std::vector<std::shared_ptr<AbstractBrain>> getAllSingleGateKnockouts(); 
+	std::vector<std::shared_ptr<AbstractBrain>> getAllSingleGateKnockouts();
 
 };
 

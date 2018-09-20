@@ -80,19 +80,23 @@ void MixtureWorld::evaluateSolo(std::shared_ptr<Organism> org, int analyze, int 
 	auto brain = org->brains[brainName];
 
 	// evaluating the organism in both worlds
+	if (visualize) brain->logNote("began evaluation in ComplexiPhi");
 	brain->resetBrain();
 	if (visualize) std::cout << "Evaluating organism " << org->ID << " in ComplexiPhi world" << std::endl;
 	cpw.evaluateSolo(org, analyze, visualize, debug);
 	double cpwScore = org->dataMap.getDoubleVector("score").back();
 	if (visualize) std::cout << "ComplexiPhi world score is " << cpwScore << " for " << org->ID << std::endl;
 	org->dataMap.append("scoreComplexiPhi", cpwScore);
+	if (visualize) brain->logNote("finished evaluation in ComplexiPhi");
 
+	if (visualize) brain->logNote("began evaluation in EdlindMaze");
 	brain->resetBrain();
 	if (visualize) std::cout << "Evaluating organism " << org->ID << " in EdlundMaze world" << std::endl;
 	emw.evaluateSolo(org, analyze, visualize, debug);
 	double emwScore = org->dataMap.getDoubleVector("score").back();
 	if (visualize) std::cout << "EdlundMaze world score is " << emwScore << " for " << org->ID << std::endl;
 	org->dataMap.append("scoreEdlundMaze", emwScore);
+	if (visualize) brain->logNote("finished evaluation in EdlindMaze");
 
 	// restoring the score data
 	org->dataMap.clear("score");

@@ -68,7 +68,8 @@ void MarkovBrain::readParameters() {
 MarkovBrain::MarkovBrain(std::vector<std::shared_ptr<AbstractGate>> _gates,
                          int _nrInNodes, int _nrOutNodes,
                          std::shared_ptr<ParametersTable> PT_)
-    : AbstractBrain(_nrInNodes, _nrOutNodes, PT_), log("markov_log.log") {
+    : AbstractBrain(_nrInNodes, _nrOutNodes, PT_),
+      visualize(Global::modePL->get() == "visualize") {
 
   readParameters();
 
@@ -83,12 +84,18 @@ MarkovBrain::MarkovBrain(std::vector<std::shared_ptr<AbstractGate>> _gates,
 	}
 
 	fillInConnectionsLists();
+
+	if(visualize) {
+		log.open("markov_log.log");
+		logBrainStructure();
+	}
 }
 
 MarkovBrain::MarkovBrain(std::shared_ptr<AbstractGateListBuilder> GLB_,
                          int _nrInNodes, int _nrOutNodes,
                          std::shared_ptr<ParametersTable> PT_)
-    : AbstractBrain(_nrInNodes, _nrOutNodes, PT_), log("markov_log.log") {
+    : AbstractBrain(_nrInNodes, _nrOutNodes, PT_),
+      visualize(Global::modePL->get() == "visualize") {
 	GLB = GLB_;
 	// make a node map to handle genome value to brain state address look up.
 
@@ -105,6 +112,11 @@ MarkovBrain::MarkovBrain(std::shared_ptr<AbstractGateListBuilder> GLB_,
 	}
 
 	fillInConnectionsLists();
+
+	if(visualize) {
+		log.open("markov_log.log");
+		logBrainStructure();
+	}
 }
 
 MarkovBrain::MarkovBrain(
@@ -118,6 +130,13 @@ MarkovBrain::MarkovBrain(
 	gates = GLB->buildGateList(_genomes[genomeName], nrNodes, PT_);
 	inOutReMap(); // map ins and outs from genome values to brain states
 	fillInConnectionsLists();
+
+	if(visualize)
+		logBrainStructure();
+}
+
+void MarkovBrain::logBrainStructure() {
+	log.log("begin brain desription\n" + description() + "end brain description\n");
 }
 
 // Make a brain like the brain that called this function, using genomes and
@@ -134,21 +153,36 @@ void MarkovBrain::resetBrain() {
 	nodes.assign(nrNodes, 0.0);
 	for (auto &g :gates)
 		g->resetGate();
+
+	if(visualize)
+		log.log("Brain was reset\n");
 }
 
 void MarkovBrain::resetInputs() {
 	for (int i = 0; i < nrInputValues; i++)
 		nodes[i] = 0.0;
+
+	if(visualize)
+		log.log("Inputs were reset\n");
 }
 
 void MarkovBrain::resetOutputs() {
 	// note nrInputValues+i gets us the index for the node related to each output
 	for (int i = 0; i < nrOutputValues; i++)
 		nodes[nrInputValues + i] = 0.0;
+
+	if(visualize)
+		log.log("Outputs were reset\n");
 }
 
-
 void MarkovBrain::update() {
+	if(visualize) {
+		log.log("Transition:");
+		for(auto s : nodes)
+			log.log(" " + std::to_string(s));
+		log.log(" ->");
+	}
+
 	nextNodes.assign(nrNodes, 0.0);
 	DataMap IOMap;
 
@@ -202,6 +236,12 @@ void MarkovBrain::update() {
 		IOMap.writeToFile(IOMapFileNamePL->get());
 		IOMap.clearMap();
 	}
+
+	if(visualize) {
+		for(auto s : nodes)
+			log.log(" " + std::to_string(s));
+		log.log("\n");
+	}
 }
 
 void MarkovBrain::inOutReMap() { // remaps genome site values to valid brain
@@ -211,9 +251,18 @@ void MarkovBrain::inOutReMap() { // remaps genome site values to valid brain
 }
 
 std::string MarkovBrain::description() {
-  std::string S = "Markov Briain\nins:" + std::to_string(nrInputValues) + " outs:" +
-             std::to_string(nrOutputValues) + " hidden:" + std::to_string(hiddenNodes) +
-             "\n" + gateList();
+  std::string S = "Markov Brain\nins:" + std::to_string(nrInputValues) + " outs:" +
+             std::to_string(nrOutputValues) + " hidden:" + std::to_string(hiddenNodes);
+	S += "\nInput IDs:";
+	for(int i=0; i<nrInputValues; i++)
+		S += " " + std::to_string(i);
+	S += "\nOutput IDs:";
+	for(int i=nrInputValues; i<nrInputValues+nrOutputValues; i++)
+		S += " " + std::to_string(i);
+	S += "\nHidden IDs:";
+	for(int i=nrInputValues+nrOutputValues; i<nrNodes; i++)
+		S += " " + std::to_string(i);
+	S += "\n" + gateList();
 	return S;
 }
 
@@ -228,7 +277,6 @@ void MarkovBrain::fillInConnectionsLists() {
 			nextNodesConnections[c]++;
 	}
 }
-
 
 DataMap MarkovBrain::getStats(std::string &prefix) {
 	DataMap dataMap;

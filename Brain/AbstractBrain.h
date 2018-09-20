@@ -230,4 +230,6 @@ public:
     // "blah" = use "blah namespace at root level
     // "Group::blah" = use "blah" name space inside of group name space
   }
+
+	virtual void logNote(std::string) {};
 };
