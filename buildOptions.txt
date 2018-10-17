@@ -5,9 +5,10 @@
   + ComplexiPhi
   + EdlundMaze
 	+ Mixture
+	+ TestIsolatedEmbodied
 
 % Genome
-  + Multi
+  - Multi
   * Circular
   
 % Brain
@@ -24,6 +25,6 @@
   + Lexicase
 
 % Archivist
-  + Default
+  * Default
   + SSwD
-  * LODwAP
+  + LODwAP
