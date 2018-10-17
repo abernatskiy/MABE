@@ -36,10 +36,11 @@ public:
   }
 
   virtual std::unordered_map<std::string, std::unordered_set<std::string>> requiredGroups() override {
+		// If you override this function and use a Brain, please use numInputs() and numOutputs() appropriately in your implementation
 		return {{groupNamePL->get(PT), {"B:" + brainNamePL->get(PT) + "," + std::to_string(numInputs()) + "," + std::to_string(numOutputs())}}};
   }
 
-	virtual void resetWorld() = 0;
+	virtual void resetWorld(int visualize) = 0;
 
 	virtual int numInputs() = 0;
 	virtual int numOutputs() = 0;
@@ -51,6 +52,5 @@ public:
 	virtual void updateExtraneousWorld(int timeStep, int visualize) = 0;
 	virtual void updateRunningScores(int evalTime, int visualize) = 0;
 	virtual void recordFinalScores(int evalTime, int visualize) = 0;
-	virtual void evaluateOrganism(std::shared_ptr<Organism> currentOrganism) = 0;
+	virtual void evaluateOrganism(std::shared_ptr<Organism> currentOrganism, int visualize) = 0;
 };
-

@@ -2,6 +2,8 @@
 
 #include "../AbstractMotors.h"
 
+using namespace std;
+
 class TestMotors : public AbstractMotors {
 
 public:
@@ -14,7 +16,11 @@ public:
 	void attachToBrain(std::shared_ptr<AbstractBrain> br) override { brain=br; };
 	void update(int timeStep, int visualize) override {
 		*motorEffort = 0;
-		for(int i=0; i<brain->nrOutputValues; i++)
-			*motorEffort += brain->readOutput(i);
+//		cout << "Updating the motor effort with the follwing brain outputs:";
+		for(int i=0; i<brain->nrOutputValues; i++) {
+//			cout << " " << brain->readOutput(i);
+			*motorEffort += brain->readOutput(i)>0 ? 1 : 0;
+		}
+//		cout << endl;
 	};
 };

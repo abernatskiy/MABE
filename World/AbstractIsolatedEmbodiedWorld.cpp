@@ -25,7 +25,7 @@ void AbstractIsolatedEmbodiedWorld::evaluateSolo(std::shared_ptr<Organism> org, 
 
   std::shared_ptr<AbstractBrain> brain = org->brains[brainNamePL->get(PT)];
   for(int r=0; r<evaluationsPerGenerationPL->get(PT); r++) {
-		resetWorld();
+		resetWorld(visualize);
 
 		sensors->resetSensors();
     brain->resetBrain();
@@ -48,6 +48,5 @@ void AbstractIsolatedEmbodiedWorld::evaluateSolo(std::shared_ptr<Organism> org, 
 		recordFinalScores(timeStep, visualize);
 	}
 
-	evaluateOrganism(org);
+	evaluateOrganism(org, visualize);
 }
-

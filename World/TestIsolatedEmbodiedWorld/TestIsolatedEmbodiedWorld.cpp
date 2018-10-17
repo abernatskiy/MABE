@@ -13,12 +13,17 @@ TestIsolatedEmbodiedWorld::TestIsolatedEmbodiedWorld(std::shared_ptr<ParametersT
 	curScore = 0;
 }
 
-void TestIsolatedEmbodiedWorld::evaluateOrganism(std::shared_ptr<Organism> currentOrganism) {
+void TestIsolatedEmbodiedWorld::evaluateOrganism(std::shared_ptr<Organism> currentOrganism, int visualize) {
 
 	float scoreAccum = 0.;
-	for(int v : scores)
+//	cout << "Final scores:";
+	for(int v : scores) {
 		scoreAccum += v;
-	scoreAccum /= evaluationTime;
+//		cout << " " << v;
+	}
+	scoreAccum /= scores.size();
+
+//	cout << " average: " << scoreAccum << endl;
 
 	currentOrganism->dataMap.append("score", scoreAccum);
 }
