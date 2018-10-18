@@ -32,11 +32,10 @@ private:
 	std::string brainName;
 
 	void evaluateOnce(std::shared_ptr<Organism> org, int visualize);
+	int numInputs() { return motors->numInputs() + sensors->numInputs(); };
+	int numOutputs() { return motors->numOutputs() + sensors->numOutputs(); };
 
 	virtual void resetWorld(int visualize) = 0;
-
-	virtual int numInputs() = 0;
-	virtual int numOutputs() = 0;
 
 	virtual bool endEvaluation(unsigned long timeStep) = 0;
 	virtual void updateExtraneousWorld(int timeStep, int visualize) = 0;
@@ -60,8 +59,8 @@ public:
 			evaluateSolo(groups[groupName]->population[i], analyze, visualize, debug);
   };
 
-  virtual std::unordered_map<std::string, std::unordered_set<std::string>> requiredGroups() override {
-		// If you override this function and use a Brain, please use numInputs() and numOutputs() appropriately in your implementation
+	// Will need a rewrite if sensory or motor system will need a genome
+	std::unordered_map<std::string, std::unordered_set<std::string>> requiredGroups() override {
 		return {{groupName, {"B:" + brainName + "," + std::to_string(numInputs()) + "," + std::to_string(numOutputs())}}};
   };
 };

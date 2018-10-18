@@ -27,9 +27,6 @@ public:
 
 	TestIsolatedEmbodiedWorld(std::shared_ptr<ParametersTable> PT_);
 
-	int numInputs() override { return 3; };
-	int numOutputs() override { return 3; };
-
 	void resetWorld(int visualize) override {
 		*worldState=0;
 		*motorEffort=0;

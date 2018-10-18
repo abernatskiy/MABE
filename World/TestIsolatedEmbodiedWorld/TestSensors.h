@@ -10,7 +10,7 @@ public:
 
 	TestSensors(std::shared_ptr<int> wState) : AbstractSensors(), worldState(wState) {};
 
-	void resetSensors() override {};
+	void reset() override {};
 	void attachToBrain(std::shared_ptr<AbstractBrain> br) override { brain=br; };
 	void update(int timeStep, int visualize) override {
 		if(*worldState==0) {
@@ -24,4 +24,5 @@ public:
 			brain->setInput(2, 1);
 		}
 	};
+	int numOutputs() { return 3; };
 };

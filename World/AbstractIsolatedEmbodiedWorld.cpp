@@ -35,9 +35,9 @@ void AbstractIsolatedEmbodiedWorld::evaluateOnce(std::shared_ptr<Organism> org, 
 
 	resetWorld(visualize);
 
-	sensors->resetSensors();
+	sensors->reset();
 	brain->resetBrain();
-	motors->resetMotors();
+	motors->reset();
 
 	motors->attachToBrain(brain);
 	sensors->attachToBrain(brain);
