@@ -38,9 +38,9 @@ private:
 	virtual void resetWorld(int visualize) = 0;
 
 	virtual bool endEvaluation(unsigned long timeStep) = 0;
-	virtual void updateExtraneousWorld(int timeStep, int visualize) = 0;
-	virtual void recordRunningScores(int evalTime, int visualize) = 0;
-	virtual void recordSampleScores(int evalTime, int visualize) = 0;
+	virtual void updateExtraneousWorld(unsigned long timeStep, int visualize) = 0;
+	virtual void recordRunningScores(unsigned long evalTime, int visualize) = 0;
+	virtual void recordSampleScores(unsigned long evalTime, int visualize) = 0;
 	virtual void evaluateOrganism(std::shared_ptr<Organism> currentOrganism, int visualize) = 0;
 
 public:
