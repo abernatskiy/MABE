@@ -20,6 +20,7 @@
 class AbstractIsolatedEmbodiedWorld : public AbstractWorld {
 
 protected:
+	// Initialize these to proper daughter classes in the daughter classes' constuctors
 	std::shared_ptr<AbstractMotors> motors;
 	std::shared_ptr<AbstractSensors> sensors;
 
