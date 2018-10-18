@@ -49,9 +49,9 @@ void AbstractIsolatedEmbodiedWorld::evaluateOnce(std::shared_ptr<Organism> org, 
 		brain->update();
 		motors->update(timeStep, visualize);
 		updateExtraneousWorld(timeStep, visualize);
-		updateRunningScores(timeStep, visualize);
+		recordRunningScores(timeStep, visualize);
 		timeStep++;
 	}
 
-	recordFinalScores(timeStep, visualize);
+	recordSampleScores(timeStep, visualize);
 }

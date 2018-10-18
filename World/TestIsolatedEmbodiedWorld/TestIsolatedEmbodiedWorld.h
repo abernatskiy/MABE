@@ -36,11 +36,11 @@ public:
 	};
 	bool endEvaluation(unsigned long ts) override { return ts >= evaluationTime; };
 	void updateExtraneousWorld(int ts, int visualize) override {  *worldState = ts>=silenceTime ? 1 : 0; };
-	void updateRunningScores(int ts, int visualize) override {
+	void recordRunningScores(int ts, int visualize) override {
 		curScore += *worldState==0 ? -1*(*motorEffort) : *motorEffort;
 //		cout << "timestep: " << ts << " score: " << curScore << endl;
 	};
-	void recordFinalScores(int tott, int visualize) override { scores.push_back(curScore); };
+	void recordSampleScores(int tott, int visualize) override { scores.push_back(curScore); };
 
 	void evaluateOrganism(std::shared_ptr<Organism> currentOrganism, int visualize) override;
 };

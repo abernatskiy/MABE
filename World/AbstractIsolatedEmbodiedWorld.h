@@ -32,15 +32,15 @@ private:
 	std::string brainName;
 
 	void evaluateOnce(std::shared_ptr<Organism> org, int visualize);
-	int numInputs() { return motors->numInputs() + sensors->numInputs(); };
-	int numOutputs() { return motors->numOutputs() + sensors->numOutputs(); };
+	int numInputs() { return motors->numOutputs() + sensors->numOutputs(); };
+	int numOutputs() { return motors->numInputs() + sensors->numInputs(); };
 
 	virtual void resetWorld(int visualize) = 0;
 
 	virtual bool endEvaluation(unsigned long timeStep) = 0;
 	virtual void updateExtraneousWorld(int timeStep, int visualize) = 0;
-	virtual void updateRunningScores(int evalTime, int visualize) = 0;
-	virtual void recordFinalScores(int evalTime, int visualize) = 0;
+	virtual void recordRunningScores(int evalTime, int visualize) = 0;
+	virtual void recordSampleScores(int evalTime, int visualize) = 0;
 	virtual void evaluateOrganism(std::shared_ptr<Organism> currentOrganism, int visualize) = 0;
 
 public:
