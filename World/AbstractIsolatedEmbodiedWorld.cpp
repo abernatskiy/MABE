@@ -21,32 +21,37 @@ std::shared_ptr<ParameterLink<std::string>> AbstractIsolatedEmbodiedWorld::brain
     Parameters::register_parameter("WORLD_ISOLATED_EMBODIED_NAMES-brainNameSpace", (std::string) "root::",
                                    "Namespace for parameters used to define brain");
 
-void AbstractIsolatedEmbodiedWorld::evaluateSolo(std::shared_ptr<Organism> org, int analyze, int visualize, int debug) {
+AbstractIsolatedEmbodiedWorld::AbstractIsolatedEmbodiedWorld(std::shared_ptr<ParametersTable> PT_) : AbstractWorld(PT_) {
 
-  std::shared_ptr<AbstractBrain> brain = org->brains[brainNamePL->get(PT)];
-  for(int r=0; r<evaluationsPerGenerationPL->get(PT); r++) {
-		resetWorld(visualize);
+	// Locatizing the settings
+	evaluationsPerGeneration = evaluationsPerGenerationPL->get(PT_);
+	groupName = groupNamePL->get(PT_);
+	brainName = brainNamePL->get(PT_);
+}
 
-		sensors->resetSensors();
-    brain->resetBrain();
-		motors->resetMotors();
+void AbstractIsolatedEmbodiedWorld::evaluateOnce(std::shared_ptr<Organism> org, int visualize) {
 
-		motors->attachToBrain(brain);
-		sensors->attachToBrain(brain);
+  std::shared_ptr<AbstractBrain> brain = org->brains[brainName];
 
-		unsigned long timeStep = 0;
+	resetWorld(visualize);
 
-		while(!endEvaluation(timeStep)) {
-			sensors->update(timeStep, visualize);
-			brain->update();
-			motors->update(timeStep, visualize);
-			updateExtraneousWorld(timeStep, visualize);
-			updateRunningScores(timeStep, visualize);
-			timeStep++;
-		}
+	sensors->resetSensors();
+	brain->resetBrain();
+	motors->resetMotors();
 
-		recordFinalScores(timeStep, visualize);
+	motors->attachToBrain(brain);
+	sensors->attachToBrain(brain);
+
+	unsigned long timeStep = 0;
+
+	while(!endEvaluation(timeStep)) {
+		sensors->update(timeStep, visualize);
+		brain->update();
+		motors->update(timeStep, visualize);
+		updateExtraneousWorld(timeStep, visualize);
+		updateRunningScores(timeStep, visualize);
+		timeStep++;
 	}
 
-	evaluateOrganism(org, visualize);
+	recordFinalScores(timeStep, visualize);
 }

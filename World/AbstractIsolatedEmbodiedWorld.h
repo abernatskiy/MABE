@@ -19,38 +19,49 @@
 
 class AbstractIsolatedEmbodiedWorld : public AbstractWorld {
 
-public:
+protected:
+	std::shared_ptr<AbstractMotors> motors;
+	std::shared_ptr<AbstractSensors> sensors;
+
+private:
 	static std::shared_ptr<ParameterLink<int>> evaluationsPerGenerationPL;
+	int evaluationsPerGeneration;
 	static std::shared_ptr<ParameterLink<std::string>> groupNamePL;
+	std::string groupName;
 	static std::shared_ptr<ParameterLink<std::string>> brainNamePL;
+	std::string brainName;
 
-	AbstractIsolatedEmbodiedWorld(std::shared_ptr<ParametersTable> PT_) : AbstractWorld(PT_) {};
-	virtual ~AbstractIsolatedEmbodiedWorld() = default;
-
-	void evaluateSolo(std::shared_ptr<Organism> org, int analyze, int visualize, int debug);
-
-	virtual void evaluate(std::map<std::string, std::shared_ptr<Group>> &groups, int analyze, int visualize, int debug) {
-		int popSize = groups[groupNamePL->get(PT)]->population.size();
-		for(int i=0; i<popSize; i++)
-			evaluateSolo(groups[groupNamePL->get(PT)]->population[i], analyze, visualize, debug);
-  }
-
-  virtual std::unordered_map<std::string, std::unordered_set<std::string>> requiredGroups() override {
-		// If you override this function and use a Brain, please use numInputs() and numOutputs() appropriately in your implementation
-		return {{groupNamePL->get(PT), {"B:" + brainNamePL->get(PT) + "," + std::to_string(numInputs()) + "," + std::to_string(numOutputs())}}};
-  }
+	void evaluateOnce(std::shared_ptr<Organism> org, int visualize);
 
 	virtual void resetWorld(int visualize) = 0;
 
 	virtual int numInputs() = 0;
 	virtual int numOutputs() = 0;
 
-	std::shared_ptr<AbstractMotors> motors;
-	std::shared_ptr<AbstractSensors> sensors;
-
 	virtual bool endEvaluation(unsigned long timeStep) = 0;
 	virtual void updateExtraneousWorld(int timeStep, int visualize) = 0;
 	virtual void updateRunningScores(int evalTime, int visualize) = 0;
 	virtual void recordFinalScores(int evalTime, int visualize) = 0;
 	virtual void evaluateOrganism(std::shared_ptr<Organism> currentOrganism, int visualize) = 0;
+
+public:
+	AbstractIsolatedEmbodiedWorld(std::shared_ptr<ParametersTable> PT_);
+	virtual ~AbstractIsolatedEmbodiedWorld() = default;
+
+	// Add parallelization both on the level of organisms and on the level of repeats
+	void evaluateSolo(std::shared_ptr<Organism> org, int analyze, int visualize, int debug) {
+		for(int r=0; r<evaluationsPerGeneration; r++)
+			evaluateOnce(org, visualize);
+		evaluateOrganism(org, visualize);
+	};
+	void evaluate(std::map<std::string, std::shared_ptr<Group>> &groups, int analyze, int visualize, int debug) {
+		int popSize = groups[groupName]->population.size();
+		for(int i=0; i<popSize; i++)
+			evaluateSolo(groups[groupName]->population[i], analyze, visualize, debug);
+  };
+
+  virtual std::unordered_map<std::string, std::unordered_set<std::string>> requiredGroups() override {
+		// If you override this function and use a Brain, please use numInputs() and numOutputs() appropriately in your implementation
+		return {{groupName, {"B:" + brainName + "," + std::to_string(numInputs()) + "," + std::to_string(numOutputs())}}};
+  };
 };
