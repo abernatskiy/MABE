@@ -33,8 +33,8 @@ private:
 	std::string brainName;
 
 	void evaluateOnce(std::shared_ptr<Organism> org, int visualize);
-	int numInputs() { return motors->numOutputs() + sensors->numOutputs(); };
-	int numOutputs() { return motors->numInputs() + sensors->numInputs(); };
+	int numInputs() { return motors->numOutputs() + sensors->numOutputs(); }; // brain inputs
+	int numOutputs() { return motors->numInputs() + sensors->numInputs(); }; // brain outputs
 
 	virtual void resetWorld(int visualize) = 0;
 
