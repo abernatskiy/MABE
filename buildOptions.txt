@@ -6,6 +6,7 @@
   + EdlundMaze
 	+ Mixture
 	+ TestIsolatedEmbodied
+	+ TestImagination
 
 % Genome
   - Multi

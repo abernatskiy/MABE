@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
 
 #include "../Utilities/Data.h"
@@ -6,7 +8,7 @@
 class AbstractMentalImage {
 
 public:
-	virtual void reset() = 0;
+	virtual void reset(int visualize) = 0;
 	virtual void updateWithInputs(std::vector<double> inputs) = 0;
 	virtual void recordRunningScores(std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) = 0;
 	virtual void recordSampleScores(std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) = 0;

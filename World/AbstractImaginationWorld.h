@@ -12,41 +12,43 @@
 class AbstractImaginationWorld : public AbstractIsolatedEmbodiedWorld {
 
 protected:
-	std::shared_ptr<AbstractMentalImage> image;
+	// Two pointers must be initialized to appropriate daughter classes' pointers downcasts in the daughter classes' constuctors:
+	// 1. std::shared_ptr<AbstractSensors> sensors, inherited from AbstractIsolatedEmbodiedWorld, and
+	// 2. this one:
+	std::shared_ptr<AbstractMentalImage> mentalImage;
+	// Also, make sure to call makeMotors() after the image pointer is set up.
+
+	void makeMotors() { motors = std::make_shared<ImaginationMotors>(mentalImage); }; // conveniently encapsulates call to ImaginationMotors constructor
+	                                                                            // so that there's no need to mind it in daughter classes
+
+private:
+	// Stuff from AbstractIsolatedEmbodiedWorld that stays virtual and must be defined in daughter classes
+	// virtual void updateExtraneousWorld(unsigned long timeStep, int visualize) = 0; // likely, a schedule of world changes (a "slideshow"
+	//                                                                                // in the discrete case) will be implemented here
+	// virtual bool endEvaluation(unsigned long timeStep) = 0; // evaluation termination conditions
+
 	std::shared_ptr<DataMap> runningScores;
 	std::shared_ptr<DataMap> sampleScores;
 
-private:
-	void resetWorld(int visualize) override { image->reset(visualize); };
-	void updateExtraneousWorld(unsigned long timeStep, int visualize) override {}; // nothing happens in the world besides image updates which are made by the actuator
+	void resetWorld(int visualize) override { mentalImage->reset(visualize); };
 
 	// Mental image class knows better how to compare itself to the ground truth and what data can be provided to the Organism
 	void recordRunningScores(unsigned long evalTime, int visualize) override {
-		image->recordRunningScores(runningScores, evalTime, visualize);
+		mentalImage->recordRunningScores(runningScores, evalTime, visualize);
 	};
 	void recordSampleScores(unsigned long evalTime, int visualize) override {
-		image->recordSampleScores(sampleScores, runningScores, evalTime, visualize);
+		mentalImage->recordSampleScores(sampleScores, runningScores, evalTime, visualize);
 		runningScores->clearMap();
 	};
 	void evaluateOrganism(std::shared_ptr<Organism> currentOrganism, int visualize) override {
-		image->evaluateOrganism(currentOrganism, sampleScores, visualize);
+		mentalImage->evaluateOrganism(currentOrganism, sampleScores, visualize);
 		sampleScores->clearMap();
 	};
-
-	// Stuff from AbstractIsolatedEmbodiedWorld that stays virtual: evaluation termination condition
-	// virtual bool endEvaluation(unsigned long timeStep) = 0;
-
-	// New virtual stuff: functions constructing appropriate objects for sensors and mental image
-	virtual std::shared_ptr<AbstractMentalImage> makeMentalImage() = 0;
-	virtual std::shared_ptr<AbstractSensors> makeSensors() = 0;
 
 public:
 	AbstractImaginationWorld(std::shared_ptr<ParametersTable> PT_) : AbstractIsolatedEmbodiedWorld(PT_) {
 		runningScores = std::make_shared<DataMap>();
 		sampleScores = std::make_shared<DataMap>();
-		image = makeMentalImage();
-		motors = std::make_shared<ImaginationMotors>(image);
-		sensors = makeSensors();
 	};
 	virtual ~AbstractImaginationWorld() = default;
 };
