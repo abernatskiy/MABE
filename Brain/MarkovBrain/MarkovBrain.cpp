@@ -10,6 +10,8 @@
 
 #include "MarkovBrain.h"
 
+int LogFile::fileSuffix = 0;
+
 std::shared_ptr<ParameterLink<bool>> MarkovBrain::recordIOMapPL=
     Parameters::register_parameter(
         "BRAIN_MARKOV_ADVANCED-recordIOMap", false,
@@ -84,11 +86,6 @@ MarkovBrain::MarkovBrain(std::vector<std::shared_ptr<AbstractGate>> _gates,
 	}
 
 	fillInConnectionsLists();
-
-	if(visualize) {
-		log.open("markov_log.log");
-		logBrainStructure();
-	}
 }
 
 MarkovBrain::MarkovBrain(std::shared_ptr<AbstractGateListBuilder> GLB_,
@@ -113,10 +110,6 @@ MarkovBrain::MarkovBrain(std::shared_ptr<AbstractGateListBuilder> GLB_,
 
 	fillInConnectionsLists();
 
-	if(visualize) {
-		log.open("markov_log.log");
-		logBrainStructure();
-	}
 }
 
 MarkovBrain::MarkovBrain(
@@ -131,8 +124,10 @@ MarkovBrain::MarkovBrain(
 	inOutReMap(); // map ins and outs from genome values to brain states
 	fillInConnectionsLists();
 
-	if(visualize)
+	if(visualize) {
+		log.open("markov_log");
 		logBrainStructure();
+	}
 }
 
 void MarkovBrain::logBrainStructure() {

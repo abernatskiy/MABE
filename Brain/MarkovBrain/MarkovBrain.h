@@ -15,6 +15,7 @@
 #include <iostream>
 #include <set>
 #include <vector>
+#include <sys/stat.h>
 
 #include "GateListBuilder/GateListBuilder.h"
 #include "../../Genome/AbstractGenome.h"
@@ -24,14 +25,36 @@
 #include "../AbstractBrain.h"
 
 class LogFile {
-	private:
-		bool isOpen;
-		std::ofstream fs;
-	public:
-		LogFile() : isOpen(false) {};
-		void open(std::string fn) { if (!isOpen) {fs.open(fn, std::ios::out); isOpen = true; }}; // std::ios::out|std::ios::app for multiple brains in the same file
-		~LogFile() { if (isOpen) fs.close(); };
-		void log(std::string s) { if (isOpen) fs << s; };
+private:
+	static int fileSuffix;
+	bool isOpen;
+	std::ofstream fs;
+	bool fileExists(std::string fn) {
+		struct stat buffer;
+		return (stat (fn.c_str(), &buffer) == 0); // stackoverflow.com/questions/12774207
+	};
+	std::string getNextAvailableFile(std::string prefix) {
+		std::string candidateFN;
+		while(1) {
+			candidateFN = prefix + std::to_string(fileSuffix) + ".log";
+			if(fileExists(candidateFN)) {
+				fileSuffix++;
+			} else {
+				return candidateFN;
+			}
+		}
+	};
+public:
+	LogFile() : isOpen(false) {};
+	void open(std::string prefix) {
+		if (!isOpen) {
+			std::string availableFile = getNextAvailableFile(prefix);
+			fs.open(availableFile, std::ios::out); // std::ios::out|std::ios::app for append
+			isOpen = true;
+		}
+	};
+	~LogFile() { if (isOpen) fs.close(); };
+	void log(std::string s) { if (isOpen) fs << s; };
 };
 
 class MarkovBrain : public AbstractBrain {
