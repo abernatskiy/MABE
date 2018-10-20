@@ -14,7 +14,8 @@ class TestImaginationWorld : public AbstractImaginationWorld {
 private:
 	const unsigned long evaluationTimePerTest = 10;
 	const int shift = 2;
-	const std::vector<int> testTrueStates = {5, 7, 3, 8, 2};
+	const std::vector<int> testTrueStates = {5, 7, 3, 8, 2}; // perfect performance is 0.936857 due to transients
+//	const std::vector<int> testTrueStates = {0, 4, 1, 6, 9};
 	std::shared_ptr<int> trueState;
 
 	unsigned curTest(unsigned long timeStep) { return static_cast<unsigned>(timeStep/evaluationTimePerTest); };

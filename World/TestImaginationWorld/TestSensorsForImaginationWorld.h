@@ -16,8 +16,10 @@ public:
 	void reset() override {}; // sensors themselves are stateless
 	void update(int timeStep, int visualize) override {
 		int outnum = *worldState + shift;
-		for(int i=0; i<digits; i++)
+		for(int i=0; i<digits; i++) {
+			if(visualize) std::cout << "Outputting number " << outnum << ": setting input " << i << " to " << (outnum>>i) % 2 << std::endl;
 			brain->setInput(i, (outnum>>i) % 2);
+		}
 	};
 	int numOutputs() override { return digits; };
 };
