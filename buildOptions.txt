@@ -7,6 +7,7 @@
 	+ Mixture
 	+ TestIsolatedEmbodied
 	+ TestImagination
+	+ TestSlideshow
 
 % Genome
   - Multi
