@@ -1,3 +1,5 @@
+#pragma once
+
 #include "AbstractIsolatedEmbodiedWorld.h"
 #include "AbstractMentalImage.h"
 #include "ImaginationMotors.h"
@@ -21,6 +23,11 @@ protected:
 	void makeMotors() { motors = std::make_shared<ImaginationMotors>(mentalImage); }; // conveniently encapsulates call to ImaginationMotors constructor
 	                                                                            // so that there's no need to mind it in daughter classes
 
+	virtual void resetWorld(int visualize) override {
+		AbstractIsolatedEmbodiedWorld::resetWorld(visualize);
+		mentalImage->reset(visualize);
+	}; // keeping it virtual because state of the World is likely to grow
+
 private:
 	// Stuff from AbstractIsolatedEmbodiedWorld that stays virtual and must be defined in daughter classes
 	// virtual void updateExtraneousWorld(unsigned long timeStep, int visualize) = 0; // likely, a schedule of world changes (a "slideshow"
@@ -29,8 +36,6 @@ private:
 
 	std::shared_ptr<DataMap> runningScores;
 	std::shared_ptr<DataMap> sampleScores;
-
-	virtual void resetWorld(int visualize) override { mentalImage->reset(visualize); }; // keeping it virtual because state of the World is likely to grow
 
 	// Mental image class knows better how to compare itself to the ground truth and what data can be provided to the Organism
 	void recordRunningScores(unsigned long evalTime, int visualize) override {

@@ -21,7 +21,7 @@ std::shared_ptr<ParameterLink<std::string>> AbstractIsolatedEmbodiedWorld::brain
     Parameters::register_parameter("WORLD_ISOLATED_EMBODIED_NAMES-brainNameSpace", (std::string) "root::",
                                    "Namespace for parameters used to define brain");
 
-AbstractIsolatedEmbodiedWorld::AbstractIsolatedEmbodiedWorld(std::shared_ptr<ParametersTable> PT_) : AbstractWorld(PT_) {
+AbstractIsolatedEmbodiedWorld::AbstractIsolatedEmbodiedWorld(std::shared_ptr<ParametersTable> PT_) : AbstractWorld(PT_), brain(nullptr) {
 
 	// Locatizing the settings
 	evaluationsPerGeneration = evaluationsPerGenerationPL->get(PT_);
@@ -31,9 +31,9 @@ AbstractIsolatedEmbodiedWorld::AbstractIsolatedEmbodiedWorld(std::shared_ptr<Par
 
 void AbstractIsolatedEmbodiedWorld::evaluateOnce(std::shared_ptr<Organism> org, int visualize) {
 
-  std::shared_ptr<AbstractBrain> brain = org->brains[brainName];
-
 	resetWorld(visualize);
+
+  brain = org->brains[brainName];
 
 	sensors->reset(visualize);
 	brain->resetBrain();

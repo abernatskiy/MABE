@@ -14,6 +14,8 @@
 
 #include "AbstractWorld.h"
 #include "../Organism/Organism.h"
+#include "../Brain/AbstractBrain.h"
+
 #include "AbstractSensors.h"
 #include "AbstractMotors.h"
 
@@ -23,6 +25,11 @@ protected:
 	// Initialize these to proper daughter classes in the daughter classes' constuctors
 	std::shared_ptr<AbstractMotors> motors;
 	std::shared_ptr<AbstractSensors> sensors;
+
+	virtual void resetWorld(int visualize) { brain=nullptr; }; // override this in daughter classes and call the parent's method
+
+	// Do not touch this one, its values will be taken from Organisms
+	std::shared_ptr<AbstractBrain> brain;
 
 private:
 	static std::shared_ptr<ParameterLink<int>> evaluationsPerGenerationPL;
@@ -35,8 +42,6 @@ private:
 	void evaluateOnce(std::shared_ptr<Organism> org, int visualize);
 	int numInputs() { return motors->numOutputs() + sensors->numOutputs(); }; // brain inputs
 	int numOutputs() { return motors->numInputs() + sensors->numInputs(); }; // brain outputs
-
-	virtual void resetWorld(int visualize) = 0;
 
 	virtual bool endEvaluation(unsigned long timeStep) = 0;
 	virtual void updateExtraneousWorld(unsigned long timeStep, int visualize) = 0;

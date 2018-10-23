@@ -24,7 +24,6 @@ private:
 	bool endEvaluation(unsigned long ts) override { return ts >= evaluationTimePerTest*testTrueStates.size(); };
 
 public:
-//	TestImaginationWorld(std::shared_ptr<ParametersTable> PT_);
 	TestImaginationWorld(std::shared_ptr<ParametersTable> PT_) : AbstractImaginationWorld(PT_) {
 
 		trueState = std::make_shared<int>(testTrueStates[0]);
