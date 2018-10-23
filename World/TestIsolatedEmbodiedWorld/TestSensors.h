@@ -9,8 +9,9 @@ public:
 
 	TestSensors(std::shared_ptr<int> wState) : AbstractSensors(), worldState(wState) {};
 
-	void reset() override {};
-	void update(int timeStep, int visualize) override {
+	void reset(int visualize) override { AbstractSensors::reset(visualize); }; // this line could've been omitted, added for clarity
+	void update(int visualize) override {
+		AbstractSensors::update(visualize);
 		if(*worldState==0) {
 			brain->setInput(0, 1);
 			brain->setInput(1, 1);

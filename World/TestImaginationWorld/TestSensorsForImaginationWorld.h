@@ -13,8 +13,9 @@ private:
 
 public:
 	TestSensorsForImaginationWorld(std::shared_ptr<int> wState, int sh) : worldState(wState), shift(sh) {};
-	void reset() override {}; // sensors themselves are stateless
-	void update(int timeStep, int visualize) override {
+	void reset(int visualize) override { AbstractSensors::reset(visualize); }; // sensors themselves are stateless
+	void update(int visualize) override {
+		AbstractSensors::update(visualize);
 		int outnum = *worldState + shift;
 		for(int i=0; i<digits; i++) {
 			if(visualize) std::cout << "Outputting number " << outnum << ": setting input " << i << " to " << (outnum>>i) % 2 << std::endl;

@@ -30,7 +30,7 @@ private:
 	std::shared_ptr<DataMap> runningScores;
 	std::shared_ptr<DataMap> sampleScores;
 
-	void resetWorld(int visualize) override { mentalImage->reset(visualize); };
+	virtual void resetWorld(int visualize) override { mentalImage->reset(visualize); }; // keeping it virtual because state of the World is likely to grow
 
 	// Mental image class knows better how to compare itself to the ground truth and what data can be provided to the Organism
 	void recordRunningScores(unsigned long evalTime, int visualize) override {

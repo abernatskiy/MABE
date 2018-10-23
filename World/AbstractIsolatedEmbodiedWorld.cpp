@@ -35,9 +35,9 @@ void AbstractIsolatedEmbodiedWorld::evaluateOnce(std::shared_ptr<Organism> org, 
 
 	resetWorld(visualize);
 
-	sensors->reset();
+	sensors->reset(visualize);
 	brain->resetBrain();
-	motors->reset();
+	motors->reset(visualize);
 
 	motors->attachToBrain(brain);
 	sensors->attachToBrain(brain);
@@ -45,9 +45,9 @@ void AbstractIsolatedEmbodiedWorld::evaluateOnce(std::shared_ptr<Organism> org, 
 	unsigned long timeStep = 0;
 
 	while(!endEvaluation(timeStep)) {
-		sensors->update(timeStep, visualize);
+		sensors->update(visualize);
 		brain->update();
-		motors->update(timeStep, visualize);
+		motors->update(visualize);
 		updateExtraneousWorld(timeStep, visualize);
 		recordRunningScores(timeStep, visualize);
 		timeStep++;

@@ -11,8 +11,9 @@ public:
 
 	TestMotors(std::shared_ptr<int> mEffort) : AbstractMotors(), motorEffort(mEffort) {};
 
-	void reset() override {}; // no need to change the internal state of the motors - motorEffort belongs to the world
-	void update(int timeStep, int visualize) override {
+	void reset(int visualize) override { AbstractMotors::reset(visualize); }; // no need to change the internal state of the motors - motorEffort belongs to the world
+	void update(int visualize) override {
+		AbstractMotors::update(visualize);
 		*motorEffort = 0;
 //		cout << "Updating the motor effort with the follwing brain outputs:";
 		for(int i=0; i<brain->nrOutputValues; i++) {

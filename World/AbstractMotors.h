@@ -10,8 +10,12 @@ protected:
 public:
 	void attachToBrain(std::shared_ptr<AbstractBrain> br) { brain=br; };
 
-	virtual void reset() = 0;
-	virtual void update(int timeStep, int visualize) = 0;
+	// Overloading of all four private methods below is encouraged, but call the prototypes withing the extensions for the void ones
+	virtual void reset(int visualize) { clock=0; };
+	virtual void update(int visualize) { clock++; };
 	virtual int numInputs() = 0;
 	virtual int numOutputs() { return 0; }; // reload for proprioception
+
+private:
+	unsigned long clock;
 };
