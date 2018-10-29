@@ -23,8 +23,8 @@ private:
 		stateSchedule->reset(visualize);
 	};
 
-	void updateExtraneousWorld(unsigned long timeStep, int visualize) override {
-		if(timeStep%brainUpdatesPerWorldState() == 0) {
+	void postEvaluationOuterWorldUpdate(unsigned long timeStep, int visualize) override {
+		if(timeStep>0 && (timeStep+1)%brainUpdatesPerWorldState() == 0) {
 			stateSchedule->advance(visualize);
 			if(resetAgentBetweenStates()) {
 				sensors->reset(visualize);

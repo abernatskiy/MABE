@@ -35,7 +35,8 @@ public:
 //		cout << "Resetting world" << endl;
 	};
 	bool endEvaluation(unsigned long ts) override { return ts >= evaluationTime; };
-	void updateExtraneousWorld(unsigned long ts, int visualize) override {  *worldState = ts>=silenceTime ? 1 : 0; };
+	void preEvaluationOuterWorldUpdate(unsigned long ts, int visualize) override {  *worldState = ts>=silenceTime ? 1 : 0; };
+	void postEvaluationOuterWorldUpdate(unsigned long ts, int visualize) override {};
 	void recordRunningScores(unsigned long ts, int visualize) override {
 		curScore += *worldState==0 ? -1*(*motorEffort) : *motorEffort;
 //		cout << "timestep: " << ts << " score: " << curScore << endl;

@@ -30,12 +30,15 @@ protected:
 
 private:
 	// Stuff from AbstractIsolatedEmbodiedWorld that stays virtual and must be defined in daughter classes
-	// virtual void updateExtraneousWorld(unsigned long timeStep, int visualize) = 0; // likely, a schedule of world changes (a "slideshow"
-	//                                                                                // in the discrete case) will be implemented here
+	// virtual void postEvaluationOuterWorldUpdate(unsigned long timeStep, int visualize) = 0; // likely, a schedule of world changes (a "slideshow"
+	//                                                                                         // in the discrete case) will be implemented here
 	// virtual bool endEvaluation(unsigned long timeStep) = 0; // evaluation termination conditions
 
 	std::shared_ptr<DataMap> runningScores;
 	std::shared_ptr<DataMap> sampleScores;
+
+	// agent does not affect world except by modifying the mental image
+	void preEvaluationOuterWorldUpdate(unsigned long timeStep, int visualize) override {};
 
 	// Mental image class knows better how to compare itself to the ground truth and what data can be provided to the Organism
 	void recordRunningScores(unsigned long evalTime, int visualize) override {
