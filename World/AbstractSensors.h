@@ -6,6 +6,7 @@ class AbstractSensors {
 
 protected:
 	std::shared_ptr<AbstractBrain> brain;
+	unsigned long clock;
 
 public:
 	void attachToBrain(std::shared_ptr<AbstractBrain> br) { brain=br; };
@@ -15,7 +16,4 @@ public:
 	virtual void update(int visualize) { clock++; };
 	virtual int numOutputs() = 0;
 	virtual int numInputs() { return 0; }; // reload for active perception
-
-private:
-	unsigned long clock;
 };
