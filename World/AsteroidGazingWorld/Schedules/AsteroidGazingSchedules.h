@@ -15,7 +15,7 @@ protected:
 	unsigned numAsteroids;
 
 private:
-	void readAsteroidsFromDir(std::string datasetPath);
+	void readAsteroids();
 
 public:
 	AbstractAsteroidGazingSchedule(std::shared_ptr<std::string> curAsteroidName, std::string astDatasetPath);
