@@ -39,8 +39,8 @@ void AbstractIsolatedEmbodiedWorld::evaluateOnce(std::shared_ptr<Organism> org, 
 	brain->resetBrain();
 	motors->reset(visualize);
 
-	motors->attachToBrain(brain);
 	sensors->attachToBrain(brain);
+	motors->attachToBrain(brain);
 
 	unsigned long timeStep = 0;
 
