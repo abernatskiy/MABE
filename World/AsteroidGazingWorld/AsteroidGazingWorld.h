@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../AbstractSlideshowWorld.h"
+#include "Utilities/AsteroidsDatasetParser.h"
 
 class AsteroidGazingWorld : public AbstractSlideshowWorld {
 
@@ -10,9 +11,10 @@ class AsteroidGazingWorld : public AbstractSlideshowWorld {
 	// harmonics to a sphere
 
 private:
-	static std::shared_ptr<ParameterLink<int>> brainUpdatesPerAsteroidPL;       int brainUpdatesPerAsteroid;
-	static std::shared_ptr<ParameterLink<std::string>> asteroidsDatasetPathPL;  std::string asteroidsDatasetPath;
+	static std::shared_ptr<ParameterLink<int>> brainUpdatesPerAsteroidPL; int brainUpdatesPerAsteroid;
+	static std::shared_ptr<ParameterLink<std::string>> datasetPathPL;     std::string datasetPath;
 	static std::shared_ptr<ParameterLink<int>> sensorResolutionPL;
+	std::shared_ptr<AsteroidsDatasetParser> datasetParser;
 
 	bool resetAgentBetweenStates() override { return true; };
 	int brainUpdatesPerWorldState() override { return brainUpdatesPerAsteroid; };
