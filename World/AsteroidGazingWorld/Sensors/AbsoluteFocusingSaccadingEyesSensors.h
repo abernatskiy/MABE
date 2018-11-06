@@ -1,9 +1,22 @@
 #pragma once
 
 #include "../../AbstractSensors.h"
-#include "../../../Brain/AbstractBrain.h"
+#include "../Utilities/AsteroidsDatasetParser.h"
+#include "../Utilities/AsteroidSnapshot.h"
+
+#include <map>
+
+typedef std::map<std::string,std::map<unsigned,std::map<unsigned,std::map<unsigned,AsteroidSnapshot>>>> asteroid_snapshots_library_type;
 
 class AbsoluteFocusingSaccadingEyesSensors : public AbstractSensors {
+
+public:
+	AbsoluteFocusingSaccadingEyesSensors(std::shared_ptr<std::string> curAstName, std::shared_ptr<AsteroidsDatasetParser> datasetParser, unsigned res);
+	void update(int visualize) override;
+
+	void reset(int visualize) override { AbstractSensors::reset(visualize); }; // sensors themselves are stateless
+	int numOutputs() override { return numSensors; };
+	int numInputs() override { return 1; };
 
 private:
 	const unsigned resolution;
@@ -11,22 +24,8 @@ private:
 	std::string asteroidsDatasetPath;
 	std::shared_ptr<std::string> currentAsteroidName;
 
-	unsigned getNumSensors() {
-		// yes I know this is suboptimal
-		unsigned pow = 1;
-		for(unsigned i=0; i<resolution; i++)
-			pow *= 4;
-		return pow;
-	};
+	asteroid_snapshots_library_type asteroidSnapshots;
 
-public:
-	AbsoluteFocusingSaccadingEyesSensors(std::shared_ptr<std::string> curAstName,
-	                                     std::string datasetPath,
-	                                     unsigned res) :
-		currentAsteroidName(curAstName), asteroidsDatasetPath(datasetPath), resolution(res), numSensors(getNumSensors()) {};
+	unsigned getNumInputChannels();
 
-	void reset(int visualize) override { AbstractSensors::reset(visualize); }; // sensors themselves are stateless
-	int numOutputs() override { return numSensors; };
-
-	void update(int visualize) override;
 };
