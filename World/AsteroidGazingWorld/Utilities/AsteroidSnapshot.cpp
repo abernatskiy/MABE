@@ -5,7 +5,7 @@
 AsteroidSnapshot::AsteroidSnapshot(std::string filePath) :
 	AsteroidSnapshot(png::image<pixel_value_type>(filePath)) {}
 
-pixel_value_type AsteroidSnapshot::get(std::uint32_t x, std::uint32_t y) {
+pixel_value_type AsteroidSnapshot::get(std::uint32_t x, std::uint32_t y) const {
 
 	if( x >= height || y >= width ) {
 		std::cerr << "A value of pixel outside of the picture frame was requested. Width " << width << ", heigh " << height << ", requested value at x=" << x << ", y=" << y << std::endl;
@@ -16,7 +16,7 @@ pixel_value_type AsteroidSnapshot::get(std::uint32_t x, std::uint32_t y) {
 
 AsteroidSnapshot AsteroidSnapshot::resampleArea(std::uint32_t x0, std::uint32_t y0,
                                                 std::uint32_t x1, std::uint32_t y1,
-                                                std::uint32_t newWidth, std::uint32_t newHeight) {
+                                                std::uint32_t newWidth, std::uint32_t newHeight) const {
 
 	// Validating the arguments - comment out for slight increase in performance
 	get(x0, y0);

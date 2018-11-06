@@ -16,10 +16,10 @@ public:
 	const std::uint32_t height;
 
 	AsteroidSnapshot(std::string filePath);
-	pixel_value_type get(std::uint32_t x, std::uint32_t y);
+	pixel_value_type get(std::uint32_t x, std::uint32_t y) const;
 	AsteroidSnapshot resampleArea(std::uint32_t x0, std::uint32_t y0,
 	                              std::uint32_t x1, std::uint32_t y1,
-	                              std::uint32_t newWidth, std::uint32_t newHeight);
+	                              std::uint32_t newWidth, std::uint32_t newHeight) const;
 
 private:
 	texture_type texture;
