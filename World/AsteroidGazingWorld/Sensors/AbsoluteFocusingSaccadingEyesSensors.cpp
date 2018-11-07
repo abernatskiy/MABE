@@ -2,9 +2,10 @@
 
 #include "../../../Brain/AbstractBrain.h"
 
+#include <cstdint>
 #include <cstdlib>
 
-// Auxiliary definitions
+/***** Auxiliary definitions *****/
 
 static const std::vector<std::string> allowedParameters = { "condition", "distance", "phase" };
 
@@ -39,12 +40,66 @@ unsigned bitsFor(unsigned val) {
   return bits;
 }
 
-// AbsoluteFocusingSaccadingEyesSensors class definitions
+unsigned bitsRangeToDecimal(std::vector<bool>::iterator begin, std::vector<bool>::iterator end) {
+	unsigned val = 0;
+	while( begin != end ) {
+		val <<= 1;
+		val += *begin ? 1 : 0;
+		begin++;
+	}
+	return val;
+}
+
+unsigned bitsRangeToZeroBiasedParallelBusValue(std::vector<bool>::iterator begin, std::vector<bool>::iterator end) {
+	unsigned val = 0;
+	while( begin != end ) {
+		if( !*begin ) return val;
+		begin++; val++;
+	}
+	return val;
+}
+
+std::pair<unsigned,unsigned> triSplitRange(unsigned x0, unsigned x1, unsigned splits, std::vector<bool>::iterator begin, std::vector<bool>::iterator end) {
+	// returns a part of the segment [x0, x1) resulting from "splits" trinary splits, with the part choice dictated by the boolean input values at every split
+	unsigned choice, range, rangeStart;
+	while( splits != 0 ) {
+		if(*begin)
+			choice = *(begin+1) ? 2 : 0; // if the first bit is 1, the second one is used to choose from the top and the bottom part
+		else
+			choice = 1; // if the first bit is 0, second one is ignored and middle part is chosen
+		rangeStart = x0;
+		range = x1-x0;
+		x0 = rangeStart + (range*choice) / 3;
+		x1 = rangeStart + (range*(choice+1)) / 3;
+		splits--;
+		begin+=2;
+	}
+	return std::pair<unsigned,unsigned>(x0, x1);
+}
+
+std::pair<unsigned,unsigned> biSplitRange(unsigned x0, unsigned x1, unsigned splits, std::vector<bool>::iterator begin, std::vector<bool>::iterator end) {
+  // returns a part of the segment [x0, x1) resulting from "splits" binary splits, with the part choice dictated by the boolean input values at every split
+	unsigned choice, range, rangeStart;
+	while( splits != 0 ) {
+		choice = *begin ? 1 : 0;
+		rangeStart = x0;
+		range = x1-x0;
+		x0 = rangeStart + (range*choice) / 2;
+		x1 = rangeStart + (range*(choice+1)) / 2;
+		splits--;
+		begin++;
+	}
+	return std::pair<unsigned,unsigned>(x0, x1);
+}
+
+/***** AbsoluteFocusingSaccadingEyesSensors class definitions *****/
 
 AbsoluteFocusingSaccadingEyesSensors::AbsoluteFocusingSaccadingEyesSensors(std::shared_ptr<std::string> curAstName,
                                                                            std::shared_ptr<AsteroidsDatasetParser> datasetParser,
                                                                            unsigned fovRes, unsigned mzoom, unsigned splitFac) :
-	currentAsteroidName(curAstName), foveaResolution(fovRes), maxZoom(mzoom), splittingFactor(splitFac), numSensors(getNumSensoryChannels()), numMotors(getNumControls()) {
+	currentAsteroidName(curAstName), foveaResolution(fovRes), maxZoom(mzoom), splittingFactor(splitFac),
+	phaseControls(bitsFor(numPhases)), zoomLevelControls(maxZoom), zoomPositionControls(2*maxZoom*bitsFor(splittingFactor)),
+	numSensors(getNumSensoryChannels()), numMotors(getNumControls()) {
 
 	// Reading asteroid snapshots into RAM for quick access
 	std::set<std::string> asteroidNames = datasetParser->getAsteroidsNames();
@@ -90,23 +145,28 @@ AbsoluteFocusingSaccadingEyesSensors::AbsoluteFocusingSaccadingEyesSensors(std::
 			}
 			else {
 				const std::string snapshotPath = datasetParser->getPicturePath(an, condition, distance, phase);
-				asteroidSnapshots[an][condition][distance].emplace(phase, snapshotPath);
+				asteroidSnapshots[an][condition][distance].emplace(phase, snapshotPath); // TODO: downsample based on allowed zoom levels
 			}
 		}
   }
 	// At this point all snapshots from the dataset is in RAM
+
+	// Defining the temporaries
+	constCondition = getACondition(asteroidSnapshots);
+	constDistance = getADistance(asteroidSnapshots);
+
+	// Ruling out unsupported values of splittingFactor
+	if( splittingFactor!=2 && splittingFactor!=2 ) {
+		std::cerr << "Unsupported splitting factor of " << splittingFactor << " has been requested" << std::endl;
+		exit(EXIT_FAILURE);
+	}
 }
 
 unsigned AbsoluteFocusingSaccadingEyesSensors::getNumSensoryChannels() {
-	return foveaResolution*foveaResolution;
+	return foveaResolution*foveaResolution; // TODO: implement color depth
 }
 
 unsigned AbsoluteFocusingSaccadingEyesSensors::getNumControls() {
-	const unsigned conditionControls = 0; // we're assuming that the spacecraft has pictures from one angle only for now
-	const unsigned distanceControls = 0; // neglecting distance control for now
-	const unsigned phaseControls = 4; // 16 available phases
-	const unsigned zoomLevelControls = maxZoom; // parallel zero-biased bus
-	const unsigned zoomPositionControls = maxZoom*bitsFor(splittingFactor); // for a splitting factor of N, position of the fovea is encoded in maxZoom Nary numbers
 	return conditionControls +
 	       distanceControls +
 	       phaseControls +
@@ -115,10 +175,48 @@ unsigned AbsoluteFocusingSaccadingEyesSensors::getNumControls() {
 }
 
 void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
+	visualize = 1; // debug
 
-	// for now, just write ones to the sensory inputs of the brain
-	for(unsigned i=0; i<numSensors; i++)
-		brain->setInput(i, 1.);
+	// Converting the controls into a vector of bools
+	std::vector<bool> controls(numMotors);
+	for(unsigned i=0; i<numMotors; i++)
+		controls[i] = brain->readOutput(i) > 0.5;
+
+	if(visualize) {
+		std::cout << "Control inputs of AbsoluteFocusingSaccadingEyes:";
+		for(int ci : controls)
+			std::cout << ' ' << ci;
+		std::cout << std::endl << std::flush;
+	}
+
+	// Parsing it and getting the sensor values in meantime:
+	//  1. Determining which snapshot we want to see
+	std::vector<bool>::iterator controlsIter = controls.begin();
+	const unsigned condition = constCondition;
+	const unsigned distance = constDistance;
+	const unsigned phase = bitsRangeToDecimal(controlsIter, controlIter+=phaseControls);
+	//     ... we now know it is asteroidSnapshots[*currentAsteroidName][condition][distance][phase]
+	//     Let's get some useful params of that snapshot
+	const unsigned snapshotWidth = asteroidSnapshots[*currentAsteroidName][condition][distance][phase].width;
+	const unsigned snapshotHeight = asteroidSnapshots[*currentAsteroidName][condition][distance][phase].height;
+
+	// 2. Determining which part of the snapshot we want to see
+	const unsigned zoomLevel = bitsRangeToZeroBiasedParallelBusValue(controlIter, controlIter+=zoomLevelControls);
+	unsigned x0, x1, y0, y1;
+	std::tie(x0, x1) = splittingFactor==3 ? triSplitRange( 0, snapshotWidth, zoomLevel, controlsIter, controlsIter+=(zoomPositionControls/2) ) :
+	                                         biSplitRange( 0, snapshotWidth, zoomLevel, controlsIter, controlsIter+=(zoomPositionControls/2) );
+	std::tie(y0, y1) = splittingFactor==3 ? triSplitRange( 0, snapshotHeight, zoomLevel, controlsIter, controlsIter+=(zoomPositionControls/2) ) :
+	                                         biSplitRange( 0, snapshotHeight, zoomLevel, controlsIter, controlsIter+=(zoomPositionControls/2) );
+
+	// 3. Getting that part and feeding it to the brain line by line
+	AsteroidSnapshot view = asteroidSnapshots[*currentAsteroidName][condition][distance][phase].resampleArea(x0, y0, x1, y1, foveaResolution, foveaResolution);
+
+	unsigned pixNum = 0;
+	const unsigned contrastLvl = 127; // 127 is the middle of the dynamic range
+	for(unsigned i=0; i<foveaResolution; i++)
+		for(unsigned j=0; j<foveaResolution; j++) {
+			brain->setInput(pixNum++, view.get(i,j)>contrastLvl);
+		}
 
 	AbstractSensors::update(visualize); // increment the clock
 }

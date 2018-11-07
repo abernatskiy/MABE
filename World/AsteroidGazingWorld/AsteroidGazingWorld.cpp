@@ -15,7 +15,7 @@ std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::foveaResolutionPL =
                                  "number of rows and columns in the sensors fovea (resulting number of sensory inputs is r^2)");
 std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::splittingFactorPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING-splittingFactor", 3,
-                                 "the factor z that determines how zoom works, in particular the snapshot is divided into z^2 sub-areas at each zoom level");
+                                 "the factor z that determines how zoom works, in particular the snapshot is divided into z^2 sub-areas at each zoom level; acceptable values are 2 and 3");
 std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::maxZoomPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING-maxZoom", 3,
                                  "the number of allowed zoom levels");
