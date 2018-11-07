@@ -31,12 +31,20 @@ void validateParameterValues(std::map<std::string,std::set<unsigned>> pvals) {
 	}
 }
 
+unsigned bitsFor(unsigned val) {
+	// ceil(log2(val))
+	unsigned upper = 1;
+	unsigned bits = 0;
+	while( upper < val ) { upper *= 2; bits++; }
+  return bits;
+}
+
 // AbsoluteFocusingSaccadingEyesSensors class definitions
 
 AbsoluteFocusingSaccadingEyesSensors::AbsoluteFocusingSaccadingEyesSensors(std::shared_ptr<std::string> curAstName,
                                                                            std::shared_ptr<AsteroidsDatasetParser> datasetParser,
-                                                                           unsigned res) :
-	currentAsteroidName(curAstName), resolution(res), numSensors(getNumInputChannels()) {
+                                                                           unsigned fovRes, unsigned mzoom, unsigned splitFac) :
+	currentAsteroidName(curAstName), foveaResolution(fovRes), maxZoom(mzoom), splittingFactor(splitFac), numSensors(getNumSensoryChannels()), numMotors(getNumControls()) {
 
 	// Reading asteroid snapshots into RAM for quick access
 	std::set<std::string> asteroidNames = datasetParser->getAsteroidsNames();
@@ -89,12 +97,21 @@ AbsoluteFocusingSaccadingEyesSensors::AbsoluteFocusingSaccadingEyesSensors(std::
 	// At this point all snapshots from the dataset is in RAM
 }
 
-unsigned AbsoluteFocusingSaccadingEyesSensors::getNumInputChannels() {
-	// yes I know this is suboptimal
-	unsigned pow = 1;
-	for(unsigned i=0; i<resolution; i++)
-		pow *= 4;
-	return pow;
+unsigned AbsoluteFocusingSaccadingEyesSensors::getNumSensoryChannels() {
+	return foveaResolution*foveaResolution;
+}
+
+unsigned AbsoluteFocusingSaccadingEyesSensors::getNumControls() {
+	const unsigned conditionControls = 0; // we're assuming that the spacecraft has pictures from one angle only for now
+	const unsigned distanceControls = 0; // neglecting distance control for now
+	const unsigned phaseControls = 4; // 16 available phases
+	const unsigned zoomLevelControls = maxZoom; // parallel zero-biased bus
+	const unsigned zoomPositionControls = maxZoom*bitsFor(splittingFactor); // for a splitting factor of N, position of the fovea is encoded in maxZoom Nary numbers
+	return conditionControls +
+	       distanceControls +
+	       phaseControls +
+	       zoomLevelControls +
+	       zoomPositionControls;
 }
 
 void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {

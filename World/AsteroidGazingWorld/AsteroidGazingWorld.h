@@ -13,7 +13,9 @@ class AsteroidGazingWorld : public AbstractSlideshowWorld {
 private:
 	static std::shared_ptr<ParameterLink<int>> brainUpdatesPerAsteroidPL; int brainUpdatesPerAsteroid;
 	static std::shared_ptr<ParameterLink<std::string>> datasetPathPL;     std::string datasetPath;
-	static std::shared_ptr<ParameterLink<int>> sensorResolutionPL;
+	static std::shared_ptr<ParameterLink<int>> foveaResolutionPL;
+	static std::shared_ptr<ParameterLink<int>> splittingFactorPL;
+	static std::shared_ptr<ParameterLink<int>> maxZoomPL;
 	std::shared_ptr<AsteroidsDatasetParser> datasetParser;
 
 	bool resetAgentBetweenStates() override { return true; };

@@ -10,9 +10,15 @@ std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::brainUpdatesPerAsteroid
 std::shared_ptr<ParameterLink<std::string>> AsteroidGazingWorld::datasetPathPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING-datasetPath", (std::string) "./asteroids",
                                  "path to the folder containing the asteroids shapes and snapshots dataset");
-std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::sensorResolutionPL =
-  Parameters::register_parameter("WORLD_ASTEROID_GAZING-sensorResolution", 0,
-                                 "sensor resoluton level r, determining the number of sensor outputs as 4^r");
+std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::foveaResolutionPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING-foveaResolution", 3,
+                                 "number of rows and columns in the sensors fovea (resulting number of sensory inputs is r^2)");
+std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::splittingFactorPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING-splittingFactor", 3,
+                                 "the factor z that determines how zoom works, in particular the snapshot is divided into z^2 sub-areas at each zoom level");
+std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::maxZoomPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING-maxZoom", 3,
+                                 "the number of allowed zoom levels");
 
 AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) : AbstractSlideshowWorld(PT_) {
 	// Localizing settings
@@ -23,7 +29,7 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 	// Drawing the rest of the owl
 	currentAsteroidName = std::make_shared<std::string>("");
 	stateSchedule = std::make_shared<ExhaustiveAsteroidGazingSchedule>(currentAsteroidName, datasetParser);
-	sensors = std::make_shared<AbsoluteFocusingSaccadingEyesSensors>(currentAsteroidName, datasetParser, sensorResolutionPL->get(PT_));
+	sensors = std::make_shared<AbsoluteFocusingSaccadingEyesSensors>(currentAsteroidName, datasetParser, foveaResolutionPL->get(PT_), maxZoomPL->get(PT_), splittingFactorPL->get(PT_));
 	mentalImage = std::make_shared<SphericalHarmonicsBasedAsteroidImageMentalImage>(currentAsteroidName, datasetPath);
 
 	makeMotors();
