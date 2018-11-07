@@ -31,12 +31,12 @@ AsteroidSnapshot AsteroidSnapshot::resampleArea(std::uint32_t x0, std::uint32_t 
 	for(unsigned i=0; i<newWidth; i++)
 		for(unsigned j=0; j<newHeight; j++) {
 
-			xpp0 = (i*oldWidth) / newWidth;
-			xpp1 = ((i+1)*oldWidth) / newWidth;
+			xpp0 = x0 + (i*oldWidth) / newWidth;
+			xpp1 = x0 + ((i+1)*oldWidth) / newWidth;
 			if( xpp1==xpp0 ) xpp1++;
 
-			ypp0 = (j*oldHeight) / newHeight;
-			ypp1 = ((j+1)*oldHeight) / newHeight;
+			ypp0 = y0 + (j*oldHeight) / newHeight;
+			ypp1 = y0 + ((j+1)*oldHeight) / newHeight;
 			if( ypp1==ypp0 ) ypp1++;
 //			std::cout << "i=" << i << " j=" << j << " ypp0=" << ypp0 << " ypp1=" << ypp1 << std::endl;
 
