@@ -156,7 +156,7 @@ AbsoluteFocusingSaccadingEyesSensors::AbsoluteFocusingSaccadingEyesSensors(std::
 	constDistance = getADistance(asteroidSnapshots);
 
 	// Ruling out unsupported values of splittingFactor
-	if( splittingFactor!=2 && splittingFactor!=2 ) {
+	if( splittingFactor!=2 && splittingFactor!=3 ) {
 		std::cerr << "Unsupported splitting factor of " << splittingFactor << " has been requested" << std::endl;
 		exit(EXIT_FAILURE);
 	}
@@ -194,22 +194,53 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 	std::vector<bool>::iterator controlsIter = controls.begin();
 	const unsigned condition = constCondition;
 	const unsigned distance = constDistance;
-	const unsigned phase = bitsRangeToDecimal(controlsIter, controlIter+=phaseControls);
+	const unsigned phase = bitsRangeToDecimal(controlsIter, controlsIter+=phaseControls);
 	//     ... we now know it is asteroidSnapshots[*currentAsteroidName][condition][distance][phase]
 	//     Let's get some useful params of that snapshot
-	const unsigned snapshotWidth = asteroidSnapshots[*currentAsteroidName][condition][distance][phase].width;
-	const unsigned snapshotHeight = asteroidSnapshots[*currentAsteroidName][condition][distance][phase].height;
+
+	std::cout << *currentAsteroidName << std::endl;
+	std::cout << condition << std::endl;
+	std::cout << distance << std::endl;
+	std::cout << phase << std::endl;
+
+	AsteroidSnapshot& astSnap = asteroidSnapshots.at(*currentAsteroidName).at(condition).at(distance).at(phase);
+
+	if(visualize) {
+		std::cout << "Perceiving the following asteroid:" << std::endl;
+		astSnap.print();
+	}
 
 	// 2. Determining which part of the snapshot we want to see
-	const unsigned zoomLevel = bitsRangeToZeroBiasedParallelBusValue(controlIter, controlIter+=zoomLevelControls);
+	const unsigned zoomLevel = bitsRangeToZeroBiasedParallelBusValue(controlsIter, controlsIter+=zoomLevelControls);
 	unsigned x0, x1, y0, y1;
-	std::tie(x0, x1) = splittingFactor==3 ? triSplitRange( 0, snapshotWidth, zoomLevel, controlsIter, controlsIter+=(zoomPositionControls/2) ) :
-	                                         biSplitRange( 0, snapshotWidth, zoomLevel, controlsIter, controlsIter+=(zoomPositionControls/2) );
-	std::tie(y0, y1) = splittingFactor==3 ? triSplitRange( 0, snapshotHeight, zoomLevel, controlsIter, controlsIter+=(zoomPositionControls/2) ) :
-	                                         biSplitRange( 0, snapshotHeight, zoomLevel, controlsIter, controlsIter+=(zoomPositionControls/2) );
+
+	if(visualize) {
+		std::cout << "Using controls";
+		for(auto it=controlsIter; it!=controlsIter+zoomPositionControls/2; it++)
+			std::cout << ' ' << *it;
+		std::cout << " to split the range 0 to " << astSnap.width << " with a splitting factor of " << splittingFactor << std::endl;
+	}
+
+	std::tie(x0, x1) = splittingFactor==3 ? triSplitRange( 0, astSnap.width, zoomLevel, controlsIter, controlsIter+=(zoomPositionControls/2) ) :
+	                                         biSplitRange( 0, astSnap.width, zoomLevel, controlsIter, controlsIter+=(zoomPositionControls/2) );
+
+	if(visualize) {
+		std::cout << "Resulting range: " << x0 << ' ' << x1 << std::endl;
+		std::cout << "Using controls";
+		for(auto it=controlsIter; it!=controlsIter+zoomPositionControls/2; it++)
+			std::cout << ' ' << *it;
+		std::cout << " to split the range 0 to " << astSnap.height << " with a splitting factor of " << splittingFactor << std::endl;
+	}
+
+	std::tie(y0, y1) = splittingFactor==3 ? triSplitRange( 0, astSnap.height, zoomLevel, controlsIter, controlsIter+=(zoomPositionControls/2) ) :
+	                                         biSplitRange( 0, astSnap.height, zoomLevel, controlsIter, controlsIter+=(zoomPositionControls/2) );
+
+	if(visualize) {
+		std::cout << "Resulting range: " << y0 << ' ' << y1 << std::endl;
+	}
 
 	// 3. Getting that part and feeding it to the brain line by line
-	AsteroidSnapshot view = asteroidSnapshots[*currentAsteroidName][condition][distance][phase].resampleArea(x0, y0, x1, y1, foveaResolution, foveaResolution);
+	AsteroidSnapshot view = astSnap.resampleArea(x0, y0, x1, y1, foveaResolution, foveaResolution);
 
 	unsigned pixNum = 0;
 	const unsigned contrastLvl = 127; // 127 is the middle of the dynamic range

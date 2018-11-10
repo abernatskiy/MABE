@@ -51,6 +51,16 @@ AsteroidSnapshot AsteroidSnapshot::resampleArea(std::uint32_t x0, std::uint32_t 
 	return AsteroidSnapshot(newWidth, newHeight, areaTexture);
 }
 
+void AsteroidSnapshot::print(unsigned thumbSize) const {
+	std::cout << "Asteroid snapshot of width " << width << " and height " << height << std::endl;
+	AsteroidSnapshot thumb = resampleArea(0, 0, width, height, thumbSize, thumbSize);
+	for(unsigned i=0; i<thumbSize; i++) {
+		for(unsigned j=0; j<thumbSize; j++)
+			std::cout << static_cast<unsigned>(thumb.get(i, j)) << '\t';
+		std::cout << std::endl;
+	}
+}
+
 // Private member definitions
 
 unsigned long AsteroidSnapshot::allocatedPixels = 0;

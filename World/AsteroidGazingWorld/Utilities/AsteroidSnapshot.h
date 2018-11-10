@@ -20,6 +20,7 @@ public:
 	AsteroidSnapshot resampleArea(std::uint32_t x0, std::uint32_t y0,
 	                              std::uint32_t x1, std::uint32_t y1,
 	                              std::uint32_t newWidth, std::uint32_t newHeight) const;
+	void print(unsigned thumbSize=20) const;
 
 private:
 	texture_type texture;
