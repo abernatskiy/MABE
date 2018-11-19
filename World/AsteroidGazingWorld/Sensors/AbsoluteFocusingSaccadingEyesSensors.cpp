@@ -51,6 +51,11 @@ unsigned bitsRangeToDecimal(std::vector<bool>::iterator begin, std::vector<bool>
 }
 
 unsigned bitsRangeToZeroBiasedParallelBusValue(std::vector<bool>::iterator begin, std::vector<bool>::iterator end) {
+//	std::cout << "Converting the bits";
+//	for(auto b=begin; b!=end; b++)
+//		std::cout << " " << *b;
+//	std::cout << " into an integer.";
+
 	unsigned val = 0;
 	while( begin != end ) {
 		if( !*begin ) return val;
@@ -175,7 +180,7 @@ unsigned AbsoluteFocusingSaccadingEyesSensors::getNumControls() {
 }
 
 void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
-	visualize = 1; // debug
+//	visualize = 1; // enable for debug
 
 	// Converting the controls into a vector of bools
 	std::vector<bool> controls(numMotors);
@@ -198,10 +203,9 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 	//     ... we now know it is asteroidSnapshots[*currentAsteroidName][condition][distance][phase]
 	//     Let's get some useful params of that snapshot
 
-	std::cout << *currentAsteroidName << std::endl;
-	std::cout << condition << std::endl;
-	std::cout << distance << std::endl;
-	std::cout << phase << std::endl;
+	if(visualize) {
+		std::cout << "Snapshot summary: asteroid name " << *currentAsteroidName << ", condition " << condition << ", distance " << distance << ", phase " << phase << std::endl;
+	}
 
 	AsteroidSnapshot& astSnap = asteroidSnapshots.at(*currentAsteroidName).at(condition).at(distance).at(phase);
 
@@ -211,29 +215,32 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 	}
 
 	// 2. Determining which part of the snapshot we want to see
-	const unsigned zoomLevel = bitsRangeToZeroBiasedParallelBusValue(controlsIter, controlsIter+=zoomLevelControls);
+	const unsigned zoomLevel = bitsRangeToZeroBiasedParallelBusValue(controlsIter, controlsIter+zoomLevelControls);
+	controlsIter += zoomLevelControls;
 	unsigned x0, x1, y0, y1;
 
 	if(visualize) {
 		std::cout << "Using controls";
 		for(auto it=controlsIter; it!=controlsIter+zoomPositionControls/2; it++)
 			std::cout << ' ' << *it;
-		std::cout << " to split the range 0 to " << astSnap.width << " with a splitting factor of " << splittingFactor << std::endl;
+		std::cout << " to split the range 0 to " << astSnap.width << " with a splitting factor of " << splittingFactor << " to a zoom level of " << zoomLevel << std::endl;
 	}
 
-	std::tie(x0, x1) = splittingFactor==3 ? triSplitRange( 0, astSnap.width, zoomLevel, controlsIter, controlsIter+=(zoomPositionControls/2) ) :
-	                                         biSplitRange( 0, astSnap.width, zoomLevel, controlsIter, controlsIter+=(zoomPositionControls/2) );
+	std::tie(x0, x1) = splittingFactor==3 ? triSplitRange( 0, astSnap.width, zoomLevel, controlsIter, controlsIter+(zoomPositionControls/2) ) :
+	                                         biSplitRange( 0, astSnap.width, zoomLevel, controlsIter, controlsIter+(zoomPositionControls/2) );
+	controlsIter += (zoomPositionControls/2);
 
 	if(visualize) {
 		std::cout << "Resulting range: " << x0 << ' ' << x1 << std::endl;
 		std::cout << "Using controls";
 		for(auto it=controlsIter; it!=controlsIter+zoomPositionControls/2; it++)
 			std::cout << ' ' << *it;
-		std::cout << " to split the range 0 to " << astSnap.height << " with a splitting factor of " << splittingFactor << std::endl;
+		std::cout << " to split the range 0 to " << astSnap.height << " with a splitting factor of " << splittingFactor << " to a zoom level of " << zoomLevel << std::endl;
 	}
 
-	std::tie(y0, y1) = splittingFactor==3 ? triSplitRange( 0, astSnap.height, zoomLevel, controlsIter, controlsIter+=(zoomPositionControls/2) ) :
-	                                         biSplitRange( 0, astSnap.height, zoomLevel, controlsIter, controlsIter+=(zoomPositionControls/2) );
+	std::tie(y0, y1) = splittingFactor==3 ? triSplitRange( 0, astSnap.height, zoomLevel, controlsIter, controlsIter+(zoomPositionControls/2) ) :
+	                                         biSplitRange( 0, astSnap.height, zoomLevel, controlsIter, controlsIter+(zoomPositionControls/2) );
+	controlsIter += (zoomPositionControls/2);
 
 	if(visualize) {
 		std::cout << "Resulting range: " << y0 << ' ' << y1 << std::endl;
@@ -242,8 +249,13 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 	// 3. Getting that part and feeding it to the brain line by line
 	AsteroidSnapshot view = astSnap.resampleArea(x0, y0, x1, y1, foveaResolution, foveaResolution);
 
+	if(visualize) {
+		std::cout << "Resulting view in full resolution:" << std::endl;
+		view.print(foveaResolution);
+	}
+
 	unsigned pixNum = 0;
-	const unsigned contrastLvl = 127; // 127 is the middle of the dynamic range
+	const unsigned contrastLvl = 10; // 127 is the middle of the dynamic range
 	for(unsigned i=0; i<foveaResolution; i++)
 		for(unsigned j=0; j<foveaResolution; j++) {
 			brain->setInput(pixNum++, view.get(i,j)>contrastLvl);
