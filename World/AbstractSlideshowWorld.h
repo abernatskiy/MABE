@@ -13,7 +13,7 @@ protected:
 	std::shared_ptr<AbstractStateSchedule> stateSchedule; // must be kinda like a motor: takes a pointer to some subset of World state upon construction, modifies it when advance() is called
 
 private:
-	// New function to override. These two are the only ones.
+	// New functions to override. These two are the only ones.
 	virtual bool resetAgentBetweenStates() = 0;
 	virtual int brainUpdatesPerWorldState() = 0;
 
@@ -24,6 +24,7 @@ private:
 	};
 
 	void postEvaluationOuterWorldUpdate(unsigned long timeStep, int visualize) override {
+		mentalImage->recordRunningScoresWithinState(timeStep%brainUpdatesPerWorldState(), brainUpdatesPerWorldState());
 		if(timeStep>0 && (timeStep+1)%brainUpdatesPerWorldState() == 0) {
 //			std::cout << "Advancing the schedule: period " << brainUpdatesPerWorldState() << ", timeStep " << timeStep << std::endl << std::flush;
 //			std::cout << "State schedule pointer: " << stateSchedule << std::endl << std::flush;
@@ -35,6 +36,7 @@ private:
 				brain->resetBrain();
 				motors->reset(visualize);
 				// no need to reattach brain to sensors and motors since it doesn't come off in the reset
+				mentalImage->resetAfterWorldStateChange(visualize);
 			}
 //			std::cout << "Optional reset stage passed" << std::endl << std::flush;
 		}
