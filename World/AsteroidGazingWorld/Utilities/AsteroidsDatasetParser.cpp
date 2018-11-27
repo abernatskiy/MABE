@@ -49,6 +49,12 @@ std::string AsteroidsDatasetParser::getICQPath(std::string asteroidName) {
 	return icqpath;
 }
 
+std::string AsteroidsDatasetParser::getDescriptionPath(std::string asteroidName) {
+	std::string descpath = ( fsDatasetPath / fs::path(asteroidName) / fs::path("description.txt") ).string();
+	checkIfRegularFile(descpath);
+	return descpath;
+}
+
 std::set<std::string> AsteroidsDatasetParser::getAllPicturePaths(std::string asteroidName) {
 
 	std::set<std::string> pictureName;

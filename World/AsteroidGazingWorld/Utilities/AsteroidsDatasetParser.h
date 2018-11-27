@@ -14,7 +14,10 @@ class AsteroidsDatasetParser {
 public:
 	AsteroidsDatasetParser(std::string datasetPath);
 	std::set<std::string> getAsteroidsNames();
+
 	std::string getICQPath(std::string asteroidName);
+	std::string getDescriptionPath(std::string asteroidName);
+
 	std::set<std::string> getAllPicturePaths(std::string asteroidName);
 	std::string getPicturePath(std::string asteroidName, unsigned condition, unsigned distance, unsigned phase);
 	std::map<std::string,std::set<unsigned>> getAllParameterValues(std::string asteroidName);
