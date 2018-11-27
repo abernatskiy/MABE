@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <map>
 #include <vector>
 
@@ -8,12 +7,6 @@
 #include "../Utilities/AsteroidsDatasetParser.h"
 
 typedef std::tuple<unsigned,unsigned,unsigned> CommandType; // location of the spike is determined by three numbers
-
-// Position-based decoders
-
-unsigned decodeUInt(std::vector<double>::iterator begin, std::vector<double>::iterator end);
-
-// The class itself
 
 class SpikesOnCubeMentalImage : public AbstractMentalImage {
 
@@ -36,7 +29,7 @@ public:
 
 	void updateWithInputs(std::vector<double> inputs) override;
 
-	void recordStateScores() override;
+	void recordRunningScoresWithinState(int stateTime, int statePeriod) override;
 	void recordRunningScores(std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) override;
 	void recordSampleScores(std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) override;
 	void evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) override;

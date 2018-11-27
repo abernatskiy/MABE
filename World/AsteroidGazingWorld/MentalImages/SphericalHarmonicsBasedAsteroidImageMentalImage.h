@@ -1,16 +1,6 @@
 #pragma once
 
-#include <algorithm>
-
 #include "../../AbstractMentalImage.h"
-
-// Position-based decoders
-
-unsigned decodeUInt(std::vector<double>::iterator begin, std::vector<double>::iterator end);
-int decodeSInt(std::vector<double>::iterator begin, std::vector<double>::iterator end);
-double decodeDouble(std::vector<double>::iterator begin, std::vector<double>::iterator end);
-
-// The class itself
 
 class SphericalHarmonicsBasedAsteroidImageMentalImage : public AbstractMentalImage {
 

@@ -1,14 +1,9 @@
 #include "SpikesOnCubeMentalImage.h"
+#include "decoders.h"
 
 #include <algorithm>
 #include <fstream>
 #include <sstream>
-
-/***** Position-based decoders *****/
-
-unsigned decodeUInt(std::vector<double>::iterator begin, std::vector<double>::iterator end) {
-	return std::distance(begin, std::max_element(begin, end));
-}
 
 /***** Public SpikesOnCubeMentalImage class definitions *****/
 

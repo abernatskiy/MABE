@@ -1,6 +1,7 @@
 #include "AsteroidGazingWorld.h"
 
-#include "MentalImages/SphericalHarmonicsBasedAsteroidImageMentalImage.h"
+//#include "MentalImages/SphericalHarmonicsBasedAsteroidImageMentalImage.h"
+#include "MentalImages/SpikesOnCubeMentalImage.h"
 #include "Sensors/AbsoluteFocusingSaccadingEyesSensors.h"
 #include "Schedules/AsteroidGazingSchedules.h"
 
@@ -30,7 +31,7 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 	currentAsteroidName = std::make_shared<std::string>("");
 	stateSchedule = std::make_shared<ExhaustiveAsteroidGazingSchedule>(currentAsteroidName, datasetParser);
 	sensors = std::make_shared<AbsoluteFocusingSaccadingEyesSensors>(currentAsteroidName, datasetParser, foveaResolutionPL->get(PT_), maxZoomPL->get(PT_), splittingFactorPL->get(PT_));
-	mentalImage = std::make_shared<SphericalHarmonicsBasedAsteroidImageMentalImage>(currentAsteroidName, datasetParser);
+	mentalImage = std::make_shared<SpikesOnCubeMentalImage>(currentAsteroidName, datasetParser);
 
 	makeMotors();
 };
