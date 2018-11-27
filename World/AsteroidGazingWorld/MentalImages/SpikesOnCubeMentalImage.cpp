@@ -10,23 +10,28 @@
 SpikesOnCubeMentalImage::SpikesOnCubeMentalImage(std::shared_ptr<std::string> curAstNamePtr,
 	                                               std::shared_ptr<AsteroidsDatasetParser> dsParserPtr) :
 		currentAsteroidNamePtr(curAstNamePtr),
-		datasetParserPtr(dsParserPtr)
-//		bitsForFace(),
-//		bitsForCoordinate()
-{}
+		datasetParserPtr(dsParserPtr),
+		justReset(true) {}
 
 void SpikesOnCubeMentalImage::reset(int visualize) { // called in the beginning of each evaluation cycle
 	stateScores.clear();
 	currentCommands.clear();
 	// originalCommands are taken care of in readOriginalCommands()
+	justReset = true;
 }
 
 void SpikesOnCubeMentalImage::resetAfterWorldStateChange(int visualize) { // called after each discrete world state change
 	currentCommands.clear();
 	// originalCommands are taken care of in readOriginalCommands()
+	justReset = true;
 }
 
 void SpikesOnCubeMentalImage::updateWithInputs(std::vector<double> inputs) {
+	if(justReset) {
+		justReset = false;
+		return;
+	}
+
 	unsigned face, i, j;
 	auto it = inputs.begin();
 
@@ -38,11 +43,16 @@ void SpikesOnCubeMentalImage::updateWithInputs(std::vector<double> inputs) {
 
 	j = decodeUInt(it, it+bitsForCoordinate);
 
+//	std::cout << "Outputting a command: " << face << ' ' << i << ' ' << j << std::endl;
 	currentCommands.insert(std::make_tuple(face,i,j));
 }
 
 void SpikesOnCubeMentalImage::recordRunningScoresWithinState(int stateTime, int statePeriod) {
+//	std::cout << "Recording running scores within state at " << stateTime << ", period " << statePeriod << ", current asteroid " << *currentAsteroidNamePtr << std::endl; // FIXME
+
 	if(stateTime == statePeriod-1) {
+		std::cout << "Evaluating on " << *currentAsteroidNamePtr << std::endl; // FIXME
+
 		readOriginalCommands();
 		unsigned numCorrectCommands = 0;
 		for(auto it=originalCommands.begin(); it!=originalCommands.end(); it++) {
@@ -50,6 +60,20 @@ void SpikesOnCubeMentalImage::recordRunningScoresWithinState(int stateTime, int 
 				numCorrectCommands++;
 		}
 		stateScores.push_back(numCorrectCommands);
+
+		std::cout << "Brain generated commands:"; // FIXME
+		for(auto com : currentCommands) {
+			unsigned f,i,j;
+			std::tie(f,i,j) = com;
+			std::cout << ' ' << f << ' ' << i << ' ' << j << ';';
+		}
+		std::cout << std::endl;
+
+		std::cout << "Added " << numCorrectCommands << " to evaluations of " << *currentAsteroidNamePtr << std::endl; // FIXME
+//		std::cout << "Full evaluations:";
+//		for(auto sc : stateScores)
+//			std::cout << ' ' << sc;
+//		std::cout << std::endl;
 	}
 }
 
@@ -83,4 +107,13 @@ void SpikesOnCubeMentalImage::readOriginalCommands() {
 		originalCommands.insert(std::make_tuple(face,i,j));
 	}
 	commandsFstream.close();
+
+//	std::cout << "Read original commands for " << *currentAsteroidNamePtr <<" from " << commandsFilePath << std::endl;
+	std::cout << "Original commands:"; // FIXME
+	for(auto coords : originalCommands) {
+		unsigned f,i,j;
+		std::tie(f,i,j) = coords;
+		std::cout << ' ' << f << ' ' << i << ' ' << j << ';';
+	}
+	std::cout << std::endl;
 }

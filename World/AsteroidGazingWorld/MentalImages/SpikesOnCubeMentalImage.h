@@ -21,6 +21,8 @@ private:
 	const unsigned bitsForFace = 6;
 	const unsigned bitsForCoordinate = q+1;
 
+	bool justReset;
+
 public:
 	SpikesOnCubeMentalImage(std::shared_ptr<std::string> curAstName, std::shared_ptr<AsteroidsDatasetParser> dsParser);
 
