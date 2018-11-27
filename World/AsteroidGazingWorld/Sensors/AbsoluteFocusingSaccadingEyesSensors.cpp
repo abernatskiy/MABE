@@ -258,8 +258,10 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 	const unsigned contrastLvl = 10; // 127 is the middle of the dynamic range
 	for(unsigned i=0; i<foveaResolution; i++)
 		for(unsigned j=0; j<foveaResolution; j++) {
+			// std::cout << (int) (view.get(i,j)>contrastLvl) << ' ';
 			brain->setInput(pixNum++, view.get(i,j)>contrastLvl);
 		}
+	// std::cout << std::endl;
 
 	AbstractSensors::update(visualize); // increment the clock
 }

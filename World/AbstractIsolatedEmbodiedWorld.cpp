@@ -31,9 +31,7 @@ AbstractIsolatedEmbodiedWorld::AbstractIsolatedEmbodiedWorld(std::shared_ptr<Par
 
 void AbstractIsolatedEmbodiedWorld::evaluateOnce(std::shared_ptr<Organism> org, int visualize) {
 
-	visualize = 1; // FIXME
 	if(visualize) std::cout << "Evaluating organism " << org << std::endl;
-	visualize = 0;
 
 	resetWorld(visualize);
 

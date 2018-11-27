@@ -43,16 +43,11 @@ void SpikesOnCubeMentalImage::updateWithInputs(std::vector<double> inputs) {
 
 	j = decodeUInt(it, it+bitsForCoordinate);
 
-//	std::cout << "Outputting a command: " << face << ' ' << i << ' ' << j << std::endl;
 	currentCommands.insert(std::make_tuple(face,i,j));
 }
 
 void SpikesOnCubeMentalImage::recordRunningScoresWithinState(int stateTime, int statePeriod) {
-//	std::cout << "Recording running scores within state at " << stateTime << ", period " << statePeriod << ", current asteroid " << *currentAsteroidNamePtr << std::endl; // FIXME
-
 	if(stateTime == statePeriod-1) {
-		std::cout << "Evaluating on " << *currentAsteroidNamePtr << std::endl; // FIXME
-
 		readOriginalCommands();
 		unsigned numCorrectCommands = 0;
 		for(auto it=originalCommands.begin(); it!=originalCommands.end(); it++) {
@@ -61,7 +56,7 @@ void SpikesOnCubeMentalImage::recordRunningScoresWithinState(int stateTime, int 
 		}
 		stateScores.push_back(numCorrectCommands);
 
-		std::cout << "Brain generated commands:"; // FIXME
+		std::cout << "Brain generated commands for " << *currentAsteroidNamePtr  << ":"; // FIXME
 		for(auto com : currentCommands) {
 			unsigned f,i,j;
 			std::tie(f,i,j) = com;
@@ -69,7 +64,7 @@ void SpikesOnCubeMentalImage::recordRunningScoresWithinState(int stateTime, int 
 		}
 		std::cout << std::endl;
 
-		std::cout << "Added " << numCorrectCommands << " to evaluations of " << *currentAsteroidNamePtr << std::endl; // FIXME
+//		std::cout << "Added " << numCorrectCommands << " to evaluations of " << *currentAsteroidNamePtr << std::endl;
 //		std::cout << "Full evaluations:";
 //		for(auto sc : stateScores)
 //			std::cout << ' ' << sc;
@@ -85,7 +80,8 @@ void SpikesOnCubeMentalImage::recordSampleScores(std::shared_ptr<DataMap> sample
 
 void SpikesOnCubeMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) {
 	double score = sampleScoresMap->getAverage("score");
-	if(visualize) std::cout << "Assigning score of " << score << std::endl;
+	visualize = 1; // FIXME
+	if(visualize) std::cout << "Assigning score of " << score << " to organism " << org << std::endl;
 	org->dataMap.append("score", score);
 }
 
@@ -109,11 +105,12 @@ void SpikesOnCubeMentalImage::readOriginalCommands() {
 	commandsFstream.close();
 
 //	std::cout << "Read original commands for " << *currentAsteroidNamePtr <<" from " << commandsFilePath << std::endl;
-	std::cout << "Original commands:"; // FIXME
+/*	std::cout << "Original commands:";
 	for(auto coords : originalCommands) {
 		unsigned f,i,j;
 		std::tie(f,i,j) = coords;
 		std::cout << ' ' << f << ' ' << i << ' ' << j << ';';
 	}
 	std::cout << std::endl;
+*/
 }
