@@ -9,7 +9,6 @@
 #include <utility>
 #include <iterator>
 
-#include "constants.h"
 #include "strutil.h"
 
 #ifndef ANN_TRANSFER
@@ -74,8 +73,6 @@ public:
 	///// Functions required for native arrays end /////
 
 	std::vector<State> forward(std::vector<State> in) {
-
-		D( if(in.size()!=layerSizes.front()) { std::cerr << "ANN supplied with too many inputs (expected " << layerSizes.front() << ", got " << in.size() << ")" << std::endl; exit(EXIT_FAILURE); } )
 
 		layerStates[0] = in;
 

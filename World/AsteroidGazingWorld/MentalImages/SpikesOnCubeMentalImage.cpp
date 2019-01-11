@@ -12,7 +12,8 @@ SpikesOnCubeMentalImage::SpikesOnCubeMentalImage(std::shared_ptr<std::string> cu
 	                                               std::shared_ptr<AsteroidsDatasetParser> dsParserPtr) :
 		currentAsteroidNamePtr(curAstNamePtr),
 		datasetParserPtr(dsParserPtr),
-		justReset(true) {
+		justReset(true),
+		helperANN({ANN_INPUT_SIZE, ANN_HIDDEN_SIZE, 1}) {
 
 	readHelperANN();
 }
@@ -47,7 +48,7 @@ void SpikesOnCubeMentalImage::updateWithInputs(std::vector<double> inputs) {
 
 	j = decodeUInt(it, it+bitsForCoordinate);
 
-	currentCommands.insert(std::make_tuple(face,i,j));
+	currentCommands.push_back(std::make_tuple(face,i,j));
 }
 
 void SpikesOnCubeMentalImage::recordRunningScoresWithinState(int stateTime, int statePeriod) {
@@ -146,7 +147,7 @@ void SpikesOnCubeMentalImage::readHelperANN() {
 	helperANN.loadCompactStr(helperANNString);
 }
 
-inline void SpikesOnCubeMentalImage::encodeStatement(const CommandType& st, std::vector<double>& stor, unsigned shiftBy=0) {
+inline void SpikesOnCubeMentalImage::encodeStatement(const CommandType& st, std::vector<double>& stor, unsigned shiftBy) {
 	unsigned f,i,j;
 	std::tie(f,i,j) = st;
 
@@ -156,16 +157,19 @@ inline void SpikesOnCubeMentalImage::encodeStatement(const CommandType& st, std:
 	                                 // but the corresponding ANN input never changes (stays equal to 1/3) so it should be fine
 	stor[shiftBy+3] = propEnc(i, q);
 	stor[shiftBy+4] = propEnc(j, q);
-};
+}
 
-double commandDivergence(const CommandType& lhs, const CommandType& rhs) {
-
-	std::vector<double> nw_input(10);
+inline std::vector<double> SpikesOnCubeMentalImage::encodeStatementPair(const CommandType& lhs, const CommandType& rhs) {
+	std::vector<double> nw_input(ANN_INPUT_SIZE);
 	encodeStatement(lhs, nw_input, 0);
-	encodeStatement(rhs, nw_input, 5);
-	double annOutput = helperANN.forward(encodeStatements(lhs, rhs))[0];
-	double annZero = helperANN.forward(encodeStatements(lhs, lhs))[0];
+	encodeStatement(rhs, nw_input, ANN_INPUT_SIZE/2);
+	return nw_input;
+}
 
+double SpikesOnCubeMentalImage::commandDivergence(const CommandType& lhs, const CommandType& rhs) {
+
+	double annOutput = helperANN.forward(encodeStatementPair(lhs, rhs))[0];
+	double annZero = helperANN.forward(encodeStatementPair(lhs, lhs))[0];
 	return annOutput - annZero;
 }
 
@@ -181,7 +185,7 @@ double SpikesOnCubeMentalImage::evaluateCommand(const CommandType& command) {
 	double minDivergence = 0.;
 	int minDivergenceCommandIdx = -1;
 	for(unsigned i=0; i<numOriginalCommands; i++) {
-		if(!ocApproximationAttempted) {
+		if(!ocApproximationAttempted[i]) {
 			double currentdiv = commandDivergence(originalCommands[i], command);
 			if(minDivergenceCommandIdx==-1 || (minDivergenceCommandIdx>=0 && currentdiv<minDivergence) ) {
 				minDivergence = currentdiv;
