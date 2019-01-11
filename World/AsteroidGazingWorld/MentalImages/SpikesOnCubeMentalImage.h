@@ -5,6 +5,7 @@
 
 #include "../../AbstractMentalImage.h"
 #include "../Utilities/AsteroidsDatasetParser.h"
+#include "ann.h"
 
 typedef std::tuple<unsigned,unsigned,unsigned> CommandType; // location of the spike is determined by three numbers
 
@@ -13,15 +14,21 @@ class SpikesOnCubeMentalImage : public AbstractMentalImage {
 private:
 	std::shared_ptr<std::string> currentAsteroidNamePtr;
 	std::shared_ptr<AsteroidsDatasetParser> datasetParserPtr;
-	std::set<CommandType> currentCommands;
-	std::set<CommandType> originalCommands;
-	std::vector<unsigned> stateScores;
+
+	std::vector<CommandType> originalCommands;
+	std::vector<CommandType> currentCommands;
+	std::vector<bool> ocApproximationAttempted;
+
+	std::vector<double> stateScores;
 
 	const unsigned q = 8;
+
 	const unsigned bitsForFace = 6;
 	const unsigned bitsForCoordinate = q+1;
 
 	bool justReset;
+
+	ArtificialNeuralNetwork helperANN;
 
 public:
 	SpikesOnCubeMentalImage(std::shared_ptr<std::string> curAstName, std::shared_ptr<AsteroidsDatasetParser> dsParser);
@@ -40,4 +47,11 @@ public:
 
 private:
 	void readOriginalCommands();
+	void readHelperANN();
+
+	inline double propEnc(unsigned val, unsigned max) { return static_cast<double>(val)/static_cast<double>(max); };
+	inline void encodeStatement(const CommandType& st, std::vector<double>& stor, unsigned shiftBy=0);
+
+	double commandDivergence(CommandType from, CommandType to);
+	double evaluateCommand(CommandType c);
 };
