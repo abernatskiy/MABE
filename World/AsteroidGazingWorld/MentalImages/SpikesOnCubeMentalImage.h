@@ -26,6 +26,7 @@ private:
 	std::vector<bool> ocApproximationAttempted;
 
 	std::vector<double> stateScores;
+	std::vector<unsigned> correctCommandsStateScores;
 
 	const unsigned q = 8;
 
