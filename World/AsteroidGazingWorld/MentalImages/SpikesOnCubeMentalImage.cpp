@@ -25,7 +25,7 @@ SpikesOnCubeMentalImage::SpikesOnCubeMentalImage(std::shared_ptr<std::string> cu
 		currentAsteroidNamePtr(curAstNamePtr),
 		datasetParserPtr(dsParserPtr),
 		justReset(true),
-		helperANN({ANN_INPUT_SIZE, ANN_HIDDEN_SIZE, 1}) {
+		helperANN({ANN_INPUT_SIZE, ANN_HIDDEN_SIZE, ANN_OUTPUT_SIZE}) {
 
 	readHelperANN();
 }
@@ -113,7 +113,7 @@ void SpikesOnCubeMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, st
 	double error = sampleScoresMap->getAverage("score");
 	double numCorrectCommands = sampleScoresMap->getAverage("numCorrectCommands");
 //	std::cout << "Assigning score of " << score << " to organism " << org << std::endl;
-	org->dataMap.append("score", 1./(1.+error) );
+	org->dataMap.append("score", 1./(0.01+error) );
 	org->dataMap.append("annError", error);
 //	org->dataMap.append("score", static_cast<double>(numCorrectCommands) );
 	org->dataMap.append("numCorrectCommands", numCorrectCommands);
@@ -167,42 +167,31 @@ void SpikesOnCubeMentalImage::readHelperANN() {
 // 	helperANN.drawWeights();
 }
 
-inline void SpikesOnCubeMentalImage::encodeStatement(const CommandType& st, std::vector<double>& stor, unsigned shiftBy) {
+inline std::vector<double> SpikesOnCubeMentalImage::encodeStatement(const CommandType& st) {
+	std::vector<double> nw_input(ANN_INPUT_SIZE);
+
 	unsigned f,i,j;
 	std::tie(f,i,j) = st;
 
-	stor[shiftBy+0] = 0.;
-	stor[shiftBy+1] = propEnc(f, 6-1);
-	stor[shiftBy+2] = propEnc(1, 3); // MAX_FEATURE_SIZE is erroneously set to 3 in the craterless ALSD runs,
-	                                 // but the corresponding ANN input never changes (stays equal to 1/3) so it should be fine
-	stor[shiftBy+3] = propEnc(i, q);
-	stor[shiftBy+4] = propEnc(j, q);
-}
+	nw_input[0] = 0.;
+	nw_input[1] = propEnc(f, 6-1);
+	nw_input[2] = propEnc(1, 3); // MAX_FEATURE_SIZE is erroneously set to 3 in the craterless ALSD runs,
+	                             // but the corresponding ANN input never changes (stays equal to 1/3) so it should be fine
+	nw_input[3] = propEnc(i, q);
+	nw_input[4] = propEnc(j, q);
 
-inline std::vector<double> SpikesOnCubeMentalImage::encodeStatementPair(const CommandType& lhs, const CommandType& rhs) {
-	std::vector<double> nw_input(ANN_INPUT_SIZE);
-	encodeStatement(lhs, nw_input, 0);
-	encodeStatement(rhs, nw_input, ANN_INPUT_SIZE/2);
 	return nw_input;
 }
 
 double SpikesOnCubeMentalImage::commandDivergence(const CommandType& lhs, const CommandType& rhs) {
 
-/*	if(lhs == rhs)
-		return 0.;
-	else {
-		double annOutput = helperANN.forward(encodeStatementPair(lhs, rhs))[0];
-		double annZero = helperANN.forward(encodeStatementPair(lhs, lhs))[0];
-		return annOutput>annZero ? annOutput-annZero : 1.;
-	}
-*/
-	unsigned f0, i0, j0, f1, i1, j1;
-	std::tie(f0, i0, j0) = lhs;
-	std::tie(f1, i1, j1) = rhs;
-	return static_cast<double>( (f0>f1 ? f0-f1 : f1-f0) +
-	                            (i0>i1 ? i0-i1 : i1-i0) +
-	                            (j0>j1 ? j0-j1 : j1-j0) );
+	std::vector<State> transformedLHS = helperANN.forward(encodeStatement(lhs));
+	std::vector<State> transformedRHS = helperANN.forward(encodeStatement(rhs));
 
+	double l1dist = 0.;
+	for(unsigned i=0; i<ANN_OUTPUT_SIZE; i++)
+		l1dist += ( transformedRHS[i]>transformedLHS[i] ? transformedRHS[i]-transformedLHS[i] : transformedLHS[i]-transformedRHS[i] );
+	return l1dist;
 }
 
 double SpikesOnCubeMentalImage::evaluateCommand(const CommandType& command) {

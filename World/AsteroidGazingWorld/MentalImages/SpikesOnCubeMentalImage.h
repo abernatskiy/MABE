@@ -7,11 +7,9 @@
 #include "../Utilities/AsteroidsDatasetParser.h"
 #include "ann.h"
 
-#define ANN_INPUT_SIZE 10 // five inputs for each of the two AL statements
-
-#ifndef ANN_HIDDEN_SIZE
-#define ANN_HIDDEN_SIZE 20
-#endif // ANN_HIDDEN_SIZE
+#define ANN_INPUT_SIZE 5 // one input per each ALSD language statement field
+#define ANN_HIDDEN_SIZE 10
+#define ANN_OUTPUT_SIZE 5
 
 typedef std::tuple<unsigned,unsigned,unsigned> CommandType; // location of the spike is determined by three numbers
 
@@ -57,8 +55,7 @@ private:
 	void readHelperANN();
 
 	inline double propEnc(unsigned val, unsigned max) { return static_cast<double>(val)/static_cast<double>(max); };
-	inline void encodeStatement(const CommandType& st, std::vector<double>& stor, unsigned shiftBy=0);
-	inline std::vector<double> encodeStatementPair(const CommandType& lhs, const CommandType& rhs);
+	inline std::vector<double> encodeStatement(const CommandType& st);
 
 	double commandDivergence(const CommandType& from, const CommandType& to);
 	double evaluateCommand(const CommandType& c);
