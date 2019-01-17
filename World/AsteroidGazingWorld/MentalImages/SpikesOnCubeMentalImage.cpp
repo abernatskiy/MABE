@@ -113,9 +113,8 @@ void SpikesOnCubeMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, st
 	double error = sampleScoresMap->getAverage("score");
 	double numCorrectCommands = sampleScoresMap->getAverage("numCorrectCommands");
 //	std::cout << "Assigning score of " << score << " to organism " << org << std::endl;
-	org->dataMap.append("score", 1./(0.01+error) );
 	org->dataMap.append("annError", error);
-//	org->dataMap.append("score", static_cast<double>(numCorrectCommands) );
+	org->dataMap.append("score", static_cast<double>(numCorrectCommands) );
 	org->dataMap.append("numCorrectCommands", numCorrectCommands);
 }
 
@@ -188,10 +187,14 @@ inline std::vector<double> SpikesOnCubeMentalImage::encodeStatementPair(const Co
 
 double SpikesOnCubeMentalImage::commandDivergence(const CommandType& lhs, const CommandType& rhs) {
 
+	return 0.;
+
+/*
 	double annOutput = helperANN.forward(encodeStatementPair(lhs, rhs))[0];
 	double annZero = helperANN.forward(encodeStatementPair(lhs, lhs))[0];
 	return annOutput>annZero ? annOutput-annZero : 1.;
 
+*/
 /*
 	unsigned f0, i0, j0, f1, i1, j1;
 	std::tie(f0, i0, j0) = lhs;
