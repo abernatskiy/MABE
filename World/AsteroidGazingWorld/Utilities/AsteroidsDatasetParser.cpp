@@ -22,8 +22,8 @@ bool hasEnding(std::string const &fullString, std::string const &ending) {
 AsteroidsDatasetParser::AsteroidsDatasetParser(std::string datasetPath) :
 
 	fsDatasetPath(fs::system_complete(datasetPath)) {
-	if( !fs::exists(fsDatasetPath) ) { std::cerr << "Dataset path " << fsDatasetPath << " does not exist" << std::endl; exit(EXIT_FAILURE); }
-	if( !fs::is_directory(fsDatasetPath) ) { std::cerr << "Dataset path " << fsDatasetPath << " is not a directory" << std::endl; exit(EXIT_FAILURE); }
+	if( !fs::exists(fsDatasetPath) ) { std::cerr << "Dataset path " << fsDatasetPath.string() << " does not exist" << std::endl; exit(EXIT_FAILURE); }
+	if( !fs::is_directory(fsDatasetPath) ) { std::cerr << "Dataset path " << fsDatasetPath.string() << " is not a directory" << std::endl; exit(EXIT_FAILURE); }
 }
 
 std::set<std::string> AsteroidsDatasetParser::getAsteroidsNames() {
