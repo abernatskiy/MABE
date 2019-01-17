@@ -113,7 +113,7 @@ void SpikesOnCubeMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, st
 	double error = sampleScoresMap->getAverage("score");
 	double numCorrectCommands = sampleScoresMap->getAverage("numCorrectCommands");
 //	std::cout << "Assigning score of " << score << " to organism " << org << std::endl;
-	org->dataMap.append("score", 1./(1.+error) );
+	org->dataMap.append("score", 1./(0.01+error) );
 	org->dataMap.append("annError", error);
 //	org->dataMap.append("score", static_cast<double>(numCorrectCommands) );
 	org->dataMap.append("numCorrectCommands", numCorrectCommands);
@@ -188,20 +188,18 @@ inline std::vector<double> SpikesOnCubeMentalImage::encodeStatementPair(const Co
 
 double SpikesOnCubeMentalImage::commandDivergence(const CommandType& lhs, const CommandType& rhs) {
 
-/*	if(lhs == rhs)
-		return 0.;
-	else {
-		double annOutput = helperANN.forward(encodeStatementPair(lhs, rhs))[0];
-		double annZero = helperANN.forward(encodeStatementPair(lhs, lhs))[0];
-		return annOutput>annZero ? annOutput-annZero : 1.;
-	}
-*/
+	double annOutput = helperANN.forward(encodeStatementPair(lhs, rhs))[0];
+	double annZero = helperANN.forward(encodeStatementPair(lhs, lhs))[0];
+	return annOutput>annZero ? annOutput-annZero : 1.;
+
+/*
 	unsigned f0, i0, j0, f1, i1, j1;
 	std::tie(f0, i0, j0) = lhs;
 	std::tie(f1, i1, j1) = rhs;
 	return static_cast<double>( (f0>f1 ? f0-f1 : f1-f0) +
 	                            (i0>i1 ? i0-i1 : i1-i0) +
 	                            (j0>j1 ? j0-j1 : j1-j0) );
+*/
 
 }
 
