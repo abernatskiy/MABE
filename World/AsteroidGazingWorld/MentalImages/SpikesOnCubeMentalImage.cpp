@@ -84,11 +84,10 @@ void SpikesOnCubeMentalImage::recordRunningScoresWithinState(int stateTime, int 
 //		std::cout << "Evaluation of the current individual was " << cumulativeDivergence << std::endl << std::endl;
 
 /*
-		std::cout << "Brain generated commands for " << *currentAsteroidNamePtr  << ":"; // FIXME
+		std::cout << "Brain generated commands for " << *currentAsteroidNamePtr  << ":";
 		for(auto com : currentCommands) {
-			unsigned f,i,j;
-			std::tie(f,i,j) = com;
-			std::cout << ' ' << f << ' ' << i << ' ' << j << ';';
+			printCommand(com);
+			std::cout << std::endl;
 		}
 		std::cout << std::endl;
 
@@ -105,17 +104,16 @@ void SpikesOnCubeMentalImage::recordRunningScoresWithinState(int stateTime, int 
 void SpikesOnCubeMentalImage::recordRunningScores(std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {}
 
 void SpikesOnCubeMentalImage::recordSampleScores(std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {
-	sampleScoresMap->append("score", static_cast<double>(std::accumulate(stateScores.begin(), stateScores.end(), 0.)));
+	sampleScoresMap->append("guidingFunction", static_cast<double>(std::accumulate(stateScores.begin(), stateScores.end(), 0.)));
 	sampleScoresMap->append("numCorrectCommands", static_cast<double>(std::accumulate(correctCommandsStateScores.begin(), correctCommandsStateScores.end(), 0)));
 }
 
 void SpikesOnCubeMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) {
-	double error = sampleScoresMap->getAverage("score");
+	double gerror = sampleScoresMap->getAverage("guidingFunction");
 	double numCorrectCommands = sampleScoresMap->getAverage("numCorrectCommands");
 //	std::cout << "Assigning score of " << score << " to organism " << org << std::endl;
-	org->dataMap.append("score", 1./(0.01+error) );
-	org->dataMap.append("annError", error);
-//	org->dataMap.append("score", static_cast<double>(numCorrectCommands) );
+	org->dataMap.append("score", 1./(1.+gerror) );
+	org->dataMap.append("guidingFunction", gerror);
 	org->dataMap.append("numCorrectCommands", numCorrectCommands);
 }
 
@@ -133,18 +131,16 @@ void SpikesOnCubeMentalImage::readOriginalCommands() {
 	while( std::getline(commandsFstream, cline) ) {
 		unsigned face, i, j;
 		std::stringstream cstream(cline);
-		cstream >> face >> i >> j; // TODO: edit to match Lindsey commands format
+		cstream >> face >> i >> j;
 		originalCommands.push_back(std::make_tuple(face,i,j));
 	}
 	commandsFstream.close();
 
 /*
-	std::cout << "Read original commands for " << *currentAsteroidNamePtr <<" from " << commandsFilePath << std::endl;
-	std::cout << "Original commands:";
-	for(auto coords : originalCommands) {
-		unsigned f,i,j;
-		std::tie(f,i,j) = coords;
-		std::cout << ' ' << f << ' ' << i << ' ' << j << ';';
+	std::cout << "Read original commands for " << *currentAsteroidNamePtr <<" from " << commandsFilePath << ":" << std::endl;
+	for(auto command : originalCommands) {
+		printCommand(command);
+		std::cout << std::endl;
 	}
 	std::cout << std::endl;
 */
@@ -185,13 +181,23 @@ inline std::vector<double> SpikesOnCubeMentalImage::encodeStatement(const Comman
 
 double SpikesOnCubeMentalImage::commandDivergence(const CommandType& lhs, const CommandType& rhs) {
 
+	// L1 on transformed statement guidance is disabled for now
+/*
 	std::vector<State> transformedLHS = helperANN.forward(encodeStatement(lhs));
 	std::vector<State> transformedRHS = helperANN.forward(encodeStatement(rhs));
-
 	double l1dist = 0.;
 	for(unsigned i=0; i<ANN_OUTPUT_SIZE; i++)
 		l1dist += ( transformedRHS[i]>transformedLHS[i] ? transformedRHS[i]-transformedLHS[i] : transformedLHS[i]-transformedRHS[i] );
 	return l1dist;
+*/
+
+	// Manually designed guiding function: Hamming distance
+	unsigned f0, i0, j0, f1, i1, j1;
+	std::tie(f0, i0, j0) = lhs;
+	std::tie(f1, i1, j1) = rhs;
+	return static_cast<double>( (f0>f1 ? f0-f1 : f1-f0) +
+	                            (i0>i1 ? i0-i1 : i1-i0) +
+	                            (j0>j1 ? j0-j1 : j1-j0) );
 }
 
 double SpikesOnCubeMentalImage::evaluateCommand(const CommandType& command) {
