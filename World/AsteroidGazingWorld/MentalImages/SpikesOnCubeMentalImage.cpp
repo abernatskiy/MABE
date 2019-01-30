@@ -53,13 +53,16 @@ void SpikesOnCubeMentalImage::updateWithInputs(std::vector<double> inputs) {
 	unsigned face, i, j;
 	auto it = inputs.begin();
 
-	face = decodeSPUInt(it, it+bitsForFace);
+//	face = decodeSPUInt(it, it+bitsForFace);
+	face = decodeOHUInt(it, it+bitsForFace);
 	it += bitsForFace;
 
-	i = decodeSPUInt(it, it+bitsForCoordinate);
+//	i = decodeSPUInt(it, it+bitsForCoordinate);
+	i = decodeOHUInt(it, it+bitsForCoordinate);
 	it += bitsForCoordinate;
 
-	j = decodeSPUInt(it, it+bitsForCoordinate);
+//	j = decodeSPUInt(it, it+bitsForCoordinate);
+	j = decodeOHUInt(it, it+bitsForCoordinate);
 
 	currentCommands.push_back(std::make_tuple(face,i,j));
 }

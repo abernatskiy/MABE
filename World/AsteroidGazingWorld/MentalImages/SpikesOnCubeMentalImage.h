@@ -29,8 +29,13 @@ private:
 	const unsigned k = 3;
 	const unsigned q = 1<<k;
 
-	const unsigned bitsForFace = 3;
-	const unsigned bitsForCoordinate = k+1;
+	// "One-hot" encoding version
+	const unsigned bitsForFace = 6;
+	const unsigned bitsForCoordinate = q+1;
+
+	// Standard positional encoding version
+	//const unsigned bitsForFace = 3;
+	//const unsigned bitsForCoordinate = k+1;
 
 	bool justReset;
 
