@@ -53,13 +53,13 @@ void SpikesOnCubeMentalImage::updateWithInputs(std::vector<double> inputs) {
 	unsigned face, i, j;
 	auto it = inputs.begin();
 
-	face = decodeUInt(it, it+bitsForFace);
+	face = decodeSPUInt(it, it+bitsForFace);
 	it += bitsForFace;
 
-	i = decodeUInt(it, it+bitsForCoordinate);
+	i = decodeSPUInt(it, it+bitsForCoordinate);
 	it += bitsForCoordinate;
 
-	j = decodeUInt(it, it+bitsForCoordinate);
+	j = decodeSPUInt(it, it+bitsForCoordinate);
 
 	currentCommands.push_back(std::make_tuple(face,i,j));
 }
@@ -84,7 +84,7 @@ void SpikesOnCubeMentalImage::recordRunningScoresWithinState(int stateTime, int 
 //		std::cout << "Evaluation of the current individual was " << cumulativeDivergence << std::endl << std::endl;
 
 /*
-		std::cout << "Brain generated commands for " << *currentAsteroidNamePtr  << ":";
+		std::cout << "Brain generated commands for " << *currentAsteroidNamePtr  << ":" << std::endl;
 		for(auto com : currentCommands) {
 			printCommand(com);
 			std::cout << std::endl;
@@ -111,7 +111,6 @@ void SpikesOnCubeMentalImage::recordSampleScores(std::shared_ptr<DataMap> sample
 void SpikesOnCubeMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) {
 	double gerror = sampleScoresMap->getAverage("guidingFunction");
 	double numCorrectCommands = sampleScoresMap->getAverage("numCorrectCommands");
-//	std::cout << "Assigning score of " << score << " to organism " << org << std::endl;
 	org->dataMap.append("score", 1./(1.+gerror) );
 	org->dataMap.append("guidingFunction", gerror);
 	org->dataMap.append("numCorrectCommands", numCorrectCommands);

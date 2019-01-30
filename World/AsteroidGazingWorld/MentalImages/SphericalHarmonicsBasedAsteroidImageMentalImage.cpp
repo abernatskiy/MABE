@@ -7,9 +7,9 @@ SphericalHarmonicsBasedAsteroidImageMentalImage::SphericalHarmonicsBasedAsteroid
 }
 
 void SphericalHarmonicsBasedAsteroidImageMentalImage::updateWithInputs(std::vector<double> inputs) {
-	unsigned l = decodeUInt(inputs.begin(), inputs.begin()+bitsForL);
-	int m = decodeSInt(inputs.begin()+bitsForL, inputs.begin()+bitsForL+bitsForM);
-	double r = decodeDouble(inputs.begin()+bitsForL+bitsForM, inputs.begin()+bitsForL+bitsForM+bitsForR);
+	unsigned l = decodeOHUInt(inputs.begin(), inputs.begin()+bitsForL);
+	int m = decodeOHSInt(inputs.begin()+bitsForL, inputs.begin()+bitsForL+bitsForM);
+	double r = decodeOHDouble(inputs.begin()+bitsForL+bitsForM, inputs.begin()+bitsForL+bitsForM+bitsForR);
 	currentCommands.push_back(std::make_tuple(l,m,r));
 }
 

@@ -26,10 +26,11 @@ private:
 	std::vector<double> stateScores;
 	std::vector<unsigned> correctCommandsStateScores;
 
-	const unsigned q = 8;
+	const unsigned k = 3;
+	const unsigned q = 1<<k;
 
-	const unsigned bitsForFace = 6;
-	const unsigned bitsForCoordinate = q+1;
+	const unsigned bitsForFace = 3;
+	const unsigned bitsForCoordinate = k+1;
 
 	bool justReset;
 
