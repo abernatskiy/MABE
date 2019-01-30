@@ -8,6 +8,9 @@
 //     to view the full license, visit:
 //         github.com/Hintzelab/MABE/wiki/License
 
+#include <sstream>
+#include <iomanip>
+
 #include "MarkovBrain.h"
 
 int LogFile::fileSuffix = 0;
@@ -172,10 +175,12 @@ void MarkovBrain::resetOutputs() {
 
 void MarkovBrain::update() {
 	if(visualize) {
-		log.log("Transition:");
+		std::stringstream sstr;
+		sstr << "Transition:" << std::setprecision(1);
 		for(auto s : nodes)
-			log.log(" " + std::to_string(s));
-		log.log(" ->");
+			sstr << ' ' << s;
+		sstr << " ->";
+		log.log(sstr.str());
 	}
 
 	nextNodes.assign(nrNodes, 0.0);
@@ -233,9 +238,12 @@ void MarkovBrain::update() {
 	}
 
 	if(visualize) {
+		std::stringstream sstr;
+		sstr << std::setprecision(1);
 		for(auto s : nodes)
-			log.log(" " + std::to_string(s));
-		log.log("\n");
+			sstr << ' ' << s;
+		sstr << std::endl;
+		log.log(sstr.str());
 	}
 }
 
