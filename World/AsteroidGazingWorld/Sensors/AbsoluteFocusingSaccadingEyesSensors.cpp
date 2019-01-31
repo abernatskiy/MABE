@@ -251,7 +251,7 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 
 	if(visualize) {
 		std::cout << "Resulting view in full resolution:" << std::endl;
-		view.print(foveaResolution);
+		view.print(foveaResolution, true);
 	}
 
 	unsigned pixNum = 0;

@@ -27,7 +27,7 @@ public:
 	const AsteroidSnapshot& cachingResampleArea(std::uint32_t x0, std::uint32_t y0,
 	                                            std::uint32_t x1, std::uint32_t y1,
 	                                            std::uint32_t newWidth, std::uint32_t newHeight);
-	void print(unsigned thumbSize=20) const;
+	void print(unsigned thumbSize=20, bool shades=true) const;
 
 private:
 	texture_type texture;

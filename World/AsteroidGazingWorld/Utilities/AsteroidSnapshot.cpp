@@ -1,4 +1,5 @@
 #include "AsteroidSnapshot.h"
+#include "shades.h"
 
 // Public member definitions
 
@@ -66,12 +67,15 @@ const AsteroidSnapshot& AsteroidSnapshot::cachingResampleArea(std::uint32_t x0, 
 }
 
 
-void AsteroidSnapshot::print(unsigned thumbSize) const {
+void AsteroidSnapshot::print(unsigned thumbSize, bool shades) const {
 	std::cout << "Asteroid snapshot of width " << width << " and height " << height << std::endl;
 	AsteroidSnapshot thumb = resampleArea(0, 0, width, height, thumbSize, thumbSize);
 	for(unsigned i=0; i<thumbSize; i++) {
 		for(unsigned j=0; j<thumbSize; j++)
-			std::cout << static_cast<unsigned>(thumb.get(i, j)) << '\t';
+			if(shades)
+				std::cout << shade128(thumb.get(i, j));
+			else
+				std::cout << static_cast<unsigned>(thumb.get(i, j)) << '\t';
 		std::cout << std::endl;
 	}
 }
