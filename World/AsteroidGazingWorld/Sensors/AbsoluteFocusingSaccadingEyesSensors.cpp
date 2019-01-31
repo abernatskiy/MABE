@@ -250,20 +250,20 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 	// 3. Getting that part and feeding it to the brain line by line
 	const AsteroidSnapshot& view = astSnap.cachingResampleArea(x0, y0, x1, y1, foveaResolution, foveaResolution);
 
-	if(visualize) {
-		std::cout << "Resulting view in full resolution:" << std::endl;
-		view.print(foveaResolution, true);
-	}
+//	if(visualize) {
+//		std::cout << "Resulting view in full resolution:" << std::endl;
+//		view.print(foveaResolution, true);
+//	}
 
 	unsigned pixNum = 0;
-	const unsigned contrastLvl = 10; // 127 is the middle of the dynamic range
-	std::cout << "Thresholding at " << contrastLvl << " and printing the resulting bitmap" << std::endl;
+	const unsigned contrastLvl = 160; // 127 is the middle of the dynamic range
+	if(visualize) std::cout << "Thresholding at " << contrastLvl << " and printing the resulting bitmap" << std::endl;
 	for(unsigned i=0; i<foveaResolution; i++) {
 		for(unsigned j=0; j<foveaResolution; j++) {
-			std::cout << shadeBinary(view.get(i,j)>contrastLvl);
+			if(visualize) std::cout << shadeBinary(view.get(i,j)>contrastLvl);
 			brain->setInput(pixNum++, view.get(i,j)>contrastLvl);
 		}
-		std::cout << std::endl;
+		if(visualize) std::cout << std::endl;
 	}
 
 	AbstractSensors::update(visualize); // increment the clock
