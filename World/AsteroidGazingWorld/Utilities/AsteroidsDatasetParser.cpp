@@ -50,7 +50,7 @@ std::string AsteroidsDatasetParser::getICQPath(std::string asteroidName) {
 }
 
 std::string AsteroidsDatasetParser::getDescriptionPath(std::string asteroidName) {
-	std::string descpath = ( fsDatasetPath / fs::path(asteroidName) / fs::path("description.txt") ).string();
+	std::string descpath = ( fsDatasetPath / fs::path(asteroidName) / fs::path("logfile.txt") ).string();
 	checkIfRegularFile(descpath);
 	return descpath;
 }
