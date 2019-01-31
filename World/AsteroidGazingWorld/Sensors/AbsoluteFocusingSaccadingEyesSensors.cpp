@@ -1,6 +1,7 @@
 #include "AbsoluteFocusingSaccadingEyesSensors.h"
 
 #include "../../../Brain/AbstractBrain.h"
+#include "../Utilities/shades.h"
 
 #include <cstdint>
 #include <cstdlib>
@@ -209,42 +210,42 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 
 	AsteroidSnapshot& astSnap = asteroidSnapshots.at(*currentAsteroidName).at(condition).at(distance).at(phase);
 
-	if(visualize) {
-		std::cout << "Perceiving the following asteroid:" << std::endl;
-		astSnap.print();
-	}
+//	if(visualize) {
+//		std::cout << "Perceiving the following asteroid:" << std::endl;
+//		astSnap.print();
+//	}
 
 	// 2. Determining which part of the snapshot we want to see
 	const unsigned zoomLevel = bitsRangeToZeroBiasedParallelBusValue(controlsIter, controlsIter+zoomLevelControls);
 	controlsIter += zoomLevelControls;
 	unsigned x0, x1, y0, y1;
 
-	if(visualize) {
-		std::cout << "Using controls";
-		for(auto it=controlsIter; it!=controlsIter+zoomPositionControls/2; it++)
-			std::cout << ' ' << *it;
-		std::cout << " to split the range 0 to " << astSnap.width << " with a splitting factor of " << splittingFactor << " to a zoom level of " << zoomLevel << std::endl;
-	}
+//	if(visualize) {
+//		std::cout << "Using controls";
+//		for(auto it=controlsIter; it!=controlsIter+zoomPositionControls/2; it++)
+//			std::cout << ' ' << *it;
+//		std::cout << " to split the range 0 to " << astSnap.width << " with a splitting factor of " << splittingFactor << " to a zoom level of " << zoomLevel << std::endl;
+//	}
 
 	std::tie(x0, x1) = splittingFactor==3 ? triSplitRange( 0, astSnap.width, zoomLevel, controlsIter, controlsIter+(zoomPositionControls/2) ) :
 	                                         biSplitRange( 0, astSnap.width, zoomLevel, controlsIter, controlsIter+(zoomPositionControls/2) );
 	controlsIter += (zoomPositionControls/2);
 
-	if(visualize) {
-		std::cout << "Resulting range: " << x0 << ' ' << x1 << std::endl;
-		std::cout << "Using controls";
-		for(auto it=controlsIter; it!=controlsIter+zoomPositionControls/2; it++)
-			std::cout << ' ' << *it;
-		std::cout << " to split the range 0 to " << astSnap.height << " with a splitting factor of " << splittingFactor << " to a zoom level of " << zoomLevel << std::endl;
-	}
+//	if(visualize) {
+//		std::cout << "Resulting range: " << x0 << ' ' << x1 << std::endl;
+//		std::cout << "Using controls";
+//		for(auto it=controlsIter; it!=controlsIter+zoomPositionControls/2; it++)
+//			std::cout << ' ' << *it;
+//		std::cout << " to split the range 0 to " << astSnap.height << " with a splitting factor of " << splittingFactor << " to a zoom level of " << zoomLevel << std::endl;
+//	}
 
 	std::tie(y0, y1) = splittingFactor==3 ? triSplitRange( 0, astSnap.height, zoomLevel, controlsIter, controlsIter+(zoomPositionControls/2) ) :
 	                                         biSplitRange( 0, astSnap.height, zoomLevel, controlsIter, controlsIter+(zoomPositionControls/2) );
 	controlsIter += (zoomPositionControls/2);
 
-	if(visualize) {
-		std::cout << "Resulting range: " << y0 << ' ' << y1 << std::endl;
-	}
+//	if(visualize) {
+//		std::cout << "Resulting range: " << y0 << ' ' << y1 << std::endl;
+//	}
 
 	// 3. Getting that part and feeding it to the brain line by line
 	const AsteroidSnapshot& view = astSnap.cachingResampleArea(x0, y0, x1, y1, foveaResolution, foveaResolution);
@@ -256,12 +257,14 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 
 	unsigned pixNum = 0;
 	const unsigned contrastLvl = 10; // 127 is the middle of the dynamic range
-	for(unsigned i=0; i<foveaResolution; i++)
+	std::cout << "Thresholding at " << contrastLvl << " and printing the resulting bitmap" << std::endl;
+	for(unsigned i=0; i<foveaResolution; i++) {
 		for(unsigned j=0; j<foveaResolution; j++) {
-			// std::cout << (int) (view.get(i,j)>contrastLvl) << ' ';
+			std::cout << shadeBinary(view.get(i,j)>contrastLvl);
 			brain->setInput(pixNum++, view.get(i,j)>contrastLvl);
 		}
-	// std::cout << std::endl;
+		std::cout << std::endl;
+	}
 
 	AbstractSensors::update(visualize); // increment the clock
 }
