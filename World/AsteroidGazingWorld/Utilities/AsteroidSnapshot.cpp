@@ -51,6 +51,21 @@ AsteroidSnapshot AsteroidSnapshot::resampleArea(std::uint32_t x0, std::uint32_t 
 	return AsteroidSnapshot(newWidth, newHeight, areaTexture);
 }
 
+const AsteroidSnapshot& AsteroidSnapshot::cachingResampleArea(std::uint32_t x0, std::uint32_t y0,
+                                                       std::uint32_t x1, std::uint32_t y1,
+                                                       std::uint32_t newWidth, std::uint32_t newHeight) {
+
+	std::tuple<std::uint32_t,std::uint32_t,std::uint32_t,std::uint32_t,std::uint32_t,std::uint32_t> callParams = std::make_tuple(x0, y0, x1, y1, newWidth, newHeight);
+
+	auto callit = areaCache.find(callParams);
+	if(callit == areaCache.end()) {
+		areaCache.emplace(callParams, resampleArea(x0, y0, x1, y1, newWidth, newHeight));
+		callit = areaCache.find(callParams);
+	}
+	return areaCache[callParams];
+}
+
+
 void AsteroidSnapshot::print(unsigned thumbSize) const {
 	std::cout << "Asteroid snapshot of width " << width << " and height " << height << std::endl;
 	AsteroidSnapshot thumb = resampleArea(0, 0, width, height, thumbSize, thumbSize);

@@ -247,7 +247,7 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 	}
 
 	// 3. Getting that part and feeding it to the brain line by line
-	AsteroidSnapshot view = astSnap.resampleArea(x0, y0, x1, y1, foveaResolution, foveaResolution);
+	const AsteroidSnapshot& view = astSnap.cachingResampleArea(x0, y0, x1, y1, foveaResolution, foveaResolution);
 
 	if(visualize) {
 		std::cout << "Resulting view in full resolution:" << std::endl;
