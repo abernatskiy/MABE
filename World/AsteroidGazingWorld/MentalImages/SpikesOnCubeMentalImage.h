@@ -26,7 +26,7 @@ private:
 	std::vector<double> stateScores;
 	std::vector<unsigned> correctCommandsStateScores;
 
-	const unsigned k = 3;
+	const unsigned k = 2;
 	const unsigned q = 1<<k;
 
 	// "One-hot" encoding version
