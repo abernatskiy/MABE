@@ -101,7 +101,9 @@ MarkovBrain::MarkovBrain(std::shared_ptr<AbstractGateListBuilder> GLB_,
 
 	readParameters();
 
-	makeNodeMap(nodeMap, Gate_Builder::bitsPerBrainAddressPL->get(), nrNodes);
+	const int genomeFieldSize = Gate_Builder::bitsPerBrainAddressPL->get();
+	makeNodeMap(inputNodeMap, genomeFieldSize, 0, nrNodes-1);
+	makeNodeMap(outputNodeMap, genomeFieldSize, nrInputValues, nrNodes-1);
 
 	// columns to be added to ave file
 	popFileColumns.clear();
@@ -250,7 +252,7 @@ void MarkovBrain::update() {
 void MarkovBrain::inOutReMap() { // remaps genome site values to valid brain
                                  // state addresses
 	for (auto &g : gates)
-		g->applyNodeMap(nodeMap, nrNodes);
+		g->applyNodeMaps(inputNodeMap, outputNodeMap);
 }
 
 std::string MarkovBrain::description() {

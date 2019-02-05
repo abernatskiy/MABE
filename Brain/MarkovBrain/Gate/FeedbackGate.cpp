@@ -155,10 +155,10 @@ string FeedbackGate::description() {
     return "Feedback Gate\n " + S + "\n";
 }
 
-void FeedbackGate::applyNodeMap(vector<int> nodeMap, int maxNodes) {
-  AbstractGate::applyNodeMap(nodeMap, maxNodes);
-  posFBNode = nodeMap[posFBNode % maxNodes];
-  negFBNode = nodeMap[negFBNode % maxNodes];
+void FeedbackGate::applyNodeMaps(const vector<int>& inputNodeMap, const vector<int>& outputNodeMap) {
+  AbstractGate::applyNodeMaps(inputNodeMap, outputNodeMap);
+  posFBNode = inputNodeMap[posFBNode];
+  negFBNode = inputNodeMap[negFBNode];
 }
 
 void FeedbackGate::resetGate() {

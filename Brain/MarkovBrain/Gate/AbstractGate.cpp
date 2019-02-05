@@ -15,18 +15,16 @@
 // *** General tools for All Gates ***
 
 // converts values attained from genome for inputs and outputs to vaild brain state ids
-// uses nodeMap to accomplish the remaping
-void AbstractGate::applyNodeMap(vector<int> nodeMap, int maxNodes) {
-	for (size_t i = 0; i < inputs.size(); i++) {
-		inputs[i] = nodeMap[inputs[i]] % maxNodes;
-	}
-	for (size_t i = 0; i < outputs.size(); i++) {
-		outputs[i] = nodeMap[outputs[i]] % maxNodes;
-	}
+// uses a pair of lookup tables - inputNodeMap and outputNodeMap
+void AbstractGate::applyNodeMaps(const vector<int>& inputNodeMap, const vector<int>& outputNodeMap) {
+	for (size_t i = 0; i < inputs.size(); i++)
+		inputs[i] = inputNodeMap[inputs[i]];
+	for (size_t i = 0; i < outputs.size(); i++)
+		outputs[i] = outputNodeMap[outputs[i]];
 }
 
 shared_ptr<AbstractGate> AbstractGate::makeCopy(shared_ptr<ParametersTable> _PT) {
-	cout << "ERROR IN AbstractGate::makeCopy() - You are using the abstract copy constructor for gates. You must define your own" << endl; 
+	cout << "ERROR IN AbstractGate::makeCopy() - You are using the abstract copy constructor for gates. You must define your own" << endl;
 	exit(1);
 }
 

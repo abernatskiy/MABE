@@ -47,7 +47,7 @@ public:
 	vector<int> inputs;
 	vector<int> outputs;
 
-	virtual void applyNodeMap(vector<int> nodeMap, int maxNodes);  // converts genome values into brain state value addresses
+	virtual void applyNodeMaps(const vector<int>& inputNodeMap, const vector<int>& outputNodeMap);  // converts genome values into brain state value addresses
 	virtual void resetGate(void);  // this is empty here. Some gates so not need to reset, they can use this method.
 	virtual vector<int> getIns();  // returns a vector of int with the adress for this gates input brain state value addresses
 	virtual vector<int> getOuts();  // returns a vector of int with the adress for this gates onput brain state value addresses

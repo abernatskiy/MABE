@@ -127,14 +127,12 @@ public:
 		return "Neuron";
 	}
 
-	void applyNodeMap(vector<int> nodeMap, int maxNodes) override {
-		AbstractGate::applyNodeMap(nodeMap, maxNodes);
-		if (thresholdFromNode != -1) {
-			thresholdFromNode = nodeMap[thresholdFromNode] % maxNodes;
-		}
-		if (deliveryChargeFromNode != -1) {
-			deliveryChargeFromNode = nodeMap[deliveryChargeFromNode] % maxNodes;
-		}
+	void applyNodeMaps(const vector<int>& inputNodeMap, const vector<int>& outputNodeMap) override {
+		AbstractGate::applyNodeMaps(inputNodeMap, outputNodeMap);
+		if (thresholdFromNode != -1)
+			thresholdFromNode = inputNodeMap[thresholdFromNode];
+		if (deliveryChargeFromNode != -1)
+			deliveryChargeFromNode = inputNodeMap[deliveryChargeFromNode];
 	}
 
 	void resetGate() override {

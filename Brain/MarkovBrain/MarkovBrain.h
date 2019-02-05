@@ -97,11 +97,8 @@ public:
 	std::shared_ptr<AbstractGateListBuilder> GLB;
 	std::vector<int> nodesConnections, nextNodesConnections;
 
-	//	static bool& cacheResults;
-	//	static int& cacheResultsCount;
-
-	// static void initializeParameters();
-	std::vector<int> nodeMap;
+	std::vector<int> inputNodeMap;
+	std::vector<int> outputNodeMap;
 
 	/*
 		* Builds a look up table to convert genome site values into brain state
@@ -109,15 +106,20 @@ public:
 		* if there is a variable number of brain states, then the node map must be
 		* rebuilt.
 		*/
-	static int makeNodeMap(std::vector<int> &nodeMap, int sizeInBits,
-	                                      int defaultNrOfBrainStates) {
-		for (int i = 0; i < pow(2, (sizeInBits));i++) {
-			// each site in the genome has 8 bits so we need to count though
-			// (  2 to the (8 * number of sites)  )
-			nodeMap.push_back(i % defaultNrOfBrainStates);
+	static void makeNodeMap(std::vector<int>& nodeMap, int genomeFieldSizeInBits, int minNodeAddress, int maxNodeAddress) {
+
+		const int numAddresses = maxNodeAddress - minNodeAddress + 1;
+		const int numStates = pow(2, genomeFieldSizeInBits);
+
+		if(numAddresses > numStates) {
+			std::cerr << "WARNING: Requested to map " << genomeFieldSizeInBits
+			          << " bits (capable of taking " << numStates << " values) to "
+			          << numAddresses << " node addresses (min " << minNodeAddress
+			          << ", max " << maxNodeAddress << ")" << std::endl;
 		}
 
-		return 1;
+		for(int i=0; i<numStates; i++)
+			nodeMap.push_back(minNodeAddress + (i % numAddresses));
 	}
 
 	MarkovBrain() = delete;

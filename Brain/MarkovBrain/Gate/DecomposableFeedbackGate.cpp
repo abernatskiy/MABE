@@ -202,10 +202,10 @@ string DecomposableFeedbackGate::description() {
     return "Decomposable Feedback Gate\n " + S + "\n";
 }
 
-void DecomposableFeedbackGate::applyNodeMap(vector<int> nodeMap, int maxNodes) {
-  AbstractGate::applyNodeMap(nodeMap, maxNodes);
-  posFBNode = nodeMap[posFBNode % maxNodes];
-  negFBNode = nodeMap[negFBNode % maxNodes];
+void DecomposableFeedbackGate::applyNodeMaps(const vector<int>& inputNodeMap, const vector<int>& outputNodeMap) {
+  AbstractGate::applyNodeMaps(inputNodeMap, outputNodeMap);
+  posFBNode = inputNodeMap[posFBNode];
+  negFBNode = outputNodeMap[negFBNode];
 }
 
 void DecomposableFeedbackGate::resetGate() {

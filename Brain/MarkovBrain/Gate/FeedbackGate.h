@@ -50,7 +50,7 @@ class FeedbackGate : public AbstractGate {
                shared_ptr<ParametersTable> _PT);
   virtual string description();
   virtual void update(vector<double> & states, vector<double> & nextStates) override;
-  virtual void applyNodeMap(vector<int> nodeMap, int maxNodes);
+  virtual void applyNodeMaps(const vector<int>& inputNodeMap, const vector<int>& outputNodeMap) override;
   virtual void resetGate(void);
   virtual vector<int> getIns();
   //virtual double computeGateRMS();
