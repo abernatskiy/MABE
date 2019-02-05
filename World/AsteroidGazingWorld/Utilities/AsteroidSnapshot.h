@@ -20,7 +20,14 @@ public:
 	AsteroidSnapshot(std::string filePath);
 	AsteroidSnapshot() : width(0), height(0) {};
 
-	pixel_value_type get(std::uint32_t x, std::uint32_t y) const;
+	inline pixel_value_type get(std::uint32_t x, std::uint32_t y) const {
+//		if( x >= height || y >= width ) {
+//			std::cerr << "A value of pixel outside of the picture frame was requested. Width " << width << ", heigh " << height << ", requested value at x=" << x << ", y=" << y << std::endl;
+//			exit(EXIT_FAILURE);
+//		}
+		return texture[x][y];
+	}
+
 	AsteroidSnapshot resampleArea(std::uint32_t x0, std::uint32_t y0,
 	                              std::uint32_t x1, std::uint32_t y1,
 	                              std::uint32_t newWidth, std::uint32_t newHeight) const;
