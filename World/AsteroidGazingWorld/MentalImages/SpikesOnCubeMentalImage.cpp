@@ -69,27 +69,31 @@ void SpikesOnCubeMentalImage::updateWithInputs(std::vector<double> inputs) {
 
 void SpikesOnCubeMentalImage::recordRunningScoresWithinState(int stateTime, int statePeriod) {
 	if(stateTime == statePeriod-1) {
+
 		readOriginalCommands();
-		ocApproximationAttempted.resize(originalCommands.size());
+		unsigned numOriginalCommands = originalCommands.size();
+
+		ocApproximationAttempted.resize(numOriginalCommands);
 		std::fill(ocApproximationAttempted.begin(), ocApproximationAttempted.end(), false);
 
+		// Only the last numOriginalCommands outputs of the brain count
 		unsigned numCorrectCommands = 0;
 		for(auto it=originalCommands.begin(); it!=originalCommands.end(); it++)
-			if(std::find(currentCommands.begin(), currentCommands.end(), *it) != currentCommands.end())
+			if(std::find(currentCommands.end()-numOriginalCommands, currentCommands.end(), *it) != currentCommands.end())
 				numCorrectCommands++;
 		correctCommandsStateScores.push_back(numCorrectCommands);
 
 		double cumulativeDivergence = 0.;
-		for(auto curComm : currentCommands)
-			cumulativeDivergence += evaluateCommand(curComm);
+		for(auto it=currentCommands.end()-numOriginalCommands; it!=currentCommands.end(); it++)
+			cumulativeDivergence += evaluateCommand(*it);
 		stateScores.push_back(cumulativeDivergence);
 
 //		std::cout << "Evaluation of the current individual was " << cumulativeDivergence << std::endl << std::endl;
 
 /*
 		std::cout << "Brain generated commands for " << *currentAsteroidNamePtr  << ":" << std::endl;
-		for(auto com : currentCommands) {
-			printCommand(com);
+		for(auto it=currentCommands.end()-numOriginalCommands; it!=currentCommands.end(); it++) {
+			printCommand(*it);
 			std::cout << std::endl;
 		}
 		std::cout << std::endl;
