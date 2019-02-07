@@ -50,47 +50,61 @@ void SpikesOnCubeMentalImage::updateWithInputs(std::vector<double> inputs) {
 		return;
 	}
 
-	unsigned face, i, j;
-	auto it = inputs.begin();
+	currentCommands.clear();
 
-//	face = decodeSPUInt(it, it+bitsForFace);
-	face = decodeOHUInt(it, it+bitsForFace);
-	it += bitsForFace;
+	for(unsigned ci=0; ci<3; ci++) {
 
-//	i = decodeSPUInt(it, it+bitsForCoordinate);
-	i = decodeOHUInt(it, it+bitsForCoordinate);
-	it += bitsForCoordinate;
+		unsigned face, i, j;
+		auto it = inputs.begin() + ci*(bitsForFace+2*bitsForCoordinate);
 
-//	j = decodeSPUInt(it, it+bitsForCoordinate);
-	j = decodeOHUInt(it, it+bitsForCoordinate);
+		face = decodeSPUInt(it, it+bitsForFace);
+//		face = decodeOHUInt(it, it+bitsForFace);
+		it += bitsForFace;
 
-	currentCommands.push_back(std::make_tuple(face,i,j));
+		i = decodeSPUInt(it, it+bitsForCoordinate) + 1; // +1 is to account for the forbidden nature of edges
+//		i = decodeOHUInt(it, it+bitsForCoordinate);
+		it += bitsForCoordinate;
+
+		j = decodeSPUInt(it, it+bitsForCoordinate);
+//		j = decodeOHUInt(it, it+bitsForCoordinate);
+
+		currentCommands.push_back(std::make_tuple(face,i,j));
+	}
 }
 
 void SpikesOnCubeMentalImage::recordRunningScoresWithinState(int stateTime, int statePeriod) {
-	if(stateTime == statePeriod-1) {
+
+	if(stateTime == 0) {
 
 		readOriginalCommands();
-		unsigned numOriginalCommands = originalCommands.size();
+		ocApproximationAttempted.resize(originalCommands.size());
+		correctCommandsStateScores.push_back(0);
+		stateScores.push_back(0.);
+	}
 
-		ocApproximationAttempted.resize(numOriginalCommands);
-		std::fill(ocApproximationAttempted.begin(), ocApproximationAttempted.end(), false);
+	if(currentCommands.size() != 0) {
 
-		// Only the last numOriginalCommands outputs of the brain count
 		unsigned numCorrectCommands = 0;
 		for(auto it=originalCommands.begin(); it!=originalCommands.end(); it++)
-			if(std::find(currentCommands.end()-numOriginalCommands, currentCommands.end(), *it) != currentCommands.end())
+			if(std::find(currentCommands.begin(), currentCommands.end(), *it) != currentCommands.end())
 				numCorrectCommands++;
-		correctCommandsStateScores.push_back(numCorrectCommands);
+		if( correctCommandsStateScores.back() < numCorrectCommands )
+			correctCommandsStateScores.back() = numCorrectCommands;
 
 		double cumulativeDivergence = 0.;
-		for(auto it=currentCommands.end()-numOriginalCommands; it!=currentCommands.end(); it++)
+		std::fill(ocApproximationAttempted.begin(), ocApproximationAttempted.end(), false);
+		for(auto it=currentCommands.begin(); it!=currentCommands.end(); it++)
 			cumulativeDivergence += evaluateCommand(*it);
-		stateScores.push_back(cumulativeDivergence);
+		stateScores.back() += cumulativeDivergence/currentCommands.size();
+	}
 
-//		std::cout << "Evaluation of the current individual was " << cumulativeDivergence << std::endl << std::endl;
+	if(stateTime == statePeriod-1) {
+
+		stateScores.back() /= statePeriod;
+//		std::cout << "Evaluation of the current individual was " << stateScores.back() << std::endl << std::endl;
 
 /*
+		// REWRITE
 		std::cout << "Brain generated commands for " << *currentAsteroidNamePtr  << ":" << std::endl;
 		for(auto it=currentCommands.end()-numOriginalCommands; it!=currentCommands.end(); it++) {
 			printCommand(*it);
@@ -111,20 +125,22 @@ void SpikesOnCubeMentalImage::recordRunningScoresWithinState(int stateTime, int 
 void SpikesOnCubeMentalImage::recordRunningScores(std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {}
 
 void SpikesOnCubeMentalImage::recordSampleScores(std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {
-	sampleScoresMap->append("guidingFunction", static_cast<double>(std::accumulate(stateScores.begin(), stateScores.end(), 0.)));
-	sampleScoresMap->append("numCorrectCommands", static_cast<double>(std::accumulate(correctCommandsStateScores.begin(), correctCommandsStateScores.end(), 0)));
+	sampleScoresMap->append( "guidingFunction",
+	                         static_cast<double>(std::accumulate(stateScores.begin(), stateScores.end(), 0.)) / stateScores.size() );
+	sampleScoresMap->append( "numCorrectCommands",
+	                         static_cast<double>(std::accumulate(correctCommandsStateScores.begin(), correctCommandsStateScores.end(), 0)));
 }
 
 void SpikesOnCubeMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) {
 	double gerror = sampleScoresMap->getAverage("guidingFunction");
 	double numCorrectCommands = sampleScoresMap->getAverage("numCorrectCommands");
-	org->dataMap.append("score", 1./(1.+gerror) );
+	org->dataMap.append("score", 1./(1.+gerror));
 	org->dataMap.append("guidingFunction", gerror);
 	org->dataMap.append("numCorrectCommands", numCorrectCommands);
 }
 
 int SpikesOnCubeMentalImage::numInputs() {
-	return bitsForFace + 2*bitsForCoordinate;
+	return 3*(bitsForFace + 2*bitsForCoordinate);
 }
 
 /***** Private SpikesOnCubeMentalImage class definitions *****/
@@ -203,7 +219,7 @@ double SpikesOnCubeMentalImage::commandDivergence(const CommandType& lhs, const 
 	std::tie(f1, i1, j1) = rhs;
 	return static_cast<double>( (f0>f1 ? f0-f1 : f1-f0) +
 	                            (i0>i1 ? i0-i1 : i1-i0) +
-	                            (j0>j1 ? j0-j1 : j1-j0) );
+	                            (j0>j1 ? j0-j1 : j1-j0) ) / (5+2*q);
 }
 
 double SpikesOnCubeMentalImage::evaluateCommand(const CommandType& command) {

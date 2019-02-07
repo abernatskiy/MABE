@@ -30,12 +30,12 @@ private:
 	const unsigned q = 1<<k;
 
 	// "One-hot" encoding version
-	const unsigned bitsForFace = 6;
-	const unsigned bitsForCoordinate = q+1;
+	//const unsigned bitsForFace = 6;
+	//const unsigned bitsForCoordinate = q+1;
 
 	// Standard positional encoding version
-	//const unsigned bitsForFace = 3;
-	//const unsigned bitsForCoordinate = k+1;
+	const unsigned bitsForFace = 3;
+	const unsigned bitsForCoordinate = k; // not k+1 because edge spikes are disallowed and the coordinate can actually take up to q-1 values
 
 	bool justReset;
 
