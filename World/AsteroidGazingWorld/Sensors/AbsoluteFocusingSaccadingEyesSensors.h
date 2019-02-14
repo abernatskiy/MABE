@@ -38,6 +38,8 @@ private:
 	const unsigned zoomLevelControls; // = maxZoom : parallel zero-biased bus
 	const unsigned zoomPositionControls; // = 2*maxZoom*bitsFor(splittingFactor) : for a splitting factor of N, position of the fovea is encoded in maxZoom Nary numbers
 
+	const unsigned binarizationThreshold = 160; // 127 is the middle of the dynamic range
+
 	// Derived vars
 	const unsigned numSensors;
 	const unsigned numMotors;

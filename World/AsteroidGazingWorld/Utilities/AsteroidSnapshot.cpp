@@ -1,10 +1,12 @@
+#include <cstdlib>
+
 #include "AsteroidSnapshot.h"
 #include "shades.h"
 
 // Public member definitions
 
-AsteroidSnapshot::AsteroidSnapshot(std::string filePath) :
-	AsteroidSnapshot(png::image<pixel_value_type>(filePath)) {}
+AsteroidSnapshot::AsteroidSnapshot(std::string filePath, unsigned binThreshold) :
+	AsteroidSnapshot(png::image<pixel_value_type>(filePath), binThreshold) {}
 
 AsteroidSnapshot AsteroidSnapshot::resampleArea(std::uint32_t x0, std::uint32_t y0,
                                                 std::uint32_t x1, std::uint32_t y1,
@@ -40,7 +42,7 @@ AsteroidSnapshot AsteroidSnapshot::resampleArea(std::uint32_t x0, std::uint32_t 
 			areaTexture[i][j] = static_cast<pixel_value_type>( accumulator / ((xpp1-xpp0)*(ypp1-ypp0)) );
 		}
 
-	return AsteroidSnapshot(newWidth, newHeight, areaTexture);
+	return AsteroidSnapshot(newWidth, newHeight, areaTexture, binarizationThreshold);
 }
 
 const AsteroidSnapshot& AsteroidSnapshot::cachingResampleArea(std::uint32_t x0, std::uint32_t y0,
@@ -59,6 +61,7 @@ const AsteroidSnapshot& AsteroidSnapshot::cachingResampleArea(std::uint32_t x0, 
 
 
 void AsteroidSnapshot::print(unsigned thumbSize, bool shades) const {
+
 	std::cout << "Asteroid snapshot of width " << width << " and height " << height << std::endl;
 	AsteroidSnapshot thumb = resampleArea(0, 0, width, height, thumbSize, thumbSize);
 	for(unsigned i=0; i<thumbSize; i++) {
@@ -71,12 +74,38 @@ void AsteroidSnapshot::print(unsigned thumbSize, bool shades) const {
 	}
 }
 
+bool AsteroidSnapshot::binaryIsTheSame(const AsteroidSnapshot& other) const {
+
+	for(std::uint32_t i=0; i<width; i++)
+		for(std::uint32_t j=0; j<height; j++)
+			if(binaryTexture[i][j] != other.getBinary(i, j))
+				return false;
+	return true;
+}
+
+void AsteroidSnapshot::printBinary(bool shades) const {
+
+	std::cout << "Asteroid binary snapshot of width " << width << " and height " << height << " (thresholded at " << binarizationThreshold << ")" << std::endl;
+	for(unsigned i=0; i<width; i++) {
+		for(unsigned j=0; j<height; j++)
+			if(shades)
+				std::cout << shadeBinary(binaryTexture[i][j]);
+			else
+				std::cout << static_cast<unsigned>(binaryTexture[i][j]);
+		std::cout << std::endl;
+	}
+}
+
 // Private member definitions
 
 unsigned long AsteroidSnapshot::allocatedPixels = 0;
 
-AsteroidSnapshot::AsteroidSnapshot(const png::image<pixel_value_type>& picture) :
-	width(picture.get_width()), height(picture.get_height()), texture(boost::extents[width][height]) {
+AsteroidSnapshot::AsteroidSnapshot(const png::image<pixel_value_type>& picture, unsigned binThreshold) :
+	width(picture.get_width()),
+	height(picture.get_height()),
+	texture(boost::extents[width][height]),
+	binarizationThreshold(binThreshold),
+	binaryTexture(boost::extents[width][height]) {
 
 	for(std::uint32_t i=0; i<width; i++)
 		for(std::uint32_t j=0; j<height; j++)
@@ -87,7 +116,32 @@ AsteroidSnapshot::AsteroidSnapshot(const png::image<pixel_value_type>& picture) 
 		std::cerr << "Too much memory allocated for asteroid snaphots, exiting to avoid running out" << std::endl;
 		exit(EXIT_FAILURE);
 	}
+
+	if(binThreshold > 255) {
+		std::cerr << "Binarization threshold cannot exceed 255 (requested " << binThreshold << ")" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
+	fillBinaryTexture();
 }
 
-AsteroidSnapshot::AsteroidSnapshot(std::uint32_t wt, std::uint32_t ht, texture_type txtr) :
-	width(wt), height(ht), texture(txtr) {}
+AsteroidSnapshot::AsteroidSnapshot(std::uint32_t wt, std::uint32_t ht, texture_type txtr, unsigned binThreshold) :
+	width(wt),
+	height(ht),
+	texture(txtr),
+	binarizationThreshold(binThreshold),
+	binaryTexture(boost::extents[wt][ht]) {
+
+	if(binThreshold > 255) {
+		std::cerr << "Binarization threshold cannot exceed 255 (requested " << binThreshold << ")" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
+	fillBinaryTexture();
+}
+
+void AsteroidSnapshot::fillBinaryTexture() {
+	for(std::uint32_t i=0; i<width; i++)
+		for(std::uint32_t j=0; j<height; j++)
+			binaryTexture[i][j] = texture[i][j] > binarizationThreshold;
+}

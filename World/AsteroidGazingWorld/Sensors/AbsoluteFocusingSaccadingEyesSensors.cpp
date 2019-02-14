@@ -151,7 +151,10 @@ AbsoluteFocusingSaccadingEyesSensors::AbsoluteFocusingSaccadingEyesSensors(std::
 			}
 			else {
 				const std::string snapshotPath = datasetParser->getPicturePath(an, condition, distance, phase);
-				asteroidSnapshots[an][condition][distance].emplace(phase, snapshotPath); // TODO: downsample based on allowed zoom levels
+//				asteroidSnapshots[an][condition][distance].emplace(phase, snapshotPath, binarizationThreshold); // TODO: downsample based on allowed zoom levels
+				asteroidSnapshots[an][condition][distance].emplace(std::piecewise_construct,
+				                                                   std::forward_as_tuple(phase),
+				                                                   std::forward_as_tuple(snapshotPath, binarizationThreshold)); // TODO: downsample based on allowed zoom levels
 			}
 		}
   }
@@ -256,12 +259,11 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 //	}
 
 	unsigned pixNum = 0;
-	const unsigned contrastLvl = 160; // 127 is the middle of the dynamic range
-	if(visualize) std::cout << "Thresholding at " << contrastLvl << " and printing the resulting bitmap" << std::endl;
+	if(visualize) std::cout << "Thresholding at " << binarizationThreshold << " and printing the resulting bitmap" << std::endl;
 	for(unsigned i=0; i<foveaResolution; i++) {
 		for(unsigned j=0; j<foveaResolution; j++) {
-			if(visualize) std::cout << shadeBinary(view.get(i,j)>contrastLvl);
-			brain->setInput(pixNum++, view.get(i,j)>contrastLvl);
+			if(visualize) std::cout << shadeBinary(view.get(i,j)>binarizationThreshold);
+			brain->setInput(pixNum++, view.get(i,j)>binarizationThreshold);
 		}
 		if(visualize) std::cout << std::endl;
 	}
