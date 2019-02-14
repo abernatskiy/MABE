@@ -151,10 +151,9 @@ AbsoluteFocusingSaccadingEyesSensors::AbsoluteFocusingSaccadingEyesSensors(std::
 			}
 			else {
 				const std::string snapshotPath = datasetParser->getPicturePath(an, condition, distance, phase);
-//				asteroidSnapshots[an][condition][distance].emplace(phase, snapshotPath, binarizationThreshold); // TODO: downsample based on allowed zoom levels
 				asteroidSnapshots[an][condition][distance].emplace(std::piecewise_construct,
 				                                                   std::forward_as_tuple(phase),
-				                                                   std::forward_as_tuple(snapshotPath, binarizationThreshold)); // TODO: downsample based on allowed zoom levels
+				                                                   std::forward_as_tuple(snapshotPath, binarizationThreshold)); // TODO: downsample based on allowed zoom levels for memory efficiency
 			}
 		}
   }
@@ -262,11 +261,11 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 	if(visualize) std::cout << "Thresholding at " << binarizationThreshold << " and printing the resulting bitmap" << std::endl;
 	for(unsigned i=0; i<foveaResolution; i++) {
 		for(unsigned j=0; j<foveaResolution; j++) {
-			if(visualize) std::cout << shadeBinary(view.get(i,j)>binarizationThreshold);
-			brain->setInput(pixNum++, view.get(i,j)>binarizationThreshold);
+			brain->setInput(pixNum++, view.getBinary(i,j));
 		}
-		if(visualize) std::cout << std::endl;
 	}
+	if(visualize)
+		view.printBinary();
 
 	AbstractSensors::update(visualize); // increment the clock
 }

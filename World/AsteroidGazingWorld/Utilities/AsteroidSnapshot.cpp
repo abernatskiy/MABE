@@ -85,7 +85,7 @@ bool AsteroidSnapshot::binaryIsTheSame(const AsteroidSnapshot& other) const {
 
 void AsteroidSnapshot::printBinary(bool shades) const {
 
-	std::cout << "Asteroid binary snapshot of width " << width << " and height " << height << " (thresholded at " << binarizationThreshold << ")" << std::endl;
+	std::cout << "Asteroid binary snapshot of width " << width << " and height " << height << " (thresholded at " << static_cast<unsigned>(binarizationThreshold) << ")" << std::endl;
 	for(unsigned i=0; i<width; i++) {
 		for(unsigned j=0; j<height; j++)
 			if(shades)
