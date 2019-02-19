@@ -3,6 +3,7 @@
 #include "../../../Brain/AbstractBrain.h"
 #include "../Utilities/shades.h"
 
+#include <fstream>
 #include <cstdint>
 #include <cstdlib>
 
@@ -101,11 +102,12 @@ std::pair<unsigned,unsigned> biSplitRange(unsigned x0, unsigned x1, unsigned spl
 /***** AbsoluteFocusingSaccadingEyesSensors class definitions *****/
 
 AbsoluteFocusingSaccadingEyesSensors::AbsoluteFocusingSaccadingEyesSensors(std::shared_ptr<std::string> curAstName,
-                                                                           std::shared_ptr<AsteroidsDatasetParser> datasetParser,
+                                                                           std::shared_ptr<AsteroidsDatasetParser> dsParser,
                                                                            unsigned fovRes, unsigned mzoom, unsigned splitFac) :
 	currentAsteroidName(curAstName), foveaResolution(fovRes), maxZoom(mzoom), splittingFactor(splitFac),
 	phaseControls(bitsFor(numPhases)), zoomLevelControls(maxZoom), zoomPositionControls(2*maxZoom*bitsFor(splittingFactor)),
-	numSensors(getNumSensoryChannels()), numMotors(getNumControls()) {
+	numSensors(getNumSensoryChannels()), numMotors(getNumControls()),
+	datasetParser(dsParser) {
 
 	// Reading asteroid snapshots into RAM for quick access
 	std::set<std::string> asteroidNames = datasetParser->getAsteroidsNames();
@@ -168,6 +170,9 @@ AbsoluteFocusingSaccadingEyesSensors::AbsoluteFocusingSaccadingEyesSensors(std::
 		std::cerr << "Unsupported splitting factor of " << splittingFactor << " has been requested" << std::endl;
 		exit(EXIT_FAILURE);
 	}
+
+	// Analyzing the dataset for learnability
+	analyzeDataset();
 }
 
 unsigned AbsoluteFocusingSaccadingEyesSensors::getNumSensoryChannels() {
@@ -268,4 +273,156 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 		view.printBinary();
 
 	AbstractSensors::update(visualize); // increment the clock
+}
+
+void AbsoluteFocusingSaccadingEyesSensors::analyzeDataset() {
+
+	using namespace std;
+
+	// Preparing a log file
+	string logpath = Global::outputPrefixPL->get() + "datasetAnalysis.log";
+	ofstream logfile(logpath);
+	if(!logfile.is_open()) {
+		cerr << "Could not open the dataset analysis log file " << logpath << endl;
+		exit(EXIT_FAILURE);
+	}
+
+	// Determining and logging the dimensions of the perception system
+	unsigned maxRes = foveaResolution;
+	for(unsigned i=0; i<maxZoom; i++)
+		maxRes *= splittingFactor;
+	logfile << "Maximum visual system resolution is " << maxRes << "x" << maxRes << ":" << endl
+	        << " - fovea resolution is " << foveaResolution << "x" << foveaResolution << endl
+	        << " - at zoom the field is split " << splittingFactor << "-way up to " << maxZoom << " times" << endl;
+
+	logfile << endl;
+
+	// Checking if we're dealing with a dataset that is too complex to analyze at the moment
+	set<tuple<unsigned,unsigned,unsigned>> astViews;
+	for(const auto& astRec : asteroidSnapshots) {
+		set<tuple<unsigned,unsigned,unsigned>> views;
+		for(const auto& condRec : astRec.second)
+			for(const auto& distRec : condRec.second)
+				for(const auto& phaseRec : distRec.second)
+					views.insert(make_tuple(condRec.first, distRec.first, phaseRec.first));
+		if(views.size() != 1) {
+			logfile << "Number of views available for asteroid " << astRec.first << " is not one (" << views.size()
+			        << "). Analysis of such datasets is not implemented yet, exiting the analyzer." << endl;
+			logfile.close();
+			return;
+		}
+		astViews.insert(*views.begin());
+	}
+	if(astViews.size() != 1) {
+		logfile << "Different views are available for different asteroids (a total of " << astViews.size()
+		        << " views). Analysis of such datasets is not implemented yet, exiting the analyzer." << endl;
+		logfile.close();
+		return;
+	}
+	const unsigned theCondition = get<0>(*astViews.begin());
+	const unsigned theDistance = get<1>(*astViews.begin());
+	const unsigned thePhase = get<2>(*astViews.begin());
+	logfile << "Dataset supported by the analyzer: all asteroids are available at condition " << theCondition << ", distance " << theDistance << ", phase " << thePhase << endl;
+
+	logfile << endl;
+
+	// Obtaining the list of distinct percepts, annotated with asteroid names
+	vector<AsteroidSnapshot> perceptShots;
+	vector<vector<string>> perceptAsteroidNames;
+	for(const auto& astRec : asteroidSnapshots) {
+		const auto& currentShot = astRec.second.at(theCondition).at(theDistance).at(thePhase);
+		const auto& currentPerceptShot = currentShot.resampleArea(0, 0, currentShot.width, currentShot.height, maxRes, maxRes);
+
+		bool perceptFound = false;
+		for(unsigned i=0; i<perceptShots.size(); i++) {
+			if(perceptShots[i].binaryIsTheSame(currentPerceptShot)) {
+				perceptAsteroidNames[i].push_back(astRec.first);
+				perceptFound = true;
+				break;
+			}
+		}
+
+		if(!perceptFound) {
+			perceptShots.push_back(currentPerceptShot);
+			perceptAsteroidNames.push_back({astRec.first});
+		}
+	}
+
+	// Logging the distribution of percepts
+	unsigned maxAsteroidsPerPercept = max_element(perceptAsteroidNames.begin(), perceptAsteroidNames.end(),
+	                                              [](vector<string> a, vector<string> b) {return a.size()<b.size();} )->size();
+	vector<unsigned> perceptsHistogram(maxAsteroidsPerPercept+1, 0);
+	for(unsigned i=0; i<perceptShots.size(); i++)
+		perceptsHistogram[perceptAsteroidNames[i].size()] += 1;
+	logfile << "Distribution of percept frequencies:" << endl;
+	for(unsigned i=1; i<maxAsteroidsPerPercept+1; i++)
+		logfile << perceptsHistogram[i] << " percepts encountered " << i << " times" << endl;
+
+	logfile << endl;
+
+	// Counting common sculpting commands for each percept
+	typedef tuple<unsigned,unsigned,unsigned> commandType;
+	vector<set<commandType>> commandIntersections(perceptShots.size());
+	for(unsigned p=0; p<perceptShots.size(); p++) {
+		{
+			ifstream initialCommandsStream(datasetParser->getDescriptionPath(perceptAsteroidNames[p][0]));
+			string cline;
+			while(getline(initialCommandsStream, cline)) {
+				unsigned face, i, j;
+				stringstream cstream(cline);
+				cstream >> face >> i >> j;
+				commandIntersections[p].insert(make_tuple(face, i, j));
+			}
+			initialCommandsStream.close();
+		}
+
+		for(unsigned j=1; j<perceptAsteroidNames[p].size(); j++) {
+			set<commandType> curCommands;
+
+			ifstream currentCommandsStream(datasetParser->getDescriptionPath(perceptAsteroidNames[p][j]));
+			string cline;
+			while(getline(currentCommandsStream, cline)) {
+				unsigned face, i, j;
+				stringstream cstream(cline);
+				cstream >> face >> i >> j;
+				curCommands.insert(make_tuple(face, i, j));
+			}
+			currentCommandsStream.close();
+
+			vector<set<commandType>::iterator> toRemove;
+			for(auto it=commandIntersections[p].begin(); it!=commandIntersections[p].end(); it++)
+				if(curCommands.find(*it)==curCommands.end())
+					toRemove.push_back(it);
+			for(const auto& rit : toRemove)
+				commandIntersections[p].erase(rit);
+		}
+	}
+
+	// Computing and logging the maximum number of commands that can be recovered with the available percepts
+	unsigned numRecoverableCommands = 0;
+	for(unsigned i=0; i<perceptShots.size(); i++)
+		numRecoverableCommands += 3 + commandIntersections[i].size()*(perceptAsteroidNames[i].size()-1);
+	logfile << "Total number of recoverable commands is " << numRecoverableCommands
+	        << " out of " << 3*asteroidSnapshots.size()
+	        << " (" << 3*perceptShots.size() << " from unique percepts plus "
+	        << numRecoverableCommands-3*perceptShots.size() << " by giving the same answer on same percept)" << endl;
+	logfile << endl;
+
+	// Logging the list of different percepts
+	logfile << "List of distinct percepts:" << endl << endl;
+	for(unsigned i=0; i<perceptShots.size(); i++) {
+		logfile << "Percept " << i << ", corresponding to asteroids";
+		for(const auto& astName : perceptAsteroidNames[i])
+			logfile << " " << astName;
+		logfile << " (which have " << commandIntersections[i].size() << " common intersecting commands:";
+		for(const auto& comCom : commandIntersections[i])
+			logfile << " " << get<0>(comCom)
+			        << " " << get<1>(comCom)
+			        << " " << get<2>(comCom) << ",";
+		logfile << ")" << endl;
+		logfile << perceptShots[i].getPrintedBinary();
+	}
+
+	// Closing the log file
+	logfile.close();
 }

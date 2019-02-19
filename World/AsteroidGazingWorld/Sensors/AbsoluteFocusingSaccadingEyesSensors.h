@@ -6,7 +6,7 @@
 
 #include <map>
 
-typedef std::map<std::string,std::map<unsigned,std::map<unsigned,std::map<unsigned,AsteroidSnapshot>>>> asteroid_snapshots_library_type;
+typedef std::map<std::string,std::map<unsigned,std::map<unsigned,std::map<unsigned,AsteroidSnapshot>>>> asteroid_snapshots_library_type; // asteroidName,condition,distance,phase -> snapshot
 inline std::string getAnAsteroid(const asteroid_snapshots_library_type& ast) { return ast.begin()->first; };
 inline unsigned getACondition(const asteroid_snapshots_library_type& ast) { return (ast.begin()->second).begin()->first; };
 inline unsigned getADistance(const asteroid_snapshots_library_type& ast) { return ((ast.begin()->second).begin()->second).begin()->first; };
@@ -47,6 +47,7 @@ private:
 	// Temporaries ultimately to be replaced
 	unsigned constCondition, constDistance;
 
+	std::shared_ptr<AsteroidsDatasetParser> datasetParser;
 	std::string asteroidsDatasetPath;
 	std::shared_ptr<std::string> currentAsteroidName;
 
@@ -54,4 +55,6 @@ private:
 
 	unsigned getNumSensoryChannels();
 	unsigned getNumControls();
+
+	void analyzeDataset();
 };

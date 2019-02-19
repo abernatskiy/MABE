@@ -84,16 +84,22 @@ bool AsteroidSnapshot::binaryIsTheSame(const AsteroidSnapshot& other) const {
 }
 
 void AsteroidSnapshot::printBinary(bool shades) const {
+	std::cout << getPrintedBinary();
+}
 
-	std::cout << "Asteroid binary snapshot of width " << width << " and height " << height << " (thresholded at " << static_cast<unsigned>(binarizationThreshold) << ")" << std::endl;
+std::string AsteroidSnapshot::getPrintedBinary(bool shades) const {
+
+	std::ostringstream ss;
+	ss << "Asteroid binary snapshot of width " << width << " and height " << height << " (thresholded at " << static_cast<unsigned>(binarizationThreshold) << ")" << std::endl;
 	for(unsigned i=0; i<width; i++) {
 		for(unsigned j=0; j<height; j++)
 			if(shades)
-				std::cout << shadeBinary(binaryTexture[i][j]);
+				ss << shadeBinary(binaryTexture[i][j]);
 			else
-				std::cout << static_cast<unsigned>(binaryTexture[i][j]);
-		std::cout << std::endl;
+				ss << static_cast<unsigned>(binaryTexture[i][j]);
+		ss << std::endl;
 	}
+	return ss.str();
 }
 
 // Private member definitions

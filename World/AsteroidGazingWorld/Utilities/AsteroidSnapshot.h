@@ -42,6 +42,7 @@ public:
 	inline bool getBinary(std::uint32_t x, std::uint32_t y) const { return binaryTexture[x][y]; };
 	bool binaryIsTheSame(const AsteroidSnapshot& other) const;
 	void printBinary(bool shades=true) const;
+	std::string getPrintedBinary(bool shades=true) const;
 
 private:
 	texture_type texture;
