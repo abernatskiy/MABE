@@ -130,7 +130,7 @@ MarkovBrain::MarkovBrain(
 	fillInConnectionsLists();
 
 	if(visualize) {
-		log.open("markov_log");
+		log.open(Global::outputPrefixPL->get() + "markov_log");
 		logBrainStructure();
 	}
 }
