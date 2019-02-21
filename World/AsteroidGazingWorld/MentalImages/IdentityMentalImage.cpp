@@ -15,7 +15,20 @@ IdentityMentalImage::IdentityMentalImage(std::shared_ptr<AbsoluteFocusingSaccadi
 }
 
 void IdentityMentalImage::updateWithInputs(std::vector<double> inputs) {
-	hits = sensoryChannels;
+	hits = 0;
+	const auto& lastPercept = sensorsPtr->getLastPercept();
+	if(lastPercept.size() != sensoryChannels) {
+		std::cerr << "Saved percept has wrong number of channels (is " << lastPercept.size() << ", should be " << sensoryChannels << ")" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	if(inputs.size() != sensoryChannels) {
+		std::cerr << "Mental image input has wrong number of channels (is " << inputs.size() << ", should be " << sensoryChannels << ")" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
+	for(unsigned i=0; i<sensoryChannels; i++)
+		if(lastPercept[i] == (inputs[i]>0))
+			hits++;
 }
 
 void IdentityMentalImage::recordRunningScoresWithinState(int stateTime, int statePeriod) {
@@ -30,9 +43,4 @@ void IdentityMentalImage::recordSampleScores(std::shared_ptr<DataMap> sampleScor
 
 void IdentityMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) {
 	org->dataMap.append("score", sampleScoresMap->getAverage("score"));
-
-	std::cout << "Saved percept:";
-	for(const auto& st : sensorsPtr->getLastPercept())
-		std::cout << " " << (st ? 1 : 0);
-	std::cout << std::endl;
 }

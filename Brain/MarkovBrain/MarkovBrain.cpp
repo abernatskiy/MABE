@@ -177,14 +177,15 @@ void MarkovBrain::resetOutputs() {
 }
 
 void MarkovBrain::update() {
-	if(visualize)
-		log.logStateBeforeUpdate(nodes);
 
 	nextNodes.assign(nrNodes, 0.0);
 	DataMap IOMap;
 
 	for (int i = 0; i < nrInputValues; i++)
 		nodes[i] = inputValues[i];
+
+	if(visualize)
+		log.logStateBeforeUpdate(nodes);
 
 	if (recordIOMapPL->get())
 		for (int i = 0; i < nrInputValues; i++)
