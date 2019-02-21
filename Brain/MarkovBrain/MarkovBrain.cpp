@@ -132,6 +132,7 @@ MarkovBrain::MarkovBrain(
 	if(visualize) {
 		log.open(Global::outputPrefixPL->get() + "markov_log");
 		logBrainStructure();
+		log.log("\nActivity log:\n");
 	}
 }
 
@@ -155,7 +156,7 @@ void MarkovBrain::resetBrain() {
 		g->resetGate();
 
 	if(visualize)
-		log.log("Brain was reset\n");
+		log.logBrainReset();
 }
 
 void MarkovBrain::resetInputs() {
@@ -176,14 +177,8 @@ void MarkovBrain::resetOutputs() {
 }
 
 void MarkovBrain::update() {
-	if(visualize) {
-		std::stringstream sstr;
-		sstr << "Transition:" << std::setprecision(1);
-		for(auto s : nodes)
-			sstr << ' ' << s;
-		sstr << " ->";
-		log.log(sstr.str());
-	}
+	if(visualize)
+		log.logStateBeforeUpdate(nodes);
 
 	nextNodes.assign(nrNodes, 0.0);
 	DataMap IOMap;
@@ -239,14 +234,8 @@ void MarkovBrain::update() {
 		IOMap.clearMap();
 	}
 
-	if(visualize) {
-		std::stringstream sstr;
-		sstr << std::setprecision(1);
-		for(auto s : nodes)
-			sstr << ' ' << s;
-		sstr << std::endl;
-		log.log(sstr.str());
-	}
+	if(visualize)
+		log.logStateAfterUpdate(nodes);
 }
 
 void MarkovBrain::inOutReMap() { // remaps genome site values to valid brain

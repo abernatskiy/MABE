@@ -15,6 +15,7 @@
 #include <iostream>
 #include <set>
 #include <vector>
+#include <iomanip>
 #include <sys/stat.h>
 
 #include "GateListBuilder/GateListBuilder.h"
@@ -23,6 +24,13 @@
 #include "../../Utilities/Random.h"
 
 #include "../AbstractBrain.h"
+
+inline double pointEntropy(double p) {
+	if(p == 0. || p == 1.)
+		return 0;
+	else
+		return -p*log2(p)-(1.-p)*log2(1.-p);
+}
 
 class LogFile {
 private:
@@ -44,6 +52,10 @@ private:
 			}
 		}
 	};
+
+	std::vector<std::vector<unsigned>> nodeStatesTS;
+	std::vector<std::vector<unsigned>> nodePairsStatesTS;
+
 public:
 	LogFile() : isOpen(false) {};
 	void open(std::string prefix) {
@@ -55,6 +67,55 @@ public:
 	};
 	~LogFile() { if (isOpen) fs.close(); };
 	void log(std::string s) { if (isOpen) fs << s; };
+
+	void logStateBeforeUpdate(const std::vector<double>& nodes) {
+		// First, good old file logging
+		fs << "Transition:" << std::setprecision(1);
+    for(const auto& s : nodes)
+      fs << ' ' << s;
+    fs << " ->";
+
+		// Next, remembering the initial state for future processing
+		if(nodeStatesTS.size()==0)
+			for(const auto& s : nodes)
+				nodeStatesTS.push_back({s>0 ? 1 : 0});
+	};
+
+	void logStateAfterUpdate(const std::vector<double>& nodes) {
+		// Complimentary logging after the update
+		fs << std::setprecision(1);
+		for(const auto& s : nodes)
+			fs << ' ' << s;
+		fs << std::endl;
+
+		// Remembering the current state
+		for(unsigned i=0; i<nodes.size(); i++)
+			nodeStatesTS[i].push_back(nodes[i]>0 ? 1 : 0);
+	};
+
+	void logBrainReset() {
+
+		fs << "Brain was reset" << std::endl;
+
+		fs << "Node probabilities of one:";
+		fs << std::setprecision(2);
+		std::vector<double> probsOfOne;
+		for(auto nsts : nodeStatesTS) {
+			unsigned sumOfStates = std::accumulate(nsts.begin(), nsts.end(), 0);
+			double prob = static_cast<double>(sumOfStates)/static_cast<double>(nsts.size());
+			probsOfOne.push_back(prob);
+			fs << ' ' << prob;
+		}
+		fs << std::endl;
+		nodeStatesTS.clear();
+
+		fs << "Node enthropies:";
+		fs << std::setprecision(2);
+		for(auto p : probsOfOne) {
+			fs << ' ' << pointEntropy(p);
+		}
+		fs << std::endl;
+	};
 };
 
 class MarkovBrain : public AbstractBrain {
