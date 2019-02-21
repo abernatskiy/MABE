@@ -1,7 +1,7 @@
 #include "AsteroidGazingWorld.h"
 
-//#include "MentalImages/SphericalHarmonicsBasedAsteroidImageMentalImage.h"
-#include "MentalImages/SpikesOnCubeMentalImage.h"
+//#include "MentalImages/SpikesOnCubeMentalImage.h"
+#include "MentalImages/IdentityMentalImage.h"
 #include "Sensors/AbsoluteFocusingSaccadingEyesSensors.h"
 #include "Schedules/AsteroidGazingSchedules.h"
 
@@ -30,8 +30,11 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 	// Drawing the rest of the owl
 	currentAsteroidName = std::make_shared<std::string>("");
 	stateSchedule = std::make_shared<ExhaustiveAsteroidGazingSchedule>(currentAsteroidName, datasetParser);
-	sensors = std::make_shared<AbsoluteFocusingSaccadingEyesSensors>(currentAsteroidName, datasetParser, foveaResolutionPL->get(PT_), maxZoomPL->get(PT_), splittingFactorPL->get(PT_));
-	mentalImage = std::make_shared<SpikesOnCubeMentalImage>(currentAsteroidName, datasetParser);
+	auto sensorsPtr = std::make_shared<AbsoluteFocusingSaccadingEyesSensors>(currentAsteroidName, datasetParser, foveaResolutionPL->get(PT_), maxZoomPL->get(PT_), splittingFactorPL->get(PT_));
+	sensors = static_cast<std::shared_ptr<AbstractSensors>>(sensorsPtr);
+
+//	mentalImage = std::make_shared<SpikesOnCubeMentalImage>(currentAsteroidName, datasetParser);
+	mentalImage = std::make_shared<IdentityMentalImage>(sensorsPtr);
 
 	makeMotors();
 };
