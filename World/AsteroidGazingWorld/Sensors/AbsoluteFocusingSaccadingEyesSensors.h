@@ -30,7 +30,8 @@ private:
 	const unsigned foveaResolution;
 	const unsigned maxZoom;
 	const unsigned splittingFactor;
-	const unsigned numPhases = 16;
+//	const unsigned numPhases = 16;
+	const unsigned numPhases = 1;
 
 	const unsigned conditionControls = 0; // we're assuming that the spacecraft has pictures from one angle only for now (TODO: make tunable conditions)
 	const unsigned distanceControls = 0; // neglecting distance control for now (TODO: make tunable distances)
