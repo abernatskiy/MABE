@@ -30,4 +30,9 @@ void IdentityMentalImage::recordSampleScores(std::shared_ptr<DataMap> sampleScor
 
 void IdentityMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) {
 	org->dataMap.append("score", sampleScoresMap->getAverage("score"));
+
+	std::cout << "Saved percept:";
+	for(const auto& st : sensorsPtr->getLastPercept())
+		std::cout << " " << (st ? 1 : 0);
+	std::cout << std::endl;
 }

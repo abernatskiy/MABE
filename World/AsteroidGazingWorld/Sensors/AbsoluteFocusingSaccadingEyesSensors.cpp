@@ -263,10 +263,12 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 //	}
 
 	unsigned pixNum = 0;
+	savedPercept.clear();
 	if(visualize) std::cout << "Thresholding at " << binarizationThreshold << " and printing the resulting bitmap" << std::endl;
 	for(unsigned i=0; i<foveaResolution; i++) {
 		for(unsigned j=0; j<foveaResolution; j++) {
 			brain->setInput(pixNum++, view.getBinary(i,j));
+			savedPercept.push_back(view.getBinary(i,j));
 		}
 	}
 	if(visualize)

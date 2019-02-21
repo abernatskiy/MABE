@@ -25,6 +25,8 @@ public:
 	int numOutputs() override { return numSensors; };
 	int numInputs() override { return numMotors; };
 
+	const std::vector<bool>& getLastPercept() { return savedPercept; };
+
 private:
 	// Primary settings
 	const unsigned foveaResolution;
@@ -57,4 +59,7 @@ private:
 	unsigned getNumControls();
 
 	void analyzeDataset();
+
+	// Even more temporary values
+	std::vector<bool> savedPercept;
 };
