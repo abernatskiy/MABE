@@ -9,6 +9,7 @@
 	+ TestImagination
 	+ TestSlideshow
 	+ AsteroidGazing
+	+ ParallelIsolatedEmbodied
 
 % Genome
   - Multi
