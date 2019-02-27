@@ -43,9 +43,9 @@ void ParallelIsolatedEmbodiedWorld::evaluate(std::map<std::string, std::shared_p
 	std::vector<unsigned> batchSizes(numThreads, maxBatchSize);
 	if(popSize%numThreads!=0) batchSizes.back() = popSize % maxBatchSize;
 
-	#pragma omp parallel num_threads(numThreads)
+//	#pragma omp parallel num_threads(numThreads)
 	{
-		#pragma omp for
+//		#pragma omp for
 		for(unsigned t=0; t<numThreads; t++) {
 			for(unsigned i=t*maxBatchSize; i<(t*maxBatchSize+batchSizes[t]); i++) {
 				subworlds[t]->evaluateSolo(groups[groupName]->population[i], analyze, visualize, debug);
