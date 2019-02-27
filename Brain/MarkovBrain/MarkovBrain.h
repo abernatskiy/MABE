@@ -53,7 +53,8 @@ private:
 		}
 	};
 
-	std::vector<std::vector<unsigned>> nodeStatesTS;
+	std::vector<std::vector<unsigned>> nodeStatesTS; // holds time series of the current brain "run"
+	std::vector<std::vector<unsigned>> nodeStatesHeap; // holds time series from all brain runs lumped together
 	std::vector<std::vector<unsigned>> nodePairsStatesTS;
 
 public:
@@ -77,8 +78,10 @@ public:
 
 		// Next, remembering the initial state for future processing
 		if(nodeStatesTS.size()==0)
-			for(const auto& s : nodes)
+			for(const auto& s : nodes) {
 				nodeStatesTS.push_back({s>0 ? 1 : 0});
+				nodeStatesHeap.push_back({s>0 ? 1 : 0});
+			}
 	};
 
 	void logStateAfterUpdate(const std::vector<double>& nodes) {
@@ -89,27 +92,37 @@ public:
 		fs << std::endl;
 
 		// Remembering the current state
-		for(unsigned i=0; i<nodes.size(); i++)
+		for(unsigned i=0; i<nodes.size(); i++) {
 			nodeStatesTS[i].push_back(nodes[i]>0 ? 1 : 0);
+			nodeStatesHeap[i].push_back(nodes[i]>0 ? 1 : 0);
+		}
 	};
 
 	void logBrainReset() {
 
 		fs << "Brain was reset" << std::endl;
 
-		fs << "Node probabilities of one:";
+		logTSEntropy("Current node state", nodeStatesTS);
+		nodeStatesTS.clear();
+
+		logTSEntropy("Cumulative node state", nodeStatesHeap);
+		fs << "Cumulatives are over " << nodeStatesHeap[0].size() << " measured states" << std::endl;
+
+	};
+
+	void logTSEntropy(std::string label, const std::vector<std::vector<unsigned>>& ts) {
+		fs << label << " probabilities of one:";
 		fs << std::setprecision(2);
 		std::vector<double> probsOfOne;
-		for(auto nsts : nodeStatesTS) {
+		for(auto nsts : ts) {
 			unsigned sumOfStates = std::accumulate(nsts.begin(), nsts.end(), 0);
 			double prob = static_cast<double>(sumOfStates)/static_cast<double>(nsts.size());
 			probsOfOne.push_back(prob);
 			fs << ' ' << prob;
 		}
 		fs << std::endl;
-		nodeStatesTS.clear();
 
-		fs << "Node enthropies:";
+		fs << label << " enthropies:";
 		fs << std::setprecision(2);
 		for(auto p : probsOfOne) {
 			fs << ' ' << pointEntropy(p);
@@ -136,10 +149,8 @@ public:
 	static std::shared_ptr<ParameterLink<bool>> recordIOMapPL;
 	static std::shared_ptr<ParameterLink<std::string>> IOMapFileNamePL;
 	static std::shared_ptr<ParameterLink<int>> randomizeUnconnectedOutputsTypePL;
-	static std::shared_ptr<ParameterLink<double>>
-	    randomizeUnconnectedOutputsMinPL;
-	static std::shared_ptr<ParameterLink<double>>
-	    randomizeUnconnectedOutputsMaxPL;
+	static std::shared_ptr<ParameterLink<double>> randomizeUnconnectedOutputsMinPL;
+	static std::shared_ptr<ParameterLink<double>> randomizeUnconnectedOutputsMaxPL;
 	static std::shared_ptr<ParameterLink<int>> hiddenNodesPL;
 	static std::shared_ptr<ParameterLink<std::string>> genomeNamePL;
 
