@@ -77,11 +77,18 @@ public:
     fs << " ->";
 
 		// Next, remembering the initial state for future processing
-		if(nodeStatesTS.size()==0)
+		bool nodeStatesHeapIsEmpty = (nodeStatesHeap.size()==0);
+		if(nodeStatesTS.size()==0) {
+			unsigned counter = 0;
 			for(const auto& s : nodes) {
 				nodeStatesTS.push_back({s>0 ? 1 : 0});
-				nodeStatesHeap.push_back({s>0 ? 1 : 0});
+				if(nodeStatesHeapIsEmpty)
+					nodeStatesHeap.push_back({s>0 ? 1 : 0});
+				else
+					nodeStatesHeap[counter].push_back(s>0 ? 1 : 0);
+				counter++;
 			}
+		}
 	};
 
 	void logStateAfterUpdate(const std::vector<double>& nodes) {
@@ -99,15 +106,17 @@ public:
 	};
 
 	void logBrainReset() {
-
 		fs << "Brain was reset" << std::endl;
+		if( nodeStatesTS.size()>0 && nodeStatesHeap.size()>0 ) {
+			logTSEntropy("Current node state", nodeStatesTS);
+			fs << "Current node state is averaged over a trajectory " << nodeStatesTS[0].size() << " states long" << std::endl;
+			nodeStatesTS.clear();
 
-		logTSEntropy("Current node state", nodeStatesTS);
-		nodeStatesTS.clear();
-
-		logTSEntropy("Cumulative node state", nodeStatesHeap);
-		fs << "Cumulatives are over " << nodeStatesHeap[0].size() << " measured states" << std::endl;
-
+			logTSEntropy("Cumulative node state", nodeStatesHeap);
+			fs << "Cumulatives are over " << nodeStatesHeap[0].size() << " measured states" << std::endl;
+		}
+		else
+			fs << "No states were recorded before the reset, so probabilities/entropies logged" << std::endl;
 	};
 
 	void logTSEntropy(std::string label, const std::vector<std::vector<unsigned>>& ts) {
