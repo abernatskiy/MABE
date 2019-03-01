@@ -11,6 +11,8 @@
 #define ANN_HIDDEN_SIZE 10
 #define ANN_OUTPUT_SIZE 5
 
+#include "commandLogger.h"
+
 typedef std::tuple<unsigned,unsigned,unsigned> CommandType; // location of the spike is determined by three numbers
 
 class SpikesOnCubeMentalImage : public AbstractMentalImage {
@@ -40,6 +42,9 @@ private:
 	bool justReset;
 
 	ArtificialNeuralNetwork helperANN;
+
+	CommandLogger cl;
+	bool visualize;
 
 public:
 	SpikesOnCubeMentalImage(std::shared_ptr<std::string> curAstName, std::shared_ptr<AsteroidsDatasetParser> dsParser);
