@@ -44,7 +44,7 @@ private:
 	ArtificialNeuralNetwork helperANN;
 
 	CommandLogger cl;
-	bool visualize;
+	bool mVisualize;
 	std::vector<std::vector<CommandType>> currentGuesses;
 
 public:

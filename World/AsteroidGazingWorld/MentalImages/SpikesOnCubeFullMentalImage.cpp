@@ -27,10 +27,10 @@ SpikesOnCubeFullMentalImage::SpikesOnCubeFullMentalImage(std::shared_ptr<std::st
 	justReset(true),
 	helperANN({ANN_INPUT_SIZE, ANN_HIDDEN_SIZE, ANN_OUTPUT_SIZE}),
 	cl(Global::outputPrefixPL->get() + "commands.log"),
-	visualize(Global::modePL->get() == "visualize") {
+	mVisualize(Global::modePL->get() == "visualize") {
 
 	readHelperANN();
-	if(visualize)
+	if(mVisualize)
 		cl.open();
 }
 
@@ -47,7 +47,7 @@ void SpikesOnCubeFullMentalImage::resetAfterWorldStateChange(int visualize) { //
 	// originalCommands are taken care of in readOriginalCommands()
 	justReset = true;
 
-	if(visualize) {
+	if(mVisualize) {
 //		cl.logMessage("resetAfterWorldStateChange called");
 		currentGuesses.clear();
 	}
@@ -106,7 +106,7 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(int stateTime, 
 			cumulativeDivergence += evaluateCommand(*it);
 		stateScores.back() += cumulativeDivergence/currentCommands.size();
 
-		if(visualize)
+		if(mVisualize)
 			currentGuesses.push_back(std::vector<CommandType>(currentCommands));
 	}
 
@@ -114,7 +114,7 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(int stateTime, 
 
 		stateScores.back() /= statePeriod;
 
-		if(visualize)
+		if(mVisualize)
 			cl.logMapping(originalCommands, currentGuesses);
 
 //		std::cout << "Evaluation of the current individual was " << stateScores.back() << std::endl << std::endl;
@@ -150,9 +150,12 @@ void SpikesOnCubeFullMentalImage::recordSampleScores(std::shared_ptr<DataMap> sa
 void SpikesOnCubeFullMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) {
 	double gerror = sampleScoresMap->getAverage("guidingFunction");
 	double numCorrectCommands = sampleScoresMap->getAverage("numCorrectCommands");
-	org->dataMap.append("score", 1./(1.+gerror));
+	double score = 1./(1.+gerror);
+	org->dataMap.append("score", score);
 	org->dataMap.append("guidingFunction", gerror);
 	org->dataMap.append("numCorrectCommands", numCorrectCommands);
+
+	if(mVisualize) std::cout << "score " << score << " guiding function " << gerror << " max num correct commands " << numCorrectCommands << std:: endl;
 }
 
 int SpikesOnCubeFullMentalImage::numInputs() {
