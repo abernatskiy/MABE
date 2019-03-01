@@ -27,6 +27,7 @@
   * Simple
   + Islands
   + Lexicase
+	+ AgeFitnessPareto
 
 % Archivist
   * Default
