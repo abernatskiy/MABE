@@ -22,12 +22,16 @@ void printCommandsVector1(std::vector<CommandType> commands) {
 
 SpikesOnCubeFullMentalImage::SpikesOnCubeFullMentalImage(std::shared_ptr<std::string> curAstNamePtr,
 	                                               std::shared_ptr<AsteroidsDatasetParser> dsParserPtr) :
-		currentAsteroidNamePtr(curAstNamePtr),
-		datasetParserPtr(dsParserPtr),
-		justReset(true),
-		helperANN({ANN_INPUT_SIZE, ANN_HIDDEN_SIZE, ANN_OUTPUT_SIZE}) {
+	currentAsteroidNamePtr(curAstNamePtr),
+	datasetParserPtr(dsParserPtr),
+	justReset(true),
+	helperANN({ANN_INPUT_SIZE, ANN_HIDDEN_SIZE, ANN_OUTPUT_SIZE}),
+	cl(Global::outputPrefixPL->get() + "commands.log"),
+	visualize(Global::modePL->get() == "visualize") {
 
 	readHelperANN();
+	if(visualize)
+		cl.open();
 }
 
 void SpikesOnCubeFullMentalImage::reset(int visualize) { // called in the beginning of each evaluation cycle
@@ -42,6 +46,11 @@ void SpikesOnCubeFullMentalImage::resetAfterWorldStateChange(int visualize) { //
 	currentCommands.clear();
 	// originalCommands are taken care of in readOriginalCommands()
 	justReset = true;
+
+	if(visualize) {
+//		cl.logMessage("resetAfterWorldStateChange called");
+		currentGuesses.clear();
+	}
 }
 
 void SpikesOnCubeFullMentalImage::updateWithInputs(std::vector<double> inputs) {
@@ -96,11 +105,18 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(int stateTime, 
 		for(auto it=currentCommands.begin(); it!=currentCommands.end(); it++)
 			cumulativeDivergence += evaluateCommand(*it);
 		stateScores.back() += cumulativeDivergence/currentCommands.size();
+
+		if(visualize)
+			currentGuesses.push_back(std::vector<CommandType>(currentCommands));
 	}
 
 	if(stateTime == statePeriod-1) {
 
 		stateScores.back() /= statePeriod;
+
+		if(visualize)
+			cl.logMapping(originalCommands, currentGuesses);
+
 //		std::cout << "Evaluation of the current individual was " << stateScores.back() << std::endl << std::endl;
 
 /*
