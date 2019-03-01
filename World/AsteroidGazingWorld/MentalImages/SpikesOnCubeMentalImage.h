@@ -44,7 +44,7 @@ private:
 	ArtificialNeuralNetwork helperANN;
 
 	CommandLogger cl;
-	bool visualize;
+	bool mVisualize;
 
 public:
 	SpikesOnCubeMentalImage(std::shared_ptr<std::string> curAstName, std::shared_ptr<AsteroidsDatasetParser> dsParser);

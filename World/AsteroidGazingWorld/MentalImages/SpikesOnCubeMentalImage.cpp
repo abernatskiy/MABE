@@ -27,10 +27,10 @@ SpikesOnCubeMentalImage::SpikesOnCubeMentalImage(std::shared_ptr<std::string> cu
 	justReset(true),
 	helperANN({ANN_INPUT_SIZE, ANN_HIDDEN_SIZE, ANN_OUTPUT_SIZE}),
 	cl(Global::outputPrefixPL->get() + "commands.log"),
-	visualize(Global::modePL->get() == "visualize") {
+	mVisualize(Global::modePL->get() == "visualize") {
 
 	readHelperANN();
-	if(visualize)
+	if(mVisualize)
 		cl.open();
 }
 
@@ -47,7 +47,7 @@ void SpikesOnCubeMentalImage::resetAfterWorldStateChange(int visualize) { // cal
 	// originalCommands are taken care of in readOriginalCommands()
 	justReset = true;
 
-	//if(visualize)
+	//if(mVisualize)
 	//	cl.logMessage("resetAfterWorldStateChange called");
 }
 
@@ -97,7 +97,7 @@ void SpikesOnCubeMentalImage::recordRunningScoresWithinState(int stateTime, int 
 
 		std::vector<CommandType> lastCommands(currentCommands.end()-numOriginalCommands, currentCommands.end());
 
-		if(visualize) cl.logMapping(originalCommands, std::vector<std::vector<CommandType>>({lastCommands}));
+		if(mVisualize) cl.logMapping(originalCommands, std::vector<std::vector<CommandType>>({lastCommands}));
 
 //		std::cout << "Evaluation of the current individual was " << cumulativeDivergence << std::endl << std::endl;
 
@@ -129,9 +129,12 @@ void SpikesOnCubeMentalImage::recordSampleScores(std::shared_ptr<DataMap> sample
 void SpikesOnCubeMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) {
 	double gerror = sampleScoresMap->getAverage("guidingFunction");
 	double numCorrectCommands = sampleScoresMap->getAverage("numCorrectCommands");
-	org->dataMap.append("score", 1./(1.+gerror) );
+	double score = 1./(1.+gerror);
+	org->dataMap.append("score", score );
 	org->dataMap.append("guidingFunction", gerror);
 	org->dataMap.append("numCorrectCommands", numCorrectCommands);
+
+	if(mVisualize) std::cout << "score " << score << " guiding function " << gerror << " number of correct commands " << numCorrectCommands << std::endl;
 }
 
 int SpikesOnCubeMentalImage::numInputs() {
