@@ -4,25 +4,44 @@
 #include "../../Utilities/MTree.h"
 
 #include <iostream>
-#include <sstream>
+#include <numeric>
+#include <algorithm>
+#include <vector>
+#include <memory>
 
 class AgeFitnessParetoOptimizer : public AbstractOptimizer {
 public:
+	static std::shared_ptr<ParameterLink<std::string>> optimizeFormulasPL;
+	static std::shared_ptr<ParameterLink<std::string>> optimizeFormulaNamesPL;
+	static std::shared_ptr<ParameterLink<double>> epsilonPL;
+	static std::shared_ptr<ParameterLink<std::string>> epsilonRelativeToPL;
+	static std::shared_ptr<ParameterLink<int>> poolSizePL;
+	static std::shared_ptr<ParameterLink<std::string>> nextPopSizePL;
+	static std::shared_ptr<ParameterLink<int>> numberParentsPL;
+	static std::shared_ptr<ParameterLink<bool>> recordOptimizeValuesPL;
 
-	static std::shared_ptr<ParameterLink<std::string>> IslandNameSpaceListPL;
-	static std::shared_ptr<ParameterLink<double>> migrationRatePL;
+	std::vector<std::vector<double>> scores;
+	std::vector<std::string> scoreNames;
+	bool scoresHaveDelta = false;
+	double epsilon;
+	bool epsilonRelativeTo;
+	int poolSize;
 
-	std::vector <std::shared_ptr<AbstractOptimizer>> islandOptimizers;
-	size_t islands;
-	double migrationRate;
-	std::vector<std::string> allKeys;
-	std::vector<std::vector<std::string>> fillerKeys;
-	std::map<std::string,int> fillerLookup; // if int = 0 (int,double,bool), write 0, else  (string) write "---"
+	std::shared_ptr<Abstract_MTree> nextPopSizeFormula;
+	std::vector<std::shared_ptr<Organism>> newPopulation;
+	std::vector<std::shared_ptr<Organism>> oldPopulation;
 
-	std::shared_ptr<Abstract_MTree> nextPopSizeMT;
+	int numberParents;
+
+	bool recordOptimizeValues;
+
+	std::vector<std::shared_ptr<Abstract_MTree>> optimizeFormulasMTs;
 
 	AgeFitnessParetoOptimizer(std::shared_ptr<ParametersTable> PT_ = nullptr);
 
 	virtual void optimize(std::vector<std::shared_ptr<Organism>> &population) override;
-};
 
+	virtual void cleanup(std::vector<std::shared_ptr<Organism>> &population) override;
+
+	int lexiSelect(const std::vector<int> &tournamentIndexList);
+};
