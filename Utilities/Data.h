@@ -532,8 +532,11 @@ public:
     }
   }
 
+	// Access operators of the first kind return vectors that hold the values
+	// They can be used for solo keys, in which case the returned vector should have
+	// a length of 1
   inline std::vector<bool> getBoolVector(
-      const std::string &key) { // retrieve a double from a dataMap with "key"
+      const std::string &key) { // retrieve a Boolean vector from a dataMap with "key"
     dataMapType typeOfKey = findKeyInData(key);
     if (typeOfKey == BOOL || typeOfKey == BOOLSOLO) {
       return boolData[key];
@@ -548,7 +551,7 @@ public:
     }
   }
   inline std::vector<double> getDoubleVector(
-      const std::string &key) { // retrieve a double from a dataMap with "key"
+      const std::string &key) { // retrieve a vector of doubles from a dataMap with "key"
     dataMapType typeOfKey = findKeyInData(key);
     if (typeOfKey == DOUBLE || typeOfKey == DOUBLESOLO) {
       return doubleData[key];
@@ -563,7 +566,7 @@ public:
     }
   }
   inline std::vector<int> getIntVector(
-      const std::string &key) { // retrieve a double from a dataMap with "key"
+      const std::string &key) { // retrieve a vector of ints from a dataMap with "key"
     dataMapType typeOfKey = findKeyInData(key);
     if (typeOfKey == INT || typeOfKey == INTSOLO) {
       return intData[key];
@@ -578,7 +581,7 @@ public:
     }
   }
   inline std::vector<std::string> getStringVector(
-      const std::string &key) { // retrieve a double from a dataMap with "key"
+      const std::string &key) { // retrieve a vector of strings from a dataMap with "key"
     dataMapType typeOfKey = findKeyInData(key);
     if (typeOfKey == STRING || typeOfKey == STRINGSOLO) {
       return stringData[key];
@@ -593,6 +596,57 @@ public:
     }
   }
 
+	// Access operators of the second kind return values and can only be used with solo keys.
+	inline bool getBool(const std::string& key) { // retrieve a bool from a dataMap with "key"
+		dataMapType typeOfKey = findKeyInData(key);
+		if (typeOfKey == BOOLSOLO)
+			return boolData[key][0];
+		else {
+			std::cout << "  in DataMap::getBool :: attempt to use getBool with key \""
+			          << key << "\" but this key is associated with type " << typeOfKey
+			          << "\n  exiting." << std::endl;
+			std::cout << "  (if type is NONE, then the key was not found in dataMap)" << std::endl;
+			exit(1);
+		}
+	}
+	inline double getDouble(const std::string& key) { // retrieve a double from a dataMap with "key"
+		dataMapType typeOfKey = findKeyInData(key);
+		if (typeOfKey == DOUBLESOLO)
+			return doubleData[key][0];
+		else {
+			std::cout << "  in DataMap::getDouble :: attempt to use getDouble with key \""
+			          << key << "\" but this key is associated with type " << typeOfKey
+			          << "\n  exiting." << std::endl;
+			std::cout << "  (if type is NONE, then the key was not found in dataMap)" << std::endl;
+			exit(1);
+		}
+	}
+	inline int getInt(const std::string& key) { // retrieve an int from a dataMap with "key"
+		dataMapType typeOfKey = findKeyInData(key);
+		if (typeOfKey == INTSOLO)
+			return intData[key][0];
+		else {
+			std::cout << "  in DataMap::getInt :: attempt to use getInt with key \""
+			          << key << "\" but this key is associated with type " << typeOfKey
+			          << "\n  exiting." << std::endl;
+			std::cout << "  (if type is NONE, then the key was not found in dataMap)" << std::endl;
+			exit(1);
+		}
+	}
+	inline std::string getString(const std::string& key) { // retrieve a string from a dataMap with "key"
+		dataMapType typeOfKey = findKeyInData(key);
+		if (typeOfKey == STRINGSOLO)
+			return stringData[key][0];
+		else {
+			std::cout << "  in DataMap::getString :: attempt to use getString with key \""
+			          << key << "\" but this key is associated with type " << typeOfKey
+			          << "\n  exiting." << std::endl;
+			std::cout << "  (if type is NONE, then the key was not found in dataMap)" << std::endl;
+			exit(1);
+		}
+	}
+
+	// Not sure what this is. Probably some kind of access bundled with string conversion. - AB
   inline std::string getStringOfVector(const std::string &key) { // retrieve a string from
                                                        // a dataMap with "key" -
                                                        // if not already string,
