@@ -1,116 +1,186 @@
 #include "AgeFitnessParetoOptimizer.h"
 
-#include <iostream>
-#include <numeric>
-#include <algorithm>
-#include <vector>
-#include <memory>
-
 std::shared_ptr<ParameterLink<std::string>> AgeFitnessParetoOptimizer::optimizeFormulasPL =
-    Parameters::register_parameter("OPTIMIZER_LEXICASE-optimizeFormulas",
-	(std::string) "DM_AVE[score]",
-    "values to optimize with lexicase selection (list of MTrees)\n"
-	"example for BerryWorld: [DM_AVE[food1],DM_AVE[food2],(0-DM_AVE[switches])]");
+    Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-optimizeFormulas",
+	(std::string) "(0-DM_AVE[score])",
+    "values to minimize (!) with the optimizer, excluding age (list of MTrees)\n"
+	"example for BerryWorld: [(0-DM_AVE[food1]),(0-DM_AVE[food2]),DM_AVE[switches]]");
 
 std::shared_ptr<ParameterLink<std::string>> AgeFitnessParetoOptimizer::optimizeFormulaNamesPL =
-Parameters::register_parameter("OPTIMIZER_LEXICASE-optimizeFormulaNames",
+Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-optimizeFormulaNames",
 	(std::string) "default",
 	"column names to associate with optimize formulas in data files."
-	"\n'default' will auto generate names as optimizeValue_1, optimizeValue_2, ...");
+	"\n'default' will auto generate names as minimizeValue_<formula1>, minimizeValue_<formula2>, ...");
 
-std::shared_ptr<ParameterLink<std::string>> AgeFitnessParetoOptimizer::nextPopSizePL =
-Parameters::register_parameter("OPTIMIZER_LEXICASE-nextPopSize", (std::string) "-1",
-	"size of population after optimization(MTree). -1 indicates use current population size");
+/***** Auxiliary functions *****/
 
-std::shared_ptr<ParameterLink<int>> AgeFitnessParetoOptimizer::numberParentsPL =
-Parameters::register_parameter("OPTIMIZER_LEXICASE-numberParents", 1,
-	"number of parents used to produce offspring");
+bool firstOrganismIsDominatedBySecond(std::shared_ptr<Organism> first, std::shared_ptr<Organism> second, const std::vector<std::string>& minimizeableAttributes) {
+	const bool breakTiesByID = true;
 
-std::shared_ptr<ParameterLink<double>> AgeFitnessParetoOptimizer::epsilonPL =
-Parameters::register_parameter("OPTIMIZER_LEXICASE-epsilon", .1,
-	"cutoff when conducting per formula selection.\n"
-	"e.g. 0.1 = organisms in the top 90% are kept. use 0.0 for classic Lexicase.");
-std::shared_ptr<ParameterLink<std::string>> AgeFitnessParetoOptimizer::epsilonRelativeToPL =
-Parameters::register_parameter("OPTIMIZER_LEXICASE-epsilonRelativeTo", (std::string)"rank",
-	"determines how epsilon is calculated [rank,score]"
-	"\nif rank, epsilon will be relative to organism ranks"
-	"\n  i.e. keep (best current keepers count * epsilon) organisms"
-	"\nif score epsilon will be relative to min and max score"
-	"\n  i.e. keep orgs with score >= maxScore - ( (maxScore-minScore) * epsilon )"
-);
+	bool isAnyBetterThan = false;
+	for(const auto& attrname : minimizeableAttributes) {
+		if(first->dataMap.getDouble(attrname) < second->dataMap.getDouble(attrname)) {
+			isAnyBetterThan = true;
+			break;
+		}
+	}
 
-std::shared_ptr<ParameterLink<int>> AgeFitnessParetoOptimizer::poolSizePL = 
-Parameters::register_parameter("OPTIMIZER_LEXICASE-poolSize", -1,
-	"number of organisms used when selecting parent(s) in the lexicase algorithm, -1 indicates to use entire population");
+	if(isAnyBetterThan)
+		return false;
+	else {
+		bool isAllEquivalentTo = true;
+		for(const auto& attrname : minimizeableAttributes) {
+			if(first->dataMap.getDouble(attrname) != second->dataMap.getDouble(attrname)) {
+				isAllEquivalentTo = false;
+				break;
+			}
+		}
 
-std::shared_ptr<ParameterLink<bool>> AgeFitnessParetoOptimizer::recordOptimizeValuesPL = 
-Parameters::register_parameter("OPTIMIZER_LEXICASE-recordOptimizeValues", true,
-	"record optimize values to data files using optimizeFormulaNames");
+		if(isAllEquivalentTo)
+			if(breakTiesByID)
+				return first->ID < second->ID;
+			else
+				return false;
+		else
+			return true;
+	}
+}
 
+/***** AgeFitnessParetoOptimizer class definitions *****/
 
 AgeFitnessParetoOptimizer::AgeFitnessParetoOptimizer(std::shared_ptr<ParametersTable> PT_)
-    : AbstractOptimizer(PT_) {
-
+    : AbstractOptimizer(PT_), firstGenIsNow(true) {
+	// MTree formulas support inherited with minimal modifications from LexicaseOptimizer
 	std::vector<std::string> optimizeFormulasStrings;
 	convertCSVListToVector(optimizeFormulasPL->get(PT), optimizeFormulasStrings);
-
-	for (auto s : optimizeFormulasStrings) {
+	for (auto s : optimizeFormulasStrings)
 		optimizeFormulasMTs.push_back(stringToMTree(s));
-	}
 
 	// get names to use with scores
 	if (optimizeFormulaNamesPL->get(PT) == "default") {
 		// user has not defined names, auto generate names
-		for (size_t fIndex = 0; fIndex < optimizeFormulasMTs.size(); fIndex++) {
-			scoreNames.push_back("optimizeValue_" + std::to_string(fIndex));
-		}
+		for(auto ofs : optimizeFormulasStrings)
+			scoreNames.push_back("minimizeValue_" + ofs);
 	}
 	else {
 		// user has defined names, use those
 		convertCSVListToVector(optimizeFormulaNamesPL->get(PT), scoreNames);
 	}
-
-
-	epsilon = epsilonPL->get(PT);
-	if (epsilonRelativeToPL->get(PT) == "score") {
-		epsilonRelativeTo = true;
-	}
-	else if (epsilonRelativeToPL->get(PT) == "rank") {
-		epsilonRelativeTo = false;
-	}
-	else {
-		std::cout << "  while setting up AgeFitnessParetoOptimizer, found epsilonRelativeTo value \"" <<
-			epsilonRelativeToPL->get(PT) << "\" but this value must be either \"score\" or \"rank\"."
-			"\n  exiting.";
-		exit(1);
-	}
-	poolSize = poolSizePL->get(PT);
-	nextPopSizeFormula = stringToMTree(nextPopSizePL->get(PT));
-	numberParents = numberParentsPL->get(PT);
-	recordOptimizeValues = recordOptimizeValuesPL->get(PT);
-	
-	// leave this undefined so that max.csv is not generated
-	//optimizeFormula = optimizeValueMT;
+	scoreNames.push_back("minimizeValue_age");
 
 	popFileColumns.clear();
-	if (recordOptimizeValues){
-		for (auto &name : scoreNames) {
-			popFileColumns.push_back(name);
-		}
-	}
+	for (auto &name : scoreNames)
+		popFileColumns.push_back(name);
 }
 
-// return n nonrepeating elements for [0..m)
-auto m_choose_n = [](auto const m, auto const n) {
-	std::vector<int> v(m);
-	std::iota(std::begin(v), std::end(v), 0);
-	std::shuffle(std::begin(v), std::end(v), Random::getCommonGenerator());
-	std::vector<int> r;
-	std::copy_n(std::begin(v), n, std::back_inserter(r));
-	return r;
-};
+void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>& population) {
+
+	// Assigning age to all initial organisms
+	if(firstGenIsNow) {
+		if(population.size()==0) {
+			std::cerr << "Age-fitness Pareto optimizer does not support initially empty populations, and it was applied to one" << std::endl << std::flush;
+			exit(EXIT_FAILURE);
+		}
+		templateOrganism = population[0];
+
+		for(unsigned i=0; i<population.size(); i++)
+			population[i]->dataMap.set("minimizeValue_age", 0.);
+		firstGenIsNow = false;
+	}
+
+	// Computing the values of all objectives and writing them into the organisms' data maps
+	for(unsigned i=0; i<population.size(); i++) {
+		for(unsigned p=0; p<optimizeFormulasMTs.size(); p++) {
+			double mtreeeval = optimizeFormulasMTs[p]->eval(population[i]->dataMap, PT)[0];
+			population[i]->dataMap.set(scoreNames[p], mtreeeval);
+		}
+	}
+
+	// Finding and isolating the Pareto front
+	paretoOrder.resize(population.size());
+	std::fill(paretoOrder.begin(), paretoOrder.end(), 1);
+	for(unsigned i=0; i<population.size(); i++) {
+		for(auto other : population) {
+			if(firstOrganismIsDominatedBySecond(population[i], other, scoreNames)) {
+				paretoOrder[i] = 0;
+				break;
+			}
+		}
+	}
+
+	paretoFront.clear();
+	for(unsigned i=0; i<population.size(); i++)
+		if(paretoOrder[i] != 0)
+			paretoFront.push_back(population[i]);
+
+	// Building a new population in four steps
+	//newPopulation.clear();
+	// Step 1: copying the Pareto front to it - all of it is the elite
+	newPopulation.insert(newPopulation.end(), paretoFront.begin(), paretoFront.end());
+
+	// Step 2: adding the offspring of the Pareto front organisms to the population
+	// until it reaches the projected size of the population minus one
+	while(newPopulation.size() != population.size()-1) {
+		std::shared_ptr<Organism> parent = paretoFront[Random::getIndex(paretoFront.size())];
+		std::shared_ptr<Organism> child = parent->makeMutatedOffspringFrom(parent);
+		child->dataMap.set("minimizeValue_age", parent->dataMap.getDouble("minimizeValue_age")); // it is very important to know how farback your ancestry goes
+		newPopulation.push_back(child);
+	}
 
 
+	// Printing a summary of the incoming population
+	std::cout << std::endl << "Incoming population:" << std::endl;
+
+	for(unsigned i=0; i<population.size(); i++) {
+		std::cout << "id" << population[i]->ID << " ";
+		for(auto objname : scoreNames) {
+			std::cout << objname << population[i]->dataMap.getDouble(objname) << " ";
+		}
+		std::cout << "ParetoOrder" << paretoOrder[i];
+		std::cout << std::endl;
+	}
+
+	std::cout << "Pareto front:" << std::endl;
+	for(auto org : paretoFront) {
+		std::cout << "id" << org->ID << " ";
+		for(auto objname : scoreNames) {
+			std::cout << objname << org->dataMap.getDouble(objname) << " ";
+		}
+		std::cout << std::endl;
+	}
+
+	// Step 3: incrementing age of everyone involved
+	for(auto newOrgPtr : newPopulation)
+		newOrgPtr->dataMap.set("minimizeValue_age", newOrgPtr->dataMap.getDouble("minimizeValue_age")+1.);
+	// Step 4: adding an new bloodline with age of zero
+	auto newOrg = makeNewOrganism();
+	newOrg->dataMap.set("minimizeValue_age", 0.);
+	newPopulation.push_back(newOrg);
+
+
+	// some kind of useful output goes here
+	// for (size_t fIndex = 0; fIndex < optimizeFormulasMTs.size(); fIndex++) {
+	//  std::cout << std::endl
+	//              << "   " << scoreNames[fIndex]
+	//              << ":  max = " << std::to_string(maxScores[fIndex])
+	//              << "   ave = " << std::to_string(aveScores[fIndex]) << std::flush;
+	//  }
+}
+
+void AgeFitnessParetoOptimizer::cleanup(std::vector<std::shared_ptr<Organism>>& population) {
+//	for(unsigned i=0; i<paretoOrder.size(); i++)
+//		if(paretoOrder[i]==0)
+//			population[i]->kill();
+	population.swap(newPopulation);
+	newPopulation.clear();
+}
+
+std::shared_ptr<Organism> AgeFitnessParetoOptimizer::makeNewOrganism() {
+	std::shared_ptr<Organism> newbie = templateOrganism->makeCopy(); // randomize
+	return newbie;
+}
+
+/*
 int AgeFitnessParetoOptimizer::lexiSelect(const std::vector<int> &orgIndexList) {
 	if (!scoresHaveDelta) { // if all scores are the same! pick random
 		return Random::getIndex(orgIndexList.size());
@@ -166,91 +236,4 @@ int AgeFitnessParetoOptimizer::lexiSelect(const std::vector<int> &orgIndexList) 
 	// if there is only one keeper left, return that, otherwise select randomly from keepers.
 	return keepers[pickHere];
 }
-
-
-void AgeFitnessParetoOptimizer::optimize(
-    std::vector<std::shared_ptr<Organism>> &population) {
-
-  std::vector<double> aveScores;
-  aveScores.reserve(optimizeFormulasMTs.size());
-  std::vector<double> maxScores;
-  maxScores.reserve(optimizeFormulasMTs.size());
-  std::vector<double> minScores;
-  minScores.reserve(optimizeFormulasMTs.size());
-
-  scoresHaveDelta = false;
-
-  scores.clear();
-  for (auto &opt_formula : optimizeFormulasMTs) {
-
-    std::vector<double> pop_scores;
-    pop_scores.reserve(population.size());
-
-    for (auto &org : population)
-      pop_scores.push_back(opt_formula->eval(org->dataMap, PT)[0]);
-
-    scores.push_back(pop_scores);
-
-    aveScores.push_back(
-        std::accumulate(std::begin(pop_scores), std::end(pop_scores), 0.0) /
-        population.size());
-
-    auto const minmax =
-        std::minmax_element(std::begin(pop_scores), std::end(pop_scores));
-
-    scoresHaveDelta |= *minmax.first < *minmax.second;
-
-    minScores.push_back(*minmax.first);
-    maxScores.push_back(*minmax.second);
-  }
-
-  if (recordOptimizeValues)
-    for (size_t i = 0; i < population.size(); i++)
-      for (size_t fIndex = 0; fIndex < optimizeFormulasMTs.size(); fIndex++)
-        population[i]->dataMap.set(scoreNames[fIndex], scores[fIndex][i]);
-
-  poolSize = poolSize == -1 ? population.size() : poolSize;
-
-
-  size_t nextPopulationTargetSize = nextPopSizeFormula->eval(PT)[0];
-  nextPopulationTargetSize = nextPopulationTargetSize == -1
-                                 ? population.size()
-                                 : nextPopulationTargetSize;
-
-  // generate new organisms
-  // do not add to population until all have been
-  // selected
-  newPopulation.clear();
-  newPopulation.reserve(nextPopulationTargetSize);
-
-  // generate a list of 'nextPopulationTargetSize' new orgs into 'newPopulation'
-  // for each, generate a 'parents' vector with 'numberParents' parent orgs
-  // parents are selected with lexiSelect( m_choose_n(population.size(), poolSize))
-  //   where the m_choose_n command selects 'poolSize' number of population indexes
-  std::generate_n(
-      std::back_inserter(newPopulation), nextPopulationTargetSize, [&] {
-        std::vector<std::shared_ptr<Organism>> parents;
-        std::generate_n(std::back_inserter(parents), numberParents, [&] {
-          return population[lexiSelect(m_choose_n(population.size(), poolSize))];
-        });
-        return parents[0]->makeMutatedOffspringFromMany(parents);
-      });
-
-  oldPopulation = population;
-  population.insert(population.end(), newPopulation.begin(), newPopulation.end());
-  for (size_t fIndex = 0; fIndex < optimizeFormulasMTs.size(); fIndex++) {
-    std::cout << std::endl
-              << "   " << scoreNames[fIndex]
-              << ":  max = " << std::to_string(maxScores[fIndex])
-              << "   ave = " << std::to_string(aveScores[fIndex]) << std::flush;
-  }
-}
-
-void AgeFitnessParetoOptimizer::cleanup(std::vector<std::shared_ptr<Organism>> &population) {
-	for (auto org : oldPopulation) {
-		org->kill();
-	}
-	population.swap(newPopulation);
-	newPopulation.clear();
-}
-
+*/
