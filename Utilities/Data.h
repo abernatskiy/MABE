@@ -83,6 +83,69 @@ private:
       inUse; // holds list of keys with type 1=bool, 2=double, 3=int, 4=string
 
 public:
+	std::string getTextualRepresentation(char separator = '\n') const {
+		std::ostringstream s;
+
+//		s << "field types:";
+//		for(const auto& ftr : inUse) // ftr = field type record
+//			s << " " << ftr.first << "-" << ftr.second;
+//		s << separator;
+
+		if(boolData.empty())
+			s << "no bool data";
+		else {
+			s << "bool data:";
+			for(const auto& bdr : boolData) {
+				s << " " << bdr.first << "-[";
+				for(const auto& bv : bdr.second)
+					s << bv << ",";
+				s << "]";
+			}
+		}
+		s << separator;
+
+		if(doubleData.empty())
+			s << "no double data";
+		else {
+			s << "double data:";
+			for(const auto& ddr : doubleData) {
+				s << " " << ddr.first << "-[";
+				for(const auto& dv : ddr.second)
+					s << dv << ",";
+				s << "]";
+			}
+		}
+		s << separator;
+
+		if(intData.empty())
+			s << "no int data";
+		else {
+			s << "int data:";
+			for(const auto& idr : intData) {
+				s << " " << idr.first << "-[";
+				for(const auto& iv : idr.second)
+					s << iv << ",";
+				s << "]";
+			}
+		}
+		s << separator;
+
+		if(stringData.empty())
+			s << "no string data";
+		else {
+			s << "string data:";
+			for(const auto& sdr : stringData) {
+				s << " " << sdr.first << "-[";
+				for(const auto& sv : sdr.second)
+					s << sv << ",";
+				s << "]";
+			}
+		}
+		s << separator;
+
+		return s.str();
+	};
+
   DataMap() = default;
 
   // copy constructor
