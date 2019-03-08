@@ -19,13 +19,13 @@ public:
 	std::vector<std::shared_ptr<Organism>> paretoFront;
 
 	std::vector<std::shared_ptr<Abstract_MTree>> optimizeFormulasMTs;
-	bool firstGenIsNow;
-	std::shared_ptr<Organism> templateOrganism;
 
 	AgeFitnessParetoOptimizer(std::shared_ptr<ParametersTable> PT_);
 	void optimize(std::vector<std::shared_ptr<Organism>> &population) override;
 	void cleanup(std::vector<std::shared_ptr<Organism>> &population) override; // that's mafioso
 
 private:
+	bool firstGenIsNow;
+	std::shared_ptr<Organism> templateOrganism;
 	std::shared_ptr<Organism> makeNewOrganism();
 };

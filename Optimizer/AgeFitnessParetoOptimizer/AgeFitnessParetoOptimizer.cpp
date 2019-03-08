@@ -1,9 +1,11 @@
+#include <limits>
+
 #include "AgeFitnessParetoOptimizer.h"
 
 std::shared_ptr<ParameterLink<std::string>> AgeFitnessParetoOptimizer::optimizeFormulasPL =
-    Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-optimizeFormulas",
+  Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-optimizeFormulas",
 	(std::string) "(0-DM_AVE[score])",
-    "values to minimize (!) with the optimizer, excluding age (list of MTrees)\n"
+  "values to minimize (!) with the optimizer, excluding age (list of MTrees)\n"
 	"example for BerryWorld: [(0-DM_AVE[food1]),(0-DM_AVE[food2]),DM_AVE[switches]]");
 
 std::shared_ptr<ParameterLink<std::string>> AgeFitnessParetoOptimizer::optimizeFormulaNamesPL =
@@ -81,7 +83,7 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 			std::cerr << "Age-fitness Pareto optimizer does not support initially empty populations, and it was applied to one" << std::endl << std::flush;
 			exit(EXIT_FAILURE);
 		}
-		templateOrganism = population[0];
+		templateOrganism = population[0]->makeCopy(population[0]->PT);
 
 		for(unsigned i=0; i<population.size(); i++)
 			population[i]->dataMap.set("minimizeValue_age", 0.);
@@ -114,7 +116,6 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 			paretoFront.push_back(population[i]);
 
 	// Building a new population in four steps
-	//newPopulation.clear();
 	// Step 1: copying the Pareto front to it - all of it is the elite
 	newPopulation.insert(newPopulation.end(), paretoFront.begin(), paretoFront.end());
 
@@ -127,8 +128,44 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 		newPopulation.push_back(child);
 	}
 
+	// Intermission: printing a summary of the incoming population
+	// Done here to have additional data such as Pareto order etc
 
-	// Printing a summary of the incoming population
+	// Compact messages : a line per generation
+	std::map<std::string,double> minValues;
+	std::map<std::string,int> minValueCarriers;
+	for(auto it=scoreNames.begin(); it!=scoreNames.end()-1; it++) { // exclude "minimizeValue_age"
+		minValues[*it] = std::numeric_limits<double>::max();
+		minValueCarriers[*it] = -1;
+	}
+	double maxAge = 0;
+	int oldestOrganism = -1;
+	for(const auto& champ : paretoFront) {
+		for(const auto& sn : scoreNames) {
+			if(sn == "minimizeValue_age") {
+				if(champ->dataMap.getDouble(sn) >= maxAge) {
+					maxAge = champ->dataMap.getDouble(sn);
+					oldestOrganism = champ->ID;
+				}
+			}
+			else {
+				if(champ->dataMap.getDouble(sn) <= minValues[sn]) {
+					minValues[sn] = champ->dataMap.getDouble(sn);
+					minValueCarriers[sn] = champ->ID;
+				}
+			}
+		}
+	}
+
+	std::cout << "pareto_size=" << paretoFront.size();
+	std::cout << " max_age=" << maxAge << "/" << oldestOrganism;
+	for(const auto& mvtuple : minValues)
+		std::cout << " " << mvtuple.first << "=" << mvtuple.second << "/" << minValueCarriers[mvtuple.first];
+	std::cout << std::flush;
+
+/*
+	// Detailed messages : full population & Pareto front snapshot
+
 	std::cout << std::endl << "Incoming population:" << std::endl;
 
 	for(unsigned i=0; i<population.size(); i++) {
@@ -137,6 +174,12 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 			std::cout << objname << population[i]->dataMap.getDouble(objname) << " ";
 		}
 		std::cout << "ParetoOrder" << paretoOrder[i];
+		std::cout << " genomeSizes";
+		for(auto gentuple : population[i]->genomes)
+			std::cout << " " << gentuple.second->countSites();
+
+		std::cout << " ++++ " << population[i]->dataMap.getTextualRepresentation(' ');
+
 		std::cout << std::endl;
 	}
 
@@ -148,6 +191,7 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 		}
 		std::cout << std::endl;
 	}
+*/
 
 	// Step 3: incrementing age of everyone involved
 	for(auto newOrgPtr : newPopulation)
@@ -157,83 +201,29 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 	newOrg->dataMap.set("minimizeValue_age", 0.);
 	newPopulation.push_back(newOrg);
 
-
-	// some kind of useful output goes here
-	// for (size_t fIndex = 0; fIndex < optimizeFormulasMTs.size(); fIndex++) {
-	//  std::cout << std::endl
-	//              << "   " << scoreNames[fIndex]
-	//              << ":  max = " << std::to_string(maxScores[fIndex])
-	//              << "   ave = " << std::to_string(aveScores[fIndex]) << std::flush;
-	//  }
 }
 
 void AgeFitnessParetoOptimizer::cleanup(std::vector<std::shared_ptr<Organism>>& population) {
-//	for(unsigned i=0; i<paretoOrder.size(); i++)
-//		if(paretoOrder[i]==0)
-//			population[i]->kill();
+	for(unsigned i=0; i<paretoOrder.size(); i++)
+		if(paretoOrder[i]==0)
+			population[i]->kill();
 	population.swap(newPopulation);
 	newPopulation.clear();
 }
 
 std::shared_ptr<Organism> AgeFitnessParetoOptimizer::makeNewOrganism() {
-	std::shared_ptr<Organism> newbie = templateOrganism->makeCopy(); // randomize
-	return newbie;
-}
-
-/*
-int AgeFitnessParetoOptimizer::lexiSelect(const std::vector<int> &orgIndexList) {
-	if (!scoresHaveDelta) { // if all scores are the same! pick random
-		return Random::getIndex(orgIndexList.size());
+	std::unordered_map<std::string,std::shared_ptr<AbstractGenome>> genomes;
+	for(const auto& gentuple : templateOrganism->genomes) {
+		genomes[gentuple.first] = gentuple.second->makeCopy(gentuple.second->PT);
+		genomes[gentuple.first]->fillRandom();
 	}
 
-	// generate a vector with formulasSize and fill with values from 0 to formulasSize - 1, in a random order.
-	std::vector<int> formulasOrder(optimizeFormulasMTs.size());
-	iota(formulasOrder.begin(), formulasOrder.end(), 0);
-	std::shuffle(formulasOrder.begin(), formulasOrder.end(), Random::getCommonGenerator());
-	// now we have a random order in formulasOrder
+	for(const auto& braintuple : templateOrganism->brains)
+		braintuple.second->initializeGenomes(genomes);
 
-	// keepers is the current list of indexes into population for orgs which
-	// have passed all tests so far.
-	std::vector<int> keepers  = orgIndexList;
+	std::unordered_map<std::string,std::shared_ptr<AbstractBrain>> brains;
+	for(const auto& braintuple : templateOrganism->brains)
+		brains[braintuple.first] = braintuple.second->makeBrain(genomes);
 
-	while (keepers.size() > 1 && formulasOrder.size() > 0) {
-		// while there are still atleast one keeper and there are still formulas
-		int formulaIndex = formulasOrder.back();
-		formulasOrder.pop_back();
-
-		double scoreCutoff;
-
-		if (epsilonRelativeTo) { // get scoreCutoff relitive to score
-			auto scoreRange = std::minmax_element(std::begin(scores[formulaIndex]), std::end(scores[formulaIndex]));
-			scoreCutoff = (*scoreRange.second - ((*scoreRange.second - *scoreRange.first) * epsilon));
-		}
-		else { // get scoreCutoff relitive to rank
-			// create a vector of remaning scores
-			std::vector<double> keeperScores;
-			for (size_t i = 0; i < keepers.size(); i++) {
-				keeperScores.push_back(scores[formulaIndex][keepers[i]]);
-			}
-			// based on the number of keepers, calculate how many to keep.
-			size_t cull_index = std::ceil(std::max((((1.0 - epsilon) * keeperScores.size()) - 1.0), 0.0));
-
-			// get score at the cull index position
-			std::nth_element(std::begin(keeperScores),
-				std::begin(keeperScores) + cull_index,
-				std::end(keeperScores));
-			scoreCutoff = keeperScores[cull_index];
-
-			//std::cout << "cull_index: " << cull_index << "  keeperScores.size(): " << keeperScores.size() << std::endl;
-			//std::cout << "scoreCutoff: " << scoreCutoff << std::endl;
-		}
-
-		// for each keeper, see if there are still a keeper, i.e. they have score >= scoreCutoff. remove if not
-		keepers.erase(std::remove_if(std::begin(keepers), std::end(keepers), [&](auto k) {
-			return scores[formulaIndex][k] < scoreCutoff;
-		}), std::end(keepers));
-	}
-	int pickHere = Random::getIndex(keepers.size()); 
-	//std::cout << "    keeping: " << tournamentPopulation[keepers[pickHere]]->ID << std::endl;
-	// if there is only one keeper left, return that, otherwise select randomly from keepers.
-	return keepers[pickHere];
+	return std::make_shared<Organism>(genomes, brains, templateOrganism->PT);
 }
-*/
