@@ -14,6 +14,12 @@ Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-optimizeFormulaNames"
 	"column names to associate with optimize formulas in data files."
 	"\n'default' will auto generate names as minimizeValue_<formula1>, minimizeValue_<formula2>, ...");
 
+std::shared_ptr<ParameterLink<std::string>> AgeFitnessParetoOptimizer::maxFileFormulaPL =
+Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-maxFileFormula",
+	(std::string) "DM_AVE[score]",
+	"an MTree that is used to decide which individual is described in the generation's line of max.csv."
+	"\nUnlike the formulas provided in optimizeFormulas, this one is maximized, owning to the name of the max.csv file");
+
 /***** Auxiliary functions *****/
 
 bool firstOrganismIsDominatedBySecond(std::shared_ptr<Organism> first, std::shared_ptr<Organism> second, const std::vector<std::string>& minimizeableAttributes) {
@@ -73,6 +79,8 @@ AgeFitnessParetoOptimizer::AgeFitnessParetoOptimizer(std::shared_ptr<ParametersT
 	popFileColumns.clear();
 	for (auto &name : scoreNames)
 		popFileColumns.push_back(name);
+
+	optimizeFormula = stringToMTree(maxFileFormulaPL->get(PT));
 }
 
 void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>& population) {

@@ -10,6 +10,7 @@ class AgeFitnessParetoOptimizer : public AbstractOptimizer {
 public:
 	static std::shared_ptr<ParameterLink<std::string>> optimizeFormulasPL;
 	static std::shared_ptr<ParameterLink<std::string>> optimizeFormulaNamesPL;
+	static std::shared_ptr<ParameterLink<std::string>> maxFileFormulaPL;
 
 	std::vector<std::vector<double>> scores;
 	std::vector<std::string> scoreNames;
