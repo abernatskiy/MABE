@@ -122,8 +122,22 @@ void SpikesOnCubeMentalImage::recordRunningScoresWithinState(int stateTime, int 
 void SpikesOnCubeMentalImage::recordRunningScores(std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {}
 
 void SpikesOnCubeMentalImage::recordSampleScores(std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {
-	sampleScoresMap->append("guidingFunction", static_cast<double>(std::accumulate(stateScores.begin(), stateScores.end(), 0.)));
-	sampleScoresMap->append("numCorrectCommands", static_cast<double>(std::accumulate(correctCommandsStateScores.begin(), correctCommandsStateScores.end(), 0)));
+	unsigned astsAttempted = 0;
+	const unsigned astsTotal = stateScores.size();
+	double tail = -9001;
+	for(auto stsc : stateScores) {
+		astsAttempted++;
+		if(stsc!=0) {
+			tail = stsc;
+			break;
+		}
+	}
+	double astSetGuidingFunction = (maxCommandDivergence()*(astsTotal-astsAttempted) + tail) / (maxCommandDivergence()*astsTotal);
+
+//	std::cout << "Attempted " << astsAttempted << " asteroids out of " << astsTotal << ", last one had a guiding function of " << tail << ": set guiding function is " << astSetGuidingFunction << std::endl;
+
+	sampleScoresMap->append("guidingFunction", astSetGuidingFunction);
+	sampleScoresMap->append("numCorrectCommands", static_cast<double>(astsAttempted-1));
 }
 
 void SpikesOnCubeMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) {
@@ -218,6 +232,14 @@ double SpikesOnCubeMentalImage::commandDivergence(const CommandType& lhs, const 
 	return static_cast<double>( (f0>f1 ? f0-f1 : f1-f0) +
 	                            (i0>i1 ? i0-i1 : i1-i0) +
 	                            (j0>j1 ? j0-j1 : j1-j0) );
+}
+
+double SpikesOnCubeMentalImage::maxCommandDivergence() {
+
+	// TODO: figure out what to do here for ANN-based guiding functions
+
+	// For manually designed guiding funciton: Hamming distance
+	return 3*(5+2*q);
 }
 
 double SpikesOnCubeMentalImage::evaluateCommand(const CommandType& command) {

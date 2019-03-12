@@ -69,5 +69,6 @@ private:
 	inline std::vector<double> encodeStatement(const CommandType& st);
 
 	double commandDivergence(const CommandType& from, const CommandType& to);
+	double maxCommandDivergence();
 	double evaluateCommand(const CommandType& c);
 };
