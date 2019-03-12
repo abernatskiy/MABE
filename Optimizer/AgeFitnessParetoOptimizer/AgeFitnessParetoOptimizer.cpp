@@ -93,8 +93,10 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 		}
 		templateOrganism = population[0]->makeCopy(population[0]->PT);
 
-		for(unsigned i=0; i<population.size(); i++)
+		for(unsigned i=0; i<population.size(); i++) {
 			population[i]->dataMap.set("minimizeValue_age", 0.);
+			population[i]->dataMap.set("lineageID", (int) getNewLineageID());
+		}
 		firstGenIsNow = false;
 	}
 
@@ -133,6 +135,7 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 		std::shared_ptr<Organism> parent = paretoFront[Random::getIndex(paretoFront.size())];
 		std::shared_ptr<Organism> child = parent->makeMutatedOffspringFrom(parent);
 		child->dataMap.set("minimizeValue_age", parent->dataMap.getDouble("minimizeValue_age")); // it is very important to know how farback your ancestry goes
+		child->dataMap.set("lineageID", parent->dataMap.getInt("lineageID")); // turns out knowing your surname also helps
 		newPopulation.push_back(child);
 	}
 
@@ -166,18 +169,20 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 	}
 
 	std::cout << "pareto_size=" << paretoFront.size();
-	std::cout << " max_age=" << maxAge << "/" << oldestOrganism;
+	std::cout << " max_age=" << maxAge << "@" << oldestOrganism;
 	for(const auto& mvtuple : minValues)
-		std::cout << " " << mvtuple.first << "=" << mvtuple.second << "/" << minValueCarriers[mvtuple.first];
+		std::cout << " " << mvtuple.first << "=" << mvtuple.second << "@" << minValueCarriers[mvtuple.first];
+	std::cout << " extant_lineages=";
+	for(auto pii=paretoFront.begin(); pii!=paretoFront.end(); pii++)
+		std::cout << (*pii)->dataMap.getInt("lineageID") << (pii==paretoFront.end()-1 ? "" : ",") ;
 	std::cout << std::flush;
-
 /*
 	// Detailed messages : full population & Pareto front snapshot
-
 	std::cout << std::endl << "Incoming population:" << std::endl;
 
 	for(unsigned i=0; i<population.size(); i++) {
 		std::cout << "id" << population[i]->ID << " ";
+		std::cout << "lineageid" << population[i]->dataMap.getInt("lineageID") << " ";
 		for(auto objname : scoreNames) {
 			std::cout << objname << population[i]->dataMap.getDouble(objname) << " ";
 		}
@@ -194,19 +199,20 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 	std::cout << "Pareto front:" << std::endl;
 	for(auto org : paretoFront) {
 		std::cout << "id" << org->ID << " ";
+		std::cout << "lineageid" << org->dataMap.getInt("lineageID") << " ";
 		for(auto objname : scoreNames) {
 			std::cout << objname << org->dataMap.getDouble(objname) << " ";
 		}
 		std::cout << std::endl;
 	}
 */
-
 	// Step 3: incrementing age of everyone involved
 	for(auto newOrgPtr : newPopulation)
 		newOrgPtr->dataMap.set("minimizeValue_age", newOrgPtr->dataMap.getDouble("minimizeValue_age")+1.);
 	// Step 4: adding an new bloodline with age of zero
 	auto newOrg = makeNewOrganism();
 	newOrg->dataMap.set("minimizeValue_age", 0.);
+	newOrg->dataMap.set("lineageID", (int) getNewLineageID());
 	newPopulation.push_back(newOrg);
 
 }
@@ -234,4 +240,11 @@ std::shared_ptr<Organism> AgeFitnessParetoOptimizer::makeNewOrganism() {
 		brains[braintuple.first] = braintuple.second->makeBrain(genomes);
 
 	return std::make_shared<Organism>(genomes, brains, templateOrganism->PT);
+}
+
+unsigned AgeFitnessParetoOptimizer::getNewLineageID() {
+	static unsigned curLineageID = 0;
+	unsigned retID = curLineageID;
+	curLineageID++;
+	return retID;
 }
