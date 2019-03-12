@@ -29,4 +29,5 @@ private:
 	bool firstGenIsNow;
 	std::shared_ptr<Organism> templateOrganism;
 	std::shared_ptr<Organism> makeNewOrganism();
+	unsigned getNewLineageID();
 };
