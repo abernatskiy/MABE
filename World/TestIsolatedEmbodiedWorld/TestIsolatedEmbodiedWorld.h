@@ -35,13 +35,13 @@ public:
 //		cout << "Resetting world" << endl;
 	};
 	bool endEvaluation(unsigned long ts) override { return ts >= evaluationTime; };
-	void preEvaluationOuterWorldUpdate(unsigned long ts, int visualize) override {  *worldState = ts>=silenceTime ? 1 : 0; };
-	void postEvaluationOuterWorldUpdate(unsigned long ts, int visualize) override {};
-	void recordRunningScores(unsigned long ts, int visualize) override {
+	void preEvaluationOuterWorldUpdate(std::shared_ptr<Organism> org, unsigned long ts, int visualize) override {  *worldState = ts>=silenceTime ? 1 : 0; };
+	void postEvaluationOuterWorldUpdate(std::shared_ptr<Organism> org, unsigned long ts, int visualize) override {};
+	void recordRunningScores(std::shared_ptr<Organism> org, unsigned long ts, int visualize) override {
 		curScore += *worldState==0 ? -1*(*motorEffort) : *motorEffort;
 //		cout << "timestep: " << ts << " score: " << curScore << endl;
 	};
-	void recordSampleScores(unsigned long tott, int visualize) override { scores.push_back(curScore); };
+	void recordSampleScores(std::shared_ptr<Organism> org, unsigned long tott, int visualize) override { scores.push_back(curScore); };
 
 	void evaluateOrganism(std::shared_ptr<Organism> currentOrganism, int visualize) override;
 };

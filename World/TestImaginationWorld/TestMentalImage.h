@@ -18,12 +18,12 @@ public:
 			state += curval;
 		}
 	};
-  void recordRunningScores(std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) override {
+  void recordRunningScores(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) override {
 		if(visualize) std::cout << "World state is " << (*worldState) << " and the network output is " << state << std::endl;
 		double curScore = 1. / ( 1. + (state>(*worldState) ? state-(*worldState) : (*worldState)-state) );
 		runningScoresMap->append("score", curScore);
 	};
-  void recordSampleScores(std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) override {
+  void recordSampleScores(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) override {
 		sampleScoresMap->append("score", runningScoresMap->getAverage("score"));
 	};
   void evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) override {

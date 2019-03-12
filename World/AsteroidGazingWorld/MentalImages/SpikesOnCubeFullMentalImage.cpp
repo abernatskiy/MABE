@@ -81,7 +81,7 @@ void SpikesOnCubeFullMentalImage::updateWithInputs(std::vector<double> inputs) {
 	}
 }
 
-void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(int stateTime, int statePeriod) {
+void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> org, int stateTime, int statePeriod) {
 
 	if(stateTime == 0) {
 
@@ -138,9 +138,9 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(int stateTime, 
 	}
 }
 
-void SpikesOnCubeFullMentalImage::recordRunningScores(std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {}
+void SpikesOnCubeFullMentalImage::recordRunningScores(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {}
 
-void SpikesOnCubeFullMentalImage::recordSampleScores(std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {
+void SpikesOnCubeFullMentalImage::recordSampleScores(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {
 	sampleScoresMap->append( "guidingFunction",
 	                         static_cast<double>(std::accumulate(stateScores.begin(), stateScores.end(), 0.)) / stateScores.size() );
 	sampleScoresMap->append( "numCorrectCommands",

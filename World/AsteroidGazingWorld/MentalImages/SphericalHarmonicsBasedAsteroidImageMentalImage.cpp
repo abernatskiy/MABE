@@ -13,11 +13,9 @@ void SphericalHarmonicsBasedAsteroidImageMentalImage::updateWithInputs(std::vect
 	currentCommands.push_back(std::make_tuple(l,m,r));
 }
 
-void SphericalHarmonicsBasedAsteroidImageMentalImage::recordRunningScores(std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {
-}
+void SphericalHarmonicsBasedAsteroidImageMentalImage::recordRunningScores(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {}
 
-void SphericalHarmonicsBasedAsteroidImageMentalImage::recordSampleScores(std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {
-}
+void SphericalHarmonicsBasedAsteroidImageMentalImage::recordSampleScores(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {}
 
 void SphericalHarmonicsBasedAsteroidImageMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) {
 	double score = 1.0;

@@ -19,9 +19,9 @@ public:
 	void resetAfterWorldStateChange(int visualize) override { justReset = true; stateRunningScores.clear(); hits = 0; };
 	void updateWithInputs(std::vector<double> inputs) override;
 
-	void recordRunningScoresWithinState(int stateTime, int statePeriod) override;
-	void recordRunningScores(std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) override {};
-	void recordSampleScores(std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) override;
+	void recordRunningScoresWithinState(std::shared_ptr<Organism> org, int stateTime, int statePeriod) override;
+	void recordRunningScores(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) override {};
+	void recordSampleScores(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) override;
 	void evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) override;
 
 	int numInputs() override { return sensorsPtr->numOutputs(); };

@@ -50,11 +50,11 @@ void AbstractIsolatedEmbodiedWorld::evaluateOnce(std::shared_ptr<Organism> org, 
 		sensors->update(visualize);
 		brain->update();
 		motors->update(visualize);
-		preEvaluationOuterWorldUpdate(timeStep, visualize);
-		recordRunningScores(timeStep, visualize);
-		postEvaluationOuterWorldUpdate(timeStep, visualize);
+		preEvaluationOuterWorldUpdate(org, timeStep, visualize);
+		recordRunningScores(org, timeStep, visualize);
+		postEvaluationOuterWorldUpdate(org, timeStep, visualize);
 		timeStep++;
 	}
 
-	recordSampleScores(timeStep, visualize);
+	recordSampleScores(org, timeStep, visualize);
 }

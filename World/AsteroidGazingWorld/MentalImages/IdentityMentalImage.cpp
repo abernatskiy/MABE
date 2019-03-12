@@ -31,13 +31,13 @@ void IdentityMentalImage::updateWithInputs(std::vector<double> inputs) {
 			hits++;
 }
 
-void IdentityMentalImage::recordRunningScoresWithinState(int stateTime, int statePeriod) {
+void IdentityMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> org, int stateTime, int statePeriod) {
 	stateRunningScores.push_back(static_cast<double>(hits)/static_cast<double>(sensoryChannels));
 	if(stateTime == statePeriod-1)
 		stateScores.push_back(std::accumulate(stateRunningScores.begin(), stateRunningScores.end(), 0.)/static_cast<double>(stateRunningScores.size()));
 }
 
-void IdentityMentalImage::recordSampleScores(std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {
+void IdentityMentalImage::recordSampleScores(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {
 	sampleScoresMap->append("score", std::accumulate(stateScores.begin(), stateScores.end(), 0.)/static_cast<double>(stateScores.size()));
 }
 

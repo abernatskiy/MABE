@@ -23,8 +23,8 @@ private:
 		stateSchedule->reset(visualize);
 	};
 
-	void postEvaluationOuterWorldUpdate(unsigned long timeStep, int visualize) override {
-		mentalImage->recordRunningScoresWithinState(timeStep%brainUpdatesPerWorldState(), brainUpdatesPerWorldState());
+	void postEvaluationOuterWorldUpdate(std::shared_ptr<Organism> org, unsigned long timeStep, int visualize) override {
+		mentalImage->recordRunningScoresWithinState(org, timeStep%brainUpdatesPerWorldState(), brainUpdatesPerWorldState());
 		if(timeStep>0 && (timeStep+1)%brainUpdatesPerWorldState() == 0) {
 //			std::cout << "Advancing the schedule: period " << brainUpdatesPerWorldState() << ", timeStep " << timeStep << std::endl << std::flush;
 //			std::cout << "State schedule pointer: " << stateSchedule << std::endl << std::flush;

@@ -20,7 +20,7 @@ private:
 
 	unsigned curTest(unsigned long timeStep) { return static_cast<unsigned>(timeStep/evaluationTimePerTest); };
 
-	void postEvaluationOuterWorldUpdate(unsigned long timeStep, int visualize) override { *trueState = testTrueStates[curTest(timeStep)]; };
+	void postEvaluationOuterWorldUpdate(std::shared_ptr<Organism> org, unsigned long timeStep, int visualize) override { *trueState = testTrueStates[curTest(timeStep)]; };
 	bool endEvaluation(unsigned long ts) override { return ts >= evaluationTimePerTest*testTrueStates.size(); };
 
 public:

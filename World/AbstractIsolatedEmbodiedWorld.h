@@ -44,10 +44,10 @@ private:
 	int numOutputs() { return motors->numInputs() + sensors->numInputs(); }; // brain outputs
 
 	virtual bool endEvaluation(unsigned long timeStep) = 0;
-	virtual void preEvaluationOuterWorldUpdate(unsigned long timeStep, int visualize) = 0;
-	virtual void postEvaluationOuterWorldUpdate(unsigned long timeStep, int visualize) = 0;
-	virtual void recordRunningScores(unsigned long evalTime, int visualize) = 0;
-	virtual void recordSampleScores(unsigned long evalTime, int visualize) = 0;
+	virtual void preEvaluationOuterWorldUpdate(std::shared_ptr<Organism> org, unsigned long timeStep, int visualize) = 0;
+	virtual void postEvaluationOuterWorldUpdate(std::shared_ptr<Organism> org, unsigned long timeStep, int visualize) = 0;
+	virtual void recordRunningScores(std::shared_ptr<Organism> org, unsigned long evalTime, int visualize) = 0;
+	virtual void recordSampleScores(std::shared_ptr<Organism> org, unsigned long evalTime, int visualize) = 0;
 	virtual void evaluateOrganism(std::shared_ptr<Organism> currentOrganism, int visualize) = 0;
 
 public:

@@ -38,14 +38,14 @@ private:
 	std::shared_ptr<DataMap> sampleScores;
 
 	// agent does not affect world except by modifying the mental image
-	void preEvaluationOuterWorldUpdate(unsigned long timeStep, int visualize) override {};
+	void preEvaluationOuterWorldUpdate(std::shared_ptr<Organism> org, unsigned long timeStep, int visualize) override {};
 
 	// Mental image class knows better how to compare itself to the ground truth and what data can be provided to the Organism
-	void recordRunningScores(unsigned long evalTime, int visualize) override {
-		mentalImage->recordRunningScores(runningScores, evalTime, visualize);
+	void recordRunningScores(std::shared_ptr<Organism> org, unsigned long evalTime, int visualize) override {
+		mentalImage->recordRunningScores(org, runningScores, evalTime, visualize);
 	};
-	void recordSampleScores(unsigned long evalTime, int visualize) override {
-		mentalImage->recordSampleScores(sampleScores, runningScores, evalTime, visualize);
+	void recordSampleScores(std::shared_ptr<Organism> org, unsigned long evalTime, int visualize) override {
+		mentalImage->recordSampleScores(org, sampleScores, runningScores, evalTime, visualize);
 		runningScores->clearMap();
 	};
 	void evaluateOrganism(std::shared_ptr<Organism> currentOrganism, int visualize) override {
