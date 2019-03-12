@@ -46,6 +46,8 @@ private:
 	CommandLogger cl;
 	bool mVisualize;
 
+	std::map<unsigned,std::vector<unsigned>> lineageToEvaluationOrder;
+
 public:
 	SpikesOnCubeMentalImage(std::shared_ptr<std::string> curAstName, std::shared_ptr<AsteroidsDatasetParser> dsParser);
 
@@ -54,9 +56,9 @@ public:
 
 	void updateWithInputs(std::vector<double> inputs) override;
 
-	void recordRunningScoresWithinState(int stateTime, int statePeriod) override;
-	void recordRunningScores(std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) override;
-	void recordSampleScores(std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) override;
+	void recordRunningScoresWithinState(std::shared_ptr<Organism> org, int stateTime, int statePeriod) override;
+	void recordRunningScores(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) override;
+	void recordSampleScores(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) override;
 	void evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) override;
 
 	int numInputs() override;
@@ -71,4 +73,6 @@ private:
 	double commandDivergence(const CommandType& from, const CommandType& to);
 	double maxCommandDivergence();
 	double evaluateCommand(const CommandType& c);
+
+	const std::vector<unsigned>& getEvaluationOrder(unsigned lineageID, unsigned numAsteroids);
 };

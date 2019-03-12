@@ -74,7 +74,7 @@ void SpikesOnCubeMentalImage::updateWithInputs(std::vector<double> inputs) {
 	currentCommands.push_back(std::make_tuple(face,i,j));
 }
 
-void SpikesOnCubeMentalImage::recordRunningScoresWithinState(int stateTime, int statePeriod) {
+void SpikesOnCubeMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> org, int stateTime, int statePeriod) {
 	if(stateTime == statePeriod-1) {
 
 		readOriginalCommands();
@@ -119,14 +119,24 @@ void SpikesOnCubeMentalImage::recordRunningScoresWithinState(int stateTime, int 
 	}
 }
 
-void SpikesOnCubeMentalImage::recordRunningScores(std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {}
+void SpikesOnCubeMentalImage::recordRunningScores(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {}
 
-void SpikesOnCubeMentalImage::recordSampleScores(std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {
+void SpikesOnCubeMentalImage::recordSampleScores(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {
+	unsigned lineageID = org->dataMap.findKeyInData("lineageID")!=0 ? org->dataMap.getInt("lineageID") : org->ID;
+	const auto& evaluationOrder = getEvaluationOrder(lineageID, stateScores.size());
+
+//	std::cout << "id " << org->ID << " lineage " << lineageID << ":";
+//	for(const auto& evalIdx : evaluationOrder)
+//		std::cout << " " << evalIdx;
+//	std::cout << std::endl;
+
 	unsigned astsAttempted = 0;
 	const unsigned astsTotal = stateScores.size();
 	double tail = -9001;
-	for(auto stsc : stateScores) {
+//	for(auto stsc : stateScores) {
+	for(unsigned i=0; i<astsTotal; i++) {
 		astsAttempted++;
+		double stsc = stateScores[evaluationOrder[i]];
 		if(stsc!=0) {
 			tail = stsc;
 			break;
@@ -275,4 +285,22 @@ double SpikesOnCubeMentalImage::evaluateCommand(const CommandType& command) {
 //	std::cout << "Marking statement #" << minDivergenceCommandIdx << " ("; printCommand(originalCommands[minDivergenceCommandIdx]); std::cout << ", divergence " << minDivergence << ") as attempted" << std::endl;
 
 	return minDivergence;
+}
+
+const std::vector<unsigned>& SpikesOnCubeMentalImage::getEvaluationOrder(unsigned lineageID, unsigned numAsteroids) {
+
+	std::map<unsigned,std::vector<unsigned>>::iterator itToEvalOrder;
+	bool orderIsNew;
+	std::tie(itToEvalOrder,orderIsNew) = lineageToEvaluationOrder.emplace(lineageID, numAsteroids);
+
+	if(orderIsNew) {
+		for(unsigned i=0; i<numAsteroids; i++)
+			itToEvalOrder->second.at(i) = i;
+
+		std::mt19937 rng(42*lineageID);
+		std::shuffle(itToEvalOrder->second.begin(), itToEvalOrder->second.end(), rng);
+//		std::shuffle(itToEvalOrder->second.begin(), itToEvalOrder->second.end(), Random::getCommonGenerator());
+	}
+
+	return itToEvalOrder->second;
 }
