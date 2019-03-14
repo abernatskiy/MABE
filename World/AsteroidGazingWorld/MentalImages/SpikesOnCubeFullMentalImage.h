@@ -3,48 +3,15 @@
 #include <map>
 #include <vector>
 
-#include "../../AbstractMentalImage.h"
-#include "../Utilities/AsteroidsDatasetParser.h"
-#include "ann.h"
+#include "SpikesOnCubeMentalImage.h"
 
-#define ANN_INPUT_SIZE 5 // one input per each ALSD language statement field
-#define ANN_HIDDEN_SIZE 10
-#define ANN_OUTPUT_SIZE 5
-
-#include "commandLogger.h"
-
-typedef std::tuple<unsigned,unsigned,unsigned> CommandType; // location of the spike is determined by three numbers
-
-class SpikesOnCubeFullMentalImage : public AbstractMentalImage {
+class SpikesOnCubeFullMentalImage : public SpikesOnCubeMentalImage {
 
 private:
-	std::shared_ptr<std::string> currentAsteroidNamePtr;
-	std::shared_ptr<AsteroidsDatasetParser> datasetParserPtr;
+	// Bit lengths of representations for this derived class - standard positional encoding ver.
+	const unsigned lBitsForFace = 3;
+	const unsigned lBitsForCoordinate = k; // not k+1 because edge spikes are disallowed and the coordinate can actually take up to q-1 values
 
-	std::vector<CommandType> originalCommands;
-	std::vector<CommandType> currentCommands;
-	std::vector<bool> ocApproximationAttempted;
-
-	std::vector<double> stateScores;
-	std::vector<unsigned> correctCommandsStateScores;
-
-	const unsigned k = 2;
-	const unsigned q = 1<<k;
-
-	// "One-hot" encoding version
-	//const unsigned bitsForFace = 6;
-	//const unsigned bitsForCoordinate = q+1;
-
-	// Standard positional encoding version
-	const unsigned bitsForFace = 3;
-	const unsigned bitsForCoordinate = k; // not k+1 because edge spikes are disallowed and the coordinate can actually take up to q-1 values
-
-	bool justReset;
-
-	ArtificialNeuralNetwork helperANN;
-
-	CommandLogger cl;
-	bool mVisualize;
 	std::vector<std::vector<CommandType>> currentGuesses;
 
 public:
@@ -56,19 +23,6 @@ public:
 	void updateWithInputs(std::vector<double> inputs) override;
 
 	void recordRunningScoresWithinState(std::shared_ptr<Organism> org, int stateTime, int statePeriod) override;
-	void recordRunningScores(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) override;
-	void recordSampleScores(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) override;
-	void evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) override;
 
 	int numInputs() override;
-
-private:
-	void readOriginalCommands();
-	void readHelperANN();
-
-	inline double propEnc(unsigned val, unsigned max) { return static_cast<double>(val)/static_cast<double>(max); };
-	inline std::vector<double> encodeStatement(const CommandType& st);
-
-	double commandDivergence(const CommandType& from, const CommandType& to);
-	double evaluateCommand(const CommandType& c);
 };
