@@ -149,8 +149,8 @@ void SpikesOnCubeMentalImage::recordSampleScores(std::shared_ptr<Organism> org, 
 		double stsc = stateScores[curAstIdx];
 //		std::cout << i << "th asteroid is " << curAstIdx << ", evaluation is " << stsc << ", correct commands are " << correctCommandsStateScores[curAstIdx] << std::endl;
 		score += stsc;
-		if(correctCommandsStateScores[curAstIdx]<3)
-			break;
+//		if(correctCommandsStateScores[curAstIdx]<3)
+//			break;
 	}
 
 	sampleScoresMap->append("score", score);
