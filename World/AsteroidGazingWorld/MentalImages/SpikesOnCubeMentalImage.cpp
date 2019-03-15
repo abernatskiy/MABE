@@ -130,35 +130,41 @@ void SpikesOnCubeMentalImage::recordSampleScores(std::shared_ptr<Organism> org, 
 //		std::cout << " " << evalIdx;
 //	std::cout << std::endl;
 
+//	std::cout << "id " << org->ID << " lineage " << lineageID << std::endl;
+//	std::cout << "asteroid scores:" << std::setprecision(2);
+//	for(const auto& astSc : stateScores)
+//		std::cout << " " << astSc;
+//	std::cout << std::endl;
+//	std::cout << "max correct commands:";
+//	for(const auto& ncc : correctCommandsStateScores)
+//		std::cout << " " << ncc;
+//	std::cout << std::endl;
+
 	unsigned astsAttempted = 0;
 	const unsigned astsTotal = stateScores.size();
-	double tail = -9001;
-//	for(auto stsc : stateScores) {
+	double score = 0;
 	for(unsigned i=0; i<astsTotal; i++) {
 		astsAttempted++;
-		double stsc = stateScores[evaluationOrder[i]];
-		if(stsc!=0) {
-			tail = stsc;
+		unsigned curAstIdx = evaluationOrder[i];
+		double stsc = stateScores[curAstIdx];
+//		std::cout << i << "th asteroid is " << curAstIdx << ", evaluation is " << stsc << ", correct commands are " << correctCommandsStateScores[curAstIdx] << std::endl;
+		score += stsc;
+		if(correctCommandsStateScores[curAstIdx]<3)
 			break;
-		}
 	}
-	double astSetGuidingFunction = (maxCommandDivergence()*(astsTotal-astsAttempted) + tail) / (maxCommandDivergence()*astsTotal);
 
-//	std::cout << "Attempted " << astsAttempted << " asteroids out of " << astsTotal << ", last one had a guiding function of " << tail << ": set guiding function is " << astSetGuidingFunction << std::endl;
-
-	sampleScoresMap->append("guidingFunction", astSetGuidingFunction);
+	sampleScoresMap->append("score", score);
 	sampleScoresMap->append("numCorrectCommands", static_cast<double>(astsAttempted-1));
 }
 
 void SpikesOnCubeMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) {
-	double gerror = sampleScoresMap->getAverage("guidingFunction");
+	double score = sampleScoresMap->getAverage("score");
 	double numCorrectCommands = sampleScoresMap->getAverage("numCorrectCommands");
-	double score = 1./(1.+gerror);
 	org->dataMap.append("score", score );
-	org->dataMap.append("guidingFunction", gerror);
+	org->dataMap.append("guidingFunction", -score);
 	org->dataMap.append("numCorrectCommands", numCorrectCommands);
 
-	if(mVisualize) std::cout << "score " << score << " guiding function " << gerror << " number of correct commands " << numCorrectCommands << std::endl;
+//	std::cout << "id " << org->ID << " score " << score  << " number of correct commands " << numCorrectCommands << std::endl << std::flush;
 }
 
 int SpikesOnCubeMentalImage::numInputs() {

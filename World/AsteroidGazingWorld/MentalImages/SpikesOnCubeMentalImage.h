@@ -15,6 +15,9 @@
 
 typedef std::tuple<unsigned,unsigned,unsigned> CommandType; // location of the spike is determined by three numbers
 
+void printCommand(CommandType com);
+void printCommandsVector(std::vector<CommandType> commands);
+
 class SpikesOnCubeMentalImage : public AbstractMentalImage {
 
 protected:

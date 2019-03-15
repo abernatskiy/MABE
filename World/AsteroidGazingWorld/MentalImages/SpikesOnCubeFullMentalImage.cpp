@@ -3,10 +3,33 @@
 
 /***** Utility funcs *****/
 
+std::string commandRangeToStr(const CommandRangeType& crange) {
+	const std::vector<unsigned>& frange = std::get<0>(crange);
+	const std::vector<unsigned>& irange = std::get<1>(crange);
+	const std::vector<unsigned>& jrange = std::get<2>(crange);
+	std::ostringstream s;
+	s << "[{";
+	for(auto it=frange.cbegin(); it!=frange.cend(); it++)
+		s << *it << ( it!=frange.cend()-1 ? "," : "" );
+	s << "},{";
+	for(auto it=irange.cbegin(); it!=irange.cend(); it++)
+		s << *it << ( it!=irange.cend()-1 ? "," : "" );
+	s << "},{";
+	for(auto it=jrange.cbegin(); it!=jrange.cend(); it++)
+		s << *it << ( it!=jrange.cend()-1 ? "," : "" );
+	s << "}]";
+	return s.str();
+}
+
+std::string bitRangeToStr(std::vector<double>::iterator startAt, unsigned bits) {
+	std::ostringstream s;
+	for(auto it=startAt; it!=startAt+bits; it++)
+		s << ( *it==0. ? 0 : 1 );
+	return s.str();
+}
+
 std::tuple<double,bool> evaluateRange(const CommandRangeType& guessesRange, const CommandType& originalCommand) {
-
 	// returns a score that shows how close the range is to the original command and a Boolean telling if it's a direct hit
-
 	unsigned of, oi, oj;
 	std::tie(of, oi, oj) = originalCommand;
 
@@ -40,6 +63,10 @@ std::tuple<double,bool> evaluateRange(const CommandRangeType& guessesRange, cons
 	else
 		preciseHit = false;
 
+//	std::cout << "Range " << commandRangeToStr(guessesRange) << " evaluated with respect to command ";
+//	printCommand(originalCommand);
+//	std::cout << ", yielding " << eval/3. << " and " << ( preciseHit ? "a precise hit" : "no precise hit") << std::endl;
+
 	return std::make_tuple(eval/3., preciseHit);
 }
 
@@ -69,29 +96,34 @@ void SpikesOnCubeFullMentalImage::updateWithInputs(std::vector<double> inputs) {
 	currentCommandRanges.clear();
 	for(unsigned ci=0; ci<3; ci++) {
 		auto it = inputs.begin() + ci*(lBitsForFace+2*lBitsForCoordinate);
-
+//		std::cout << "Bit pattern " << bitRangeToStr(it, lBitsForFace+2*lBitsForCoordinate);
 		auto faceRange = decodeMHVUInt(it, it+lBitsForFace);
 		it += lBitsForFace;
-
 		auto iRange = decodeMHVUInt(it, it+lBitsForCoordinate);
 		it += lBitsForCoordinate;
-
 		auto jRange = decodeMHVUInt(it, it+lBitsForCoordinate);
 
 		currentCommandRanges.push_back(std::make_tuple(faceRange, iRange, jRange));
+//		std::cout << " decoded into range " << commandRangeToStr(std::make_tuple(faceRange, iRange, jRange)) << std::endl;
 	}
 }
 
 void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> org, int stateTime, int statePeriod) {
-
 	if(stateTime == 0) {
 		readOriginalCommands();
 		ocApproximationAttempted.resize(originalCommands.size());
 		correctCommandsStateScores.push_back(0);
 		stateScores.push_back(0.);
+
+//		std::cout << "Original commands are ";
+//		for(unsigned i=0; i<3; i++) {
+//			printCommand(originalCommands[i]);
+//			std::cout << ( i==2 ? "" : ", " );
+//		}
+//		std::cout << std::endl;
 	}
 
-	if(currentCommands.size() != 0) {
+	if(currentCommandRanges.size() != 0) {
 		unsigned numCorrectCommands = 0;
 		double cumulativeScore = 0.;
 
@@ -104,17 +136,18 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 			cumulativeScore += curScore;
 			if(curHit)
 				numCorrectCommands++;
+//			std::cout << "t=" << stateTime << ": command range " << commandRangeToStr(curRange) << " scored " << curScore << " " << (curHit ? "h" : "m") << "\n";
 		}
-
 
 		if( correctCommandsStateScores.back() < numCorrectCommands )
 			correctCommandsStateScores.back() = numCorrectCommands;
 		stateScores.back() += cumulativeScore/currentCommandRanges.size();
-
+//		std::cout << "t=" << stateTime << ": cumulativeScore " << cumulativeScore/currentCommandRanges.size() << " hits " << numCorrectCommands << std::endl;
 	}
 
 	if(stateTime == statePeriod-1) {
-		stateScores.back() /= statePeriod;
+		stateScores.back() /= statePeriod-1;
+//		std::cout << "Final score: " << stateScores.back() << " final hits: " << correctCommandsStateScores.back() << std::endl;
 	}
 }
 
@@ -152,6 +185,8 @@ std::tuple<double,bool> SpikesOnCubeFullMentalImage::evaluateRangeVSSet(const Co
 		}
 	}
 	ocApproximationAttempted[highestIdx] = true;
+
+//	std::cout << "Range vs set yielded " << highestEval << " and " << ( preciseHit ? "a precise hit" : "no precise hit") << std::endl;
 
 	return std::make_tuple(highestEval, preciseHit);
 }
