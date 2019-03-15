@@ -1,6 +1,7 @@
 #include "SphericalHarmonicsBasedAsteroidImageMentalImage.h"
 
 #include <algorithm>
+#include <vector>
 
 // Decoders based on "one-hot" encoding
 // Quotes are due to the fact that only the leftmost one counts, if there are any more ones to the right of it the decoder does not care
@@ -29,4 +30,20 @@ inline unsigned decodeSPUInt(std::vector<double>::iterator begin, std::vector<do
 		begin++;
 	}
 	return retval;
+}
+
+// Decoders based on "multiple-hot" encoding with veto bits (Chapman, Hintze and co)
+// These decoders require an even number of elements between the provided iterators
+
+inline std::vector<unsigned> decodeMHVUInt(std::vector<double>::iterator begin, std::vector<double>::iterator end) {
+	std::vector<unsigned> outs;
+	auto curpos = begin;
+	unsigned curval = 0;
+	while(curpos!=end) {
+		if(*curpos==0. && *(curpos+1)!=0.) // curpos is a veto; the field immediately following indicates if the decision has been made
+			outs.push_back(curval);
+		curval++;
+		curpos += 2;
+	}
+	return outs;
 }

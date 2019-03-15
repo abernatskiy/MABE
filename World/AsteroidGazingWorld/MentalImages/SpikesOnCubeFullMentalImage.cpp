@@ -1,6 +1,48 @@
 #include "SpikesOnCubeFullMentalImage.h"
 #include "decoders.h"
 
+/***** Utility funcs *****/
+
+std::tuple<double,bool> evaluateRange(const CommandRangeType& guessesRange, const CommandType& originalCommand) {
+
+	// returns a score that shows how close the range is to the original command and a Boolean telling if it's a direct hit
+
+	unsigned of, oi, oj;
+	std::tie(of, oi, oj) = originalCommand;
+
+	double eval = 0.;
+	bool preciseHit = true;
+
+	if(std::find(std::get<0>(guessesRange).begin(),
+	             std::get<0>(guessesRange).end(), of) != std::get<0>(guessesRange).end()) {
+		eval += 1./static_cast<double>(std::get<0>(guessesRange).size()); // Arend suggests to square the size. I'll try without it
+		if(std::get<0>(guessesRange).size()!=1)
+			preciseHit = false;
+	}
+	else
+		preciseHit = false;
+
+	if(std::find(std::get<1>(guessesRange).begin(),
+	             std::get<1>(guessesRange).end(), oi) != std::get<1>(guessesRange).end()) {
+		eval += 1./static_cast<double>(std::get<1>(guessesRange).size());
+		if(std::get<1>(guessesRange).size()!=1)
+			preciseHit = false;
+	}
+	else
+		preciseHit = false;
+
+	if(std::find(std::get<2>(guessesRange).begin(),
+	             std::get<2>(guessesRange).end(), oj) != std::get<2>(guessesRange).end()) {
+		eval += 1./static_cast<double>(std::get<2>(guessesRange).size());
+		if(std::get<2>(guessesRange).size()!=1)
+			preciseHit = false;
+	}
+	else
+		preciseHit = false;
+
+	return std::make_tuple(eval/3., preciseHit);
+}
+
 /***** Public SpikesOnCubeFullMentalImage class definitions *****/
 
 SpikesOnCubeFullMentalImage::SpikesOnCubeFullMentalImage(std::shared_ptr<std::string> curAstNamePtr,
@@ -10,14 +52,12 @@ SpikesOnCubeFullMentalImage::SpikesOnCubeFullMentalImage(std::shared_ptr<std::st
 
 void SpikesOnCubeFullMentalImage::reset(int visualize) { // called in the beginning of each evaluation cycle
 	SpikesOnCubeMentalImage::reset(visualize);
-	if(mVisualize)
-		currentGuesses.clear();
+	currentCommandRanges.clear();
 }
 
 void SpikesOnCubeFullMentalImage::resetAfterWorldStateChange(int visualize) { // called after each discrete world state change
 	SpikesOnCubeMentalImage::resetAfterWorldStateChange(visualize);
-	if(mVisualize)
-		currentGuesses.clear();
+	currentCommandRanges.clear();
 }
 
 void SpikesOnCubeFullMentalImage::updateWithInputs(std::vector<double> inputs) {
@@ -26,23 +66,19 @@ void SpikesOnCubeFullMentalImage::updateWithInputs(std::vector<double> inputs) {
 		return;
 	}
 
-	currentCommands.clear();
+	currentCommandRanges.clear();
 	for(unsigned ci=0; ci<3; ci++) {
-		unsigned face, i, j;
 		auto it = inputs.begin() + ci*(lBitsForFace+2*lBitsForCoordinate);
 
-//		face = decodeSPUInt(it, it+lBitsForFace);
-		face = decodeOHUInt(it, it+lBitsForFace);
+		auto faceRange = decodeMHVUInt(it, it+lBitsForFace);
 		it += lBitsForFace;
 
-//		i = decodeSPUInt(it, it+lBitsForCoordinate) + 1; // +1 is to account for the forbidden nature of edges
-		i = decodeOHUInt(it, it+lBitsForCoordinate) + 1; // +1 is to account for the forbidden nature of edges
+		auto iRange = decodeMHVUInt(it, it+lBitsForCoordinate);
 		it += lBitsForCoordinate;
 
-//		j = decodeSPUInt(it, it+lBitsForCoordinate) + 1;
-		j = decodeOHUInt(it, it+lBitsForCoordinate) + 1;
+		auto jRange = decodeMHVUInt(it, it+lBitsForCoordinate);
 
-		currentCommands.push_back(std::make_tuple(face,i,j));
+		currentCommandRanges.push_back(std::make_tuple(faceRange, iRange, jRange));
 	}
 }
 
@@ -57,45 +93,65 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 
 	if(currentCommands.size() != 0) {
 		unsigned numCorrectCommands = 0;
-		for(auto it=originalCommands.begin(); it!=originalCommands.end(); it++)
-			if(std::find(currentCommands.begin(), currentCommands.end(), *it) != currentCommands.end())
+		double cumulativeScore = 0.;
+
+		double curScore;
+		bool curHit;
+
+		std::fill(ocApproximationAttempted.begin(), ocApproximationAttempted.end(), false);
+		for(const auto& curRange : currentCommandRanges) {
+			std::tie(curScore, curHit) = evaluateRangeVSSet(curRange);
+			cumulativeScore += curScore;
+			if(curHit)
 				numCorrectCommands++;
+		}
+
+
 		if( correctCommandsStateScores.back() < numCorrectCommands )
 			correctCommandsStateScores.back() = numCorrectCommands;
+		stateScores.back() += cumulativeScore/currentCommandRanges.size();
 
-		double cumulativeDivergence = 0.;
-		std::fill(ocApproximationAttempted.begin(), ocApproximationAttempted.end(), false);
-		for(auto it=currentCommands.begin(); it!=currentCommands.end(); it++)
-			cumulativeDivergence += evaluateCommand(*it);
-		stateScores.back() += cumulativeDivergence/currentCommands.size();
-
-		if(mVisualize)
-			currentGuesses.push_back(std::vector<CommandType>(currentCommands));
 	}
 
 	if(stateTime == statePeriod-1) {
 		stateScores.back() /= statePeriod;
-		if(mVisualize)
-			cl.logMapping(originalCommands, currentGuesses);
-//		std::cout << "Evaluation of the current individual was " << stateScores.back() << std::endl << std::endl;
-/*
-		// REWRITE
-		std::cout << "Brain generated commands for " << *currentAsteroidNamePtr  << ":" << std::endl;
-		for(auto it=currentCommands.end()-numOriginalCommands; it!=currentCommands.end(); it++) {
-			printCommand1(*it);
-			std::cout << std::endl;
-		}
-		std::cout << std::endl;
-
-		std::cout << "Added " << cumulativeDivergence << " to evaluations of " << *currentAsteroidNamePtr << std::endl;
-		std::cout << "Full evaluations:";
-		for(auto sc : correctCommandsStateScores)
-			std::cout << ' ' << sc;
-		std::cout << std::endl;
-*/
 	}
 }
 
 int SpikesOnCubeFullMentalImage::numInputs() {
 	return 3*(lBitsForFace + 2*lBitsForCoordinate);
+}
+
+/***** Private SpikesOnCubeFullMentalImage class definitions *****/
+
+std::tuple<double,bool> SpikesOnCubeFullMentalImage::evaluateRangeVSSet(const CommandRangeType& guessesRange) {
+
+	// returns a score that shows how close the range is to the closest original command,
+	//         a Boolean telling if there were any direct hits,
+	//     and the index of the closest original command
+	// Takes into account and modifies the mask.
+
+	double highestEval;
+	bool preciseHit = false;
+	int highestIdx = -1;
+
+	for(unsigned i=0; i<originalCommands.size(); i++) {
+		if(!ocApproximationAttempted[i]) {
+			double curEval;
+			bool curHit;
+
+			std::tie(curEval, curHit) = evaluateRange(guessesRange, originalCommands.at(i));
+
+			if(highestIdx==-1 || (highestIdx>=0 && curEval>highestEval) ) {
+				highestEval = curEval;
+				highestIdx = i;
+			}
+
+			if(curHit)
+				preciseHit = true;
+		}
+	}
+	ocApproximationAttempted[highestIdx] = true;
+
+	return std::make_tuple(highestEval, preciseHit);
 }

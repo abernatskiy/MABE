@@ -5,6 +5,8 @@
 
 #include "SpikesOnCubeMentalImage.h"
 
+typedef std::tuple<std::vector<unsigned>,std::vector<unsigned>,std::vector<unsigned>> CommandRangeType;
+
 class SpikesOnCubeFullMentalImage : public SpikesOnCubeMentalImage {
 
 private:
@@ -12,10 +14,13 @@ private:
 //	const unsigned lBitsForFace = 3;
 //	const unsigned lBitsForCoordinate = k; // not k+1 because edge spikes are disallowed and the coordinate can actually take up to q-1 values
 	// one-hot encoding ver.
-	const unsigned lBitsForFace = 6;
-	const unsigned lBitsForCoordinate = q-1; // again, edge spikes are disallowed and the coordinate can actually take up to q-1 values
+//	const unsigned lBitsForFace = 6;
+//	const unsigned lBitsForCoordinate = q-1; // again, edge spikes are disallowed and the coordinate can actually take up to q-1 values
+	// many-hot encoding with veto bits ver.
+	const unsigned lBitsForFace = 6*2;
+	const unsigned lBitsForCoordinate = 2*(q-1); // again, edge spikes are disallowed and the coordinate can actually take up to q-1 values
 
-	std::vector<std::vector<CommandType>> currentGuesses;
+	std::vector<CommandRangeType> currentCommandRanges;
 
 public:
 	SpikesOnCubeFullMentalImage(std::shared_ptr<std::string> curAstName, std::shared_ptr<AsteroidsDatasetParser> dsParser);
@@ -28,4 +33,7 @@ public:
 	void recordRunningScoresWithinState(std::shared_ptr<Organism> org, int stateTime, int statePeriod) override;
 
 	int numInputs() override;
+
+private:
+	std::tuple<double,bool> evaluateRangeVSSet(const CommandRangeType& guessesRange);
 };
