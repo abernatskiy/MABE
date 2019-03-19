@@ -5,6 +5,8 @@
 #include "../AbstractWorld.h"
 #include "../AbstractIsolatedEmbodiedWorld.h"
 
+std::vector<unsigned> getBatchSizes(unsigned numEvals, unsigned numBatches);
+
 class ParallelIsolatedEmbodiedWorld : public AbstractWorld {
 
 public:

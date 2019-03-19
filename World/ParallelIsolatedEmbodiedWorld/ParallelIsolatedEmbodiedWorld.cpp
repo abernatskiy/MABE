@@ -2,6 +2,25 @@
 
 #include "../AsteroidGazingWorld/AsteroidGazingWorld.h"
 
+/***** Auxiliary functions *****/
+
+void recBatchSize(unsigned numEvals, unsigned numBatches, std::vector<unsigned>::iterator pos) {
+	if(numEvals%numBatches==0)
+		std::fill(pos, pos+numBatches, numEvals/numBatches);
+	else {
+		*pos = 1 + numEvals/numBatches;
+		recBatchSize(numEvals-(*pos), numBatches-1, pos+1);
+	}
+}
+
+std::vector<unsigned> getBatchSizes(unsigned numEvals, unsigned numBatches) {
+	std::vector<unsigned> batchSizes(numBatches);
+	recBatchSize(numEvals, numBatches, batchSizes.begin());
+	return batchSizes;
+}
+
+/***** Parallel isolated embodied world class definitions *****/
+
 /*
 std::shared_ptr<ParameterLink<int>> TestWorld::modePL =
     Parameters::register_parameter(
@@ -39,15 +58,18 @@ ParallelIsolatedEmbodiedWorld::ParallelIsolatedEmbodiedWorld(std::shared_ptr<Par
 void ParallelIsolatedEmbodiedWorld::evaluate(std::map<std::string, std::shared_ptr<Group>>& groups, int analyze, int visualize, int debug) {
 
 	unsigned popSize = groups[groupNamePL->get(PT)]->population.size();
-	unsigned maxBatchSize = popSize%numThreads==0 ? popSize/numThreads : (1+popSize/numThreads);
-	std::vector<unsigned> batchSizes(numThreads, maxBatchSize);
-	if(popSize%numThreads!=0) batchSizes.back() = popSize % maxBatchSize;
+	if(popSize<numThreads)
+		std::cout << "ParalleIsolatedEmbodiedWorld: WARNING: population size " << popSize << " is less than the number of threads " << numThreads << std::endl;
+
+	std::vector<unsigned> batchSizes = getBatchSizes(popSize, numThreads);
+	std::vector<unsigned> batchStarts(numThreads, 0);
+	std::partial_sum(batchSizes.begin(), batchSizes.begin()+numThreads-1, batchStarts.begin()+1);
 
 	#pragma omp parallel num_threads(numThreads)
 	{
 		#pragma omp for
 		for(unsigned t=0; t<numThreads; t++) {
-			for(unsigned i=t*maxBatchSize; i<(t*maxBatchSize+batchSizes[t]); i++) {
+			for(unsigned i=batchStarts[t]; i<(batchStarts[t]+batchSizes[t]); i++) {
 				subworlds[t]->evaluateSolo(groups[groupName]->population[i], analyze, visualize, debug);
 			}
 		}
