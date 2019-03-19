@@ -140,21 +140,21 @@ void SpikesOnCubeMentalImage::recordSampleScores(std::shared_ptr<Organism> org, 
 //		std::cout << " " << ncc;
 //	std::cout << std::endl;
 
-	unsigned astsAttempted = 0;
+	unsigned ncc = 0;
 	const unsigned astsTotal = stateScores.size();
 	double score = 0;
 	for(unsigned i=0; i<astsTotal; i++) {
-		astsAttempted++;
 		unsigned curAstIdx = evaluationOrder[i];
 		double stsc = stateScores[curAstIdx];
 //		std::cout << i << "th asteroid is " << curAstIdx << ", evaluation is " << stsc << ", correct commands are " << correctCommandsStateScores[curAstIdx] << std::endl;
 		score += stsc;
+		ncc += correctCommandsStateScores[curAstIdx];
 //		if(correctCommandsStateScores[curAstIdx]<3)
 //			break;
 	}
 
 	sampleScoresMap->append("score", score);
-	sampleScoresMap->append("numCorrectCommands", static_cast<double>(astsAttempted-1));
+	sampleScoresMap->append("numCorrectCommands", static_cast<double>(ncc));
 }
 
 void SpikesOnCubeMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) {

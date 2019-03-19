@@ -67,6 +67,8 @@ std::tuple<double,bool> evaluateRange(const CommandRangeType& guessesRange, cons
 //	printCommand(originalCommand);
 //	std::cout << ", yielding " << eval/3. << " and " << ( preciseHit ? "a precise hit" : "no precise hit") << std::endl;
 
+//	if(preciseHit) { std::cout << "Precise hit achieved by range " << commandRangeToStr(guessesRange) << " on command "; printCommand(originalCommand); std::cout << std::endl; }
+
 	return std::make_tuple(eval/3., preciseHit);
 }
 
