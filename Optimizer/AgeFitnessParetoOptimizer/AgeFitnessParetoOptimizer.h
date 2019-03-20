@@ -30,4 +30,5 @@ private:
 	std::shared_ptr<Organism> templateOrganism;
 	std::shared_ptr<Organism> makeNewOrganism();
 	unsigned getNewLineageID();
+	void logParetoFront(const std::vector<std::shared_ptr<Organism>>& paretoFront);
 };

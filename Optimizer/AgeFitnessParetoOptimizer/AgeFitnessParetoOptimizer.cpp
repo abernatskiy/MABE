@@ -168,6 +168,8 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 		}
 	}
 
+	logParetoFront(paretoFront);
+
 	std::cout << "pareto_size=" << paretoFront.size();
 	std::cout << " max_age=" << maxAge << "@" << oldestOrganism;
 	for(const auto& mvtuple : minValues)
@@ -247,4 +249,20 @@ unsigned AgeFitnessParetoOptimizer::getNewLineageID() {
 	unsigned retID = curLineageID;
 	curLineageID++;
 	return retID;
+}
+
+void AgeFitnessParetoOptimizer::logParetoFront(const std::vector<std::shared_ptr<Organism>>& paretoFront) {
+	std::string logpath = Global::outputPrefixPL->get() + "paretoFront.log";
+	std::ofstream pflog;
+
+	static bool firstRun = true;
+	if(firstRun) {
+		pflog.open(logpath, std::ios::out);
+		pflog.close();
+		firstRun = false;
+	}
+
+	pflog.open(logpath, std::ios::app);
+	pflog << paretoFront.size() << std::endl;
+	pflog.close();
 }
