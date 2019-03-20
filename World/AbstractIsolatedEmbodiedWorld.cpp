@@ -14,6 +14,9 @@ std::shared_ptr<ParameterLink<int>> AbstractIsolatedEmbodiedWorld::evaluationsPe
     Parameters::register_parameter("WORLD_ISOLATED_EMBODIED-evaluationsPerGeneration", 1,
                                    "Number of times to test each genetically unique agent per "
                                    "generation (useful with non-deterministic brains)");
+std::shared_ptr<ParameterLink<bool>> AbstractIsolatedEmbodiedWorld::assumeDeterministicEvaluationsPL =
+    Parameters::register_parameter("WORLD_ISOLATED_EMBODIED-assumeDeterministicEvaluations", false,
+                                   "If true, the world will never re-evaluate an organism that is already evaluated, even if evaluationsPerGenerations is greater than 1");
 std::shared_ptr<ParameterLink<std::string>> AbstractIsolatedEmbodiedWorld::groupNamePL =
     Parameters::register_parameter("WORLD_ISOLATED_EMBODIED_NAMES-groupNameSpace", (std::string) "root::",
                                    "Namespace of group to be evaluated");
@@ -27,11 +30,14 @@ AbstractIsolatedEmbodiedWorld::AbstractIsolatedEmbodiedWorld(std::shared_ptr<Par
 	evaluationsPerGeneration = evaluationsPerGenerationPL->get(PT_);
 	groupName = groupNamePL->get(PT_);
 	brainName = brainNamePL->get(PT_);
+	assumeDeterministicEvaluations = assumeDeterministicEvaluationsPL->get(PT_);
+	if(assumeDeterministicEvaluations)
+		evaluationsPerGeneration = 1;
 }
 
 void AbstractIsolatedEmbodiedWorld::evaluateOnce(std::shared_ptr<Organism> org, int visualize) {
 
-	if(visualize) std::cout << "Evaluating organism " << org << std::endl;
+	if(visualize) std::cout << "Evaluating organism " << org->ID << " at " << org << std::endl;
 
 	resetWorld(visualize);
 
@@ -57,4 +63,7 @@ void AbstractIsolatedEmbodiedWorld::evaluateOnce(std::shared_ptr<Organism> org, 
 	}
 
 	recordSampleScores(org, timeStep, visualize);
+
+	if(assumeDeterministicEvaluations)
+		org->dataMap.set("evaluated", true);
 }

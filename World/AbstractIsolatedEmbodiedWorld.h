@@ -38,6 +38,8 @@ private:
 	std::string groupName;
 	static std::shared_ptr<ParameterLink<std::string>> brainNamePL;
 	std::string brainName;
+	static std::shared_ptr<ParameterLink<bool>> assumeDeterministicEvaluationsPL;
+	bool assumeDeterministicEvaluations;
 
 	void evaluateOnce(std::shared_ptr<Organism> org, int visualize);
 	int numInputs() { return motors->numOutputs() + sensors->numOutputs(); }; // brain inputs
@@ -56,6 +58,8 @@ public:
 
 	// Add parallelization both on the level of organisms and on the level of repeats
 	void evaluateSolo(std::shared_ptr<Organism> org, int analyze, int visualize, int debug) {
+		if(assumeDeterministicEvaluations && org->dataMap.findKeyInData("evaluated")==11 && org->dataMap.getBool("evaluated"))
+			return;
 		for(int r=0; r<evaluationsPerGeneration; r++)
 			evaluateOnce(org, visualize);
 		evaluateOrganism(org, visualize);
