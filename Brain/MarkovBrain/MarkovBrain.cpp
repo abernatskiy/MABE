@@ -160,6 +160,7 @@ void MarkovBrain::resetBrain() {
 }
 
 void MarkovBrain::resetInputs() {
+	AbstractBrain::resetInputs();
 	for (int i = 0; i < nrInputValues; i++)
 		nodes[i] = 0.0;
 
@@ -168,6 +169,7 @@ void MarkovBrain::resetInputs() {
 }
 
 void MarkovBrain::resetOutputs() {
+	AbstractBrain::resetOutputs();
 	// note nrInputValues+i gets us the index for the node related to each output
 	for (int i = 0; i < nrOutputValues; i++)
 		nodes[nrInputValues + i] = 0.0;
