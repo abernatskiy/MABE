@@ -33,9 +33,9 @@ inline unsigned decodeSPUInt(std::vector<double>::iterator begin, std::vector<do
 }
 
 // Decoders based on "multiple-hot" encoding with veto bits (Chapman, Hintze and co)
-// These decoders require an even number of elements between the provided iterators
 
 inline std::vector<unsigned> decodeMHVUInt(std::vector<double>::iterator begin, std::vector<double>::iterator end) {
+	// requires an even number of elements between the provided iterators
 	std::vector<unsigned> outs;
 	auto curpos = begin;
 	unsigned curval = 0;
@@ -44,6 +44,23 @@ inline std::vector<unsigned> decodeMHVUInt(std::vector<double>::iterator begin, 
 			outs.push_back(curval);
 		curval++;
 		curpos += 2;
+	}
+	return outs;
+}
+
+inline std::vector<unsigned> decodeMHV2UInt(std::vector<double>::iterator begin, std::vector<double>::iterator end) {
+	// requires a number of elements between the provided iterators that is divisible by 3
+	std::vector<unsigned> outs;
+	auto curpos = begin;
+	unsigned curval = 0;
+	while(curpos!=end) {
+		// curpos is a veto of the veto
+		// next field is the proper veto
+		// third field indicates if the decision has been made
+		if(*curpos==0. && *(curpos+1)==0 && *(curpos+2)!=0.)
+			outs.push_back(curval);
+		curval++;
+		curpos += 3;
 	}
 	return outs;
 }
