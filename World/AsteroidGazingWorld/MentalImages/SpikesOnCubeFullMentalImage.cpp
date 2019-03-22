@@ -99,11 +99,11 @@ void SpikesOnCubeFullMentalImage::updateWithInputs(std::vector<double> inputs) {
 	for(unsigned ci=0; ci<3; ci++) {
 		auto it = inputs.begin() + ci*(lBitsForFace+2*lBitsForCoordinate);
 //		std::cout << "Bit pattern " << bitRangeToStr(it, lBitsForFace+2*lBitsForCoordinate);
-		auto faceRange = decodeMHV2UInt(it, it+lBitsForFace);
+		auto faceRange = decodeMHV0UInt(it, it+lBitsForFace);
 		it += lBitsForFace;
-		auto iRange = decodeMHV2UInt(it, it+lBitsForCoordinate);
+		auto iRange = decodeMHV0UInt(it, it+lBitsForCoordinate);
 		it += lBitsForCoordinate;
-		auto jRange = decodeMHV2UInt(it, it+lBitsForCoordinate);
+		auto jRange = decodeMHV0UInt(it, it+lBitsForCoordinate);
 
 		currentCommandRanges.push_back(std::make_tuple(faceRange, iRange, jRange));
 //		std::cout << " decoded into range " << commandRangeToStr(std::make_tuple(faceRange, iRange, jRange)) << std::endl;

@@ -10,8 +10,8 @@ typedef std::tuple<std::vector<unsigned>,std::vector<unsigned>,std::vector<unsig
 class SpikesOnCubeFullMentalImage : public SpikesOnCubeMentalImage {
 
 private:
-	const unsigned lBitsForFace = 6*3;
-	const unsigned lBitsForCoordinate = 3*(q-1); // again, edge spikes are disallowed and the coordinate can actually take up to q-1 values
+	const unsigned lBitsForFace = 6*1;
+	const unsigned lBitsForCoordinate = 1*(q-1); // again, edge spikes are disallowed and the coordinate can actually take up to q-1 values
 
 	std::vector<CommandRangeType> currentCommandRanges;
 
