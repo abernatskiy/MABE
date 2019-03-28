@@ -42,7 +42,9 @@ void Organism::initOrganism(std::shared_ptr<ParametersTable> PT_) {
  * create an empty organism - it must be filled somewhere else.
  * parents is left empty (this is organism has no parents!)
  */
-Organism::Organism(std::shared_ptr<ParametersTable> PT_) {
+Organism::Organism(std::shared_ptr<ParametersTable> PT_) :
+	delayGeneticTranslation(false) {
+
   initOrganism(std::move(PT_));
   ancestors.insert(ID); // it is it's own Ancestor for data tracking purposes
   snapshotAncestors.insert(ID);
@@ -56,14 +58,14 @@ Organism::Organism(std::shared_ptr<ParametersTable> PT_) {
 * parents is set left unset/nullptr (no parents), and ancestor is set to self
 * (this organism is the result of adigigenesis!)
 */
-Organism::Organism(
-    std::unordered_map<std::string, std::shared_ptr<AbstractGenome>> &_genomes,
-    std::unordered_map<std::string, std::shared_ptr<AbstractBrain>> &_brains,
-    std::shared_ptr<ParametersTable> PT_) {
+Organism::Organism(std::unordered_map<std::string, std::shared_ptr<AbstractGenome>>& _genomes,
+                   std::unordered_map<std::string, std::shared_ptr<AbstractBrain>>& _brains,
+                   std::shared_ptr<ParametersTable> PT_) :
+	delayGeneticTranslation(false) {
+
   initOrganism(std::move(PT_));
 
   genomes = _genomes;
-
   for (auto genome : genomes) { // collect stats from genomes
     std::string prefix;
     (genome.first == "root::") ? prefix = "" : prefix = genome.first;
@@ -71,7 +73,6 @@ Organism::Organism(
   }
 
   brains = _brains;
-
   for (auto brain : _brains) { // collect stats from brains
     std::string prefix;
     (brain.first == "root::") ? prefix = "" : prefix = brain.first;
@@ -83,20 +84,20 @@ Organism::Organism(
 }
 
 /*
-* create a new organism given a single parent, genomes and brains - the grnome
+* create a new organism given a list of parents, genomes and brains - the genome
 * and brains passed with be installed as is (i.e. NOT copied)
 * it is assumed that either this organism will never by used (it will serve as a
 * template), or the brains have already been built elsewhere
 */
-Organism::Organism(
-    const std::shared_ptr<Organism> &from,
-    std::unordered_map<std::string, std::shared_ptr<AbstractGenome>> &_genomes,
-    std::unordered_map<std::string, std::shared_ptr<AbstractBrain>> &_brains,
-    std::shared_ptr<ParametersTable> PT_) {
+Organism::Organism(std::vector<std::shared_ptr<Organism>> from,
+                   std::unordered_map<std::string,std::shared_ptr<AbstractGenome>> &_genomes,
+                   std::unordered_map<std::string,std::shared_ptr<AbstractBrain>> &_brains,
+                   std::shared_ptr<ParametersTable> PT_) :
+	delayGeneticTranslation(false) {
+
   initOrganism(std::move(PT_));
 
   genomes = _genomes;
-
   for (auto genome : genomes) { // collect stats from genomes
     std::string prefix;
     (genome.first == "root::") ? prefix = "" : prefix = genome.first;
@@ -104,53 +105,50 @@ Organism::Organism(
   }
 
   brains = _brains;
-
   for (auto brain : _brains) { // collect stats from brains
     std::string prefix;
     (brain.first == "root::") ? prefix = "" : prefix = brain.first;
     dataMap.merge(brain.second->getStats(prefix));
   }
 
-  parents.push_back(from);
-  from->offspringCount++; // this parent has an(other) offspring
-  for (auto ancestorID : from->ancestors) {
-    ancestors.insert(ancestorID); // union all parents ancestors into this
-                                  // organisms ancestor set.
-  }
-  for (auto ancestorID : from->snapshotAncestors) {
-    snapshotAncestors.insert(ancestorID); // union all parents ancestors into
-                                          // this organisms ancestor set.
+  for (auto const &parent : from) {
+    parents.push_back(parent); // add this parent to the parents set
+    parent->offspringCount++;  // this parent has an(other) offspring
+    for (auto ancestorID : parent->ancestors) {
+      ancestors.insert(ancestorID); // union all parents ancestors into this
+                                    // organisms ancestor set
+    }
+    for (auto ancestorID : parent->snapshotAncestors) {
+      snapshotAncestors.insert(ancestorID); // union all parents ancestors into
+                                            // this organisms ancestor set.
+    }
   }
 }
 
 /*
-* create a new organism given a list of parents, genomes and brains - the grnome
-* and brains passed with be installed as is (i.e. NOT copied)
-* it is assumed that either this organism will never by used (it will serve as a
-* template), or the brains have already been built elsewhere
+* create a new organism given a list of parents, genomes and parent brains.
+* The genome with be installed as is (i.e. NOT copied). Pointers to parents'
+* brains will be preserved and subsequently used in delayed genetic
+* translation that has to take place before each evaluation.
 */
-Organism::Organism(
-    std::vector<std::shared_ptr<Organism>> from,
-    std::unordered_map<std::string, std::shared_ptr<AbstractGenome>> &_genomes,
-    std::unordered_map<std::string, std::shared_ptr<AbstractBrain>> &_brains,
-    std::shared_ptr<ParametersTable> PT_) {
+Organism::Organism(std::vector<std::shared_ptr<Organism>> from,
+                   std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& _genomes,
+                   std::vector<std::unordered_map<std::string,std::shared_ptr<AbstractBrain>>>& _cannedParentBrains,
+                   std::shared_ptr<ParametersTable> PT_) :
+	delayGeneticTranslation(true) {
+
   initOrganism(std::move(PT_));
 
   genomes = _genomes;
-
   for (auto genome : genomes) { // collect stats from genomes
     std::string prefix;
     (genome.first == "root::") ? prefix = "" : prefix = genome.first;
     dataMap.merge(genome.second->getStats(prefix));
   }
 
-  brains = _brains;
+	cannedParentBrains = _cannedParentBrains;
 
-  for (auto brain : _brains) { // collect stats from brains
-    std::string prefix;
-    (brain.first == "root::") ? prefix = "" : prefix = brain.first;
-    dataMap.merge(brain.second->getStats(prefix));
-  }
+	// no brains are generated for now and no stats are collected
 
   for (auto const &parent : from) {
     parents.push_back(parent); // add this parent to the parents set
@@ -209,7 +207,7 @@ Organism::makeMutatedOffspringFrom(std::shared_ptr<Organism> from) {
     newBrains[brain.first]->mutate();
   }
 
-  return std::make_shared<Organism>(from, newGenomes, newBrains, PT);
+  return std::make_shared<Organism>(std::vector<std::shared_ptr<Organism>>({from}), newGenomes, newBrains, PT);
 }
 
 std::shared_ptr<Organism> Organism::makeMutatedOffspringFromMany(
@@ -335,4 +333,27 @@ Organism::makeCopy(std::shared_ptr<ParametersTable> PT_) {
   newOrg->timeOfDeath = timeOfDeath;
   newOrg->alive = alive;
   return newOrg;
+}
+
+void Organism::translateGenomesToBrains() {
+	if(!delayGeneticTranslation)
+		return;
+
+	brains.clear();
+
+	for(auto brtuple : cannedParentBrains.front() ) {
+		std::vector<std::shared_ptr<AbstractBrain>> parentBrains;
+		for(auto const &brsmap : cannedParentBrains)
+			parentBrains.push_back(brsmap.at(brtuple.first));
+		brains[brtuple.first] = brtuple.second->makeBrainFromMany(parentBrains, genomes);
+		brains[brtuple.first]->mutate();
+	}
+
+	for (auto brtuple : brains) { // collect stats from brains
+    std::string prefix;
+    (brtuple.first == "root::") ? prefix = "" : prefix = brtuple.first;
+    dataMap.merge(brtuple.second->getStats(prefix));
+  }
+
+	delayGeneticTranslation = false;
 }

@@ -389,7 +389,7 @@ constructAllGroupsFrom(const std::shared_ptr<AbstractWorld> &world,
         newBrains[brain.first] = brain.second->makeBrain(newGenomes);
       }
       auto newOrg =
-          std::make_shared<Organism>(progenitor, newGenomes, newBrains, PT);
+          std::make_shared<Organism>(std::vector<std::shared_ptr<Organism>>({progenitor}), newGenomes, newBrains, PT);
 
       // add new organism to population
       population.push_back(newOrg);
