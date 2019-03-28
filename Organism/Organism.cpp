@@ -190,55 +190,34 @@ void Organism::kill() {
   }
 }
 
-std::shared_ptr<Organism>
-Organism::makeMutatedOffspringFrom(std::shared_ptr<Organism> from) {
-
-  std::unordered_map<std::string, std::shared_ptr<AbstractGenome>> newGenomes;
-  std::unordered_map<std::string, std::shared_ptr<AbstractBrain>> newBrains;
-
-  for (auto genome : from->genomes) {
-    newGenomes[genome.first] =
-        genome.second->makeMutatedGenomeFrom(genome.second);
-  }
-
-  for (auto brain : from->brains) {
-    newBrains[brain.first] =
-        brain.second->makeBrainFrom(brain.second, newGenomes);
-    newBrains[brain.first]->mutate();
-  }
-
-  return std::make_shared<Organism>(std::vector<std::shared_ptr<Organism>>({from}), newGenomes, newBrains, PT);
+std::shared_ptr<Organism> Organism::makeMutatedOffspringFrom(std::shared_ptr<Organism> from) {
+	return makeMutatedOffspringFromMany(std::vector<std::shared_ptr<Organism>>({from}));
 }
 
-std::shared_ptr<Organism> Organism::makeMutatedOffspringFromMany(
-    std::vector<std::shared_ptr<Organism>> from) {
+std::shared_ptr<Organism> Organism::makeMutatedOffspringFromMany(std::vector<std::shared_ptr<Organism>> from) {
 
   std::unordered_map<std::string, std::shared_ptr<AbstractGenome>> newGenomes;
   std::unordered_map<std::string, std::shared_ptr<AbstractBrain>> newBrains;
 
   for (auto genome : from[0]->genomes) {
-    std::vector<std::shared_ptr<AbstractGenome>>
-        parentGenomes; // make a list of parents genomes
-    for (auto const &p : from) {
+    std::vector<std::shared_ptr<AbstractGenome>> parentGenomes; // make a list of parents genomes
+    for (auto const &p : from)
       parentGenomes.push_back(p->genomes[genome.first]);
-    }
-    newGenomes[genome.first] =
-        genome.second->makeMutatedGenomeFromMany(parentGenomes);
+    newGenomes[genome.first] = genome.second->makeMutatedGenomeFromMany(parentGenomes);
   }
 
-  for (auto brain : from[0]->brains) {
-    std::vector<std::shared_ptr<AbstractBrain>>
-        parentBrains; // make a list of parents genomes
-    for (auto const &p : from) {
-      parentBrains.push_back(p->brains[brain.first]);
-    }
+	std::vector<std::unordered_map<std::string,std::shared_ptr<AbstractBrain>>> parentBrains;
+	for(auto& p : from)
+		parentBrains.push_back(p->brains);
 
-    newBrains[brain.first] =
-        brain.second->makeBrainFromMany(parentBrains, newGenomes);
-    newBrains[brain.first]->mutate();
-  }
+  return std::make_shared<Organism>(from, newGenomes, parentBrains, PT);
 
-  return std::make_shared<Organism>(from, newGenomes, newBrains, PT);
+	// replace the line above with the section below to make Organism
+	// compatible with worlds other than AbstractIsolatedEmbodied's daughters
+
+//	auto outptr = std::make_shared<Organism>(from, newGenomes, parentBrains, PT);
+//	outptr->translateGenomesToBrains();
+//	return outptr;
 }
 
 /*
@@ -290,10 +269,8 @@ std::shared_ptr<Organism>
 Organism::getMostRecentCommonAncestor(std::shared_ptr<Organism> org) {
   std::vector<std::shared_ptr<Organism>> LOD =
       getLOD(org); // get line of decent parent "parent"
-  for (auto org :
-       LOD) { // starting at the oldest parent, moving to the youngest
-    if (org->offspringCount >
-        1) // the first (oldest) ancestor with more then one surviving offspring
+  for (auto org : LOD) { // starting at the oldest parent, moving to the youngest
+    if (org->offspringCount > 1) // the first (oldest) ancestor with more then one surviving offspring
       return org;
   }
   return org; // a currently active genome will have referenceCounter = 1 but
@@ -301,10 +278,8 @@ Organism::getMostRecentCommonAncestor(std::shared_ptr<Organism> org) {
 }
 std::shared_ptr<Organism> Organism::getMostRecentCommonAncestor(
     std::vector<std::shared_ptr<Organism>> LOD) {
-  for (auto org :
-       LOD) { // starting at the oldest parent, moving to the youngest
-    if (org->offspringCount >
-        1) // the first (oldest) ancestor with more then one surviving offspring
+  for (auto org : LOD) { // starting at the oldest parent, moving to the youngest
+    if (org->offspringCount > 1) // the first (oldest) ancestor with more then one surviving offspring
       return org;
   }
   return LOD.back(); // a currently active genome will have referenceCounter = 1

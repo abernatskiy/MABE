@@ -39,6 +39,8 @@ void AbstractIsolatedEmbodiedWorld::evaluateOnce(std::shared_ptr<Organism> org, 
 
 	if(visualize) std::cout << "Evaluating organism " << org->ID << " at " << org << std::endl;
 
+	org->translateGenomesToBrains();
+
 	resetWorld(visualize);
 
   brain = org->brains[brainName];
