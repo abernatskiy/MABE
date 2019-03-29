@@ -410,3 +410,23 @@ getAttributeMapByID(const std::string &file_name) {
   return result;
 }
 
+// Put an arbitrary value to the target variable, return false on conversion
+// failure (COPIES FUNCTION OF load_value()!)
+template <class T>
+inline static bool convertString(const std::string &source, T &target) {
+  std::stringstream ss(source);
+  std::string remaining;
+  return ss >> target ? !(ss >> remaining) : false;
+}
+
+// converts a vector of string to a vector of type of values determined by target vector,
+// and returns bool if errors in conversion, ex: convertVectorOfStringsToVector(source, target)
+template <typename T> inline static
+bool convertVectorOfStringsToVector(const std::vector<std::string> &list, std::vector<T> &target) {
+  target.resize(list.size());
+  bool errors_detected(false);
+  for (size_t i=0; i<list.size(); i++) {
+    errors_detected |= (false == convertString(list[i], target[i]));
+  }
+  return errors_detected;
+}

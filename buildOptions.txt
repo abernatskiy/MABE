@@ -22,6 +22,7 @@
   - ConstantValues
   - Human
   - Wire
+  + BiLog
 	
 % Optimizer
   * Simple
