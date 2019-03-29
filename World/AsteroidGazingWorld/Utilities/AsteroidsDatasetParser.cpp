@@ -21,8 +21,8 @@ bool hasEnding(std::string const &fullString, std::string const &ending) {
 // AsteroidDatasetParser class definitions
 
 AsteroidsDatasetParser::AsteroidsDatasetParser(std::string datasetPath) :
-	fsDatasetPath(fs::system_complete(datasetPath)) {
 
+	fsDatasetPath(fs::system_complete(datasetPath)) {
 	if( !fs::exists(fsDatasetPath) ) { std::cerr << "Dataset path " << fsDatasetPath.string() << " does not exist" << std::endl; exit(EXIT_FAILURE); }
 	if( !fs::is_directory(fsDatasetPath) ) { std::cerr << "Dataset path " << fsDatasetPath.string() << " is not a directory" << std::endl; exit(EXIT_FAILURE); }
 }
@@ -59,30 +59,25 @@ std::string AsteroidsDatasetParser::getDescriptionPath(std::string asteroidName)
 const std::vector<command_type>& AsteroidsDatasetParser::cachingGetDescription(std::string asteroidName) {
 	auto itDesc = descriptionCache.find(asteroidName);
 	if(itDesc==descriptionCache.end()) {
-		#pragma omp critical
-		{
-//			std::cout << "Desciption cache miss for astroid " << asteroidName << std::endl << std::flush;
-			std::string descPath = getDescriptionPath(asteroidName);
-			std::ifstream commandsFstream(descPath);
-			std::string cline;
-			std::vector<command_type> desc;
-			while( std::getline(commandsFstream, cline) ) {
-				command_type com;
-				std::istringstream cstream(cline);
-				for(auto it=std::istream_iterator<command_field_type>(cstream); it!=std::istream_iterator<command_field_type>(); it++)
-					com.push_back(*it);
-				desc.push_back(com);
-			}
-		  commandsFstream.close();
-			descriptionCache[asteroidName] = desc;
-//			for(const auto& com : desc) {
-//				for(const auto& f : com)
-//					std::cout << f << ' ';
-//				std::cout << std::endl;
-//			}
-			itDesc = descriptionCache.find(asteroidName); // I am sleepy. Minimizing the number of possible points of failure
-//			std::cout << "Cache updated for astroid " << asteroidName << std::endl << std::flush;
+		std::string descPath = getDescriptionPath(asteroidName);
+		std::ifstream commandsFstream(descPath);
+		std::string cline;
+		std::vector<command_type> desc;
+		while( std::getline(commandsFstream, cline) ) {
+			command_type com;
+			std::istringstream cstream(cline);
+			for(auto it=std::istream_iterator<command_field_type>(cstream); it!=std::istream_iterator<command_field_type>(); it++)
+				com.push_back(*it);
+			desc.push_back(com);
 		}
+	  commandsFstream.close();
+		descriptionCache[asteroidName] = desc;
+//		for(const auto& com : desc) {
+//			for(const auto& f : com)
+//				std::cout << f << ' ';
+//			std::cout << std::endl;
+//		}
+		itDesc = descriptionCache.find(asteroidName); // I am sleepy. Minimizing the number of possible points of failure
 	}
 
 	return itDesc->second;
