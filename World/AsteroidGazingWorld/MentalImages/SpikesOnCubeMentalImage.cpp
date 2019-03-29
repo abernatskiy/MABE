@@ -175,25 +175,10 @@ int SpikesOnCubeMentalImage::numInputs() {
 
 void SpikesOnCubeMentalImage::readOriginalCommands() {
 	originalCommands.clear();
-	std::string commandsFilePath = datasetParserPtr->getDescriptionPath(*currentAsteroidNamePtr);
-	std::ifstream commandsFstream(commandsFilePath);
-	std::string cline;
-	while( std::getline(commandsFstream, cline) ) {
-		unsigned face, i, j;
-		std::stringstream cstream(cline);
-		cstream >> face >> i >> j;
-		originalCommands.push_back(std::make_tuple(face,i,j));
-	}
-	commandsFstream.close();
+	const std::vector<std::vector<unsigned>>& commands = datasetParserPtr->cachingGetDescription(*currentAsteroidNamePtr);
 
-/*
-	std::cout << "Read original commands for " << *currentAsteroidNamePtr <<" from " << commandsFilePath << ":" << std::endl;
-	for(auto command : originalCommands) {
-		printCommand(command);
-		std::cout << std::endl;
-	}
-	std::cout << std::endl;
-*/
+	for(const auto& com : commands)
+		originalCommands.push_back(std::make_tuple(com[0], com[1], com[2]));
 }
 
 void SpikesOnCubeMentalImage::readHelperANN() {

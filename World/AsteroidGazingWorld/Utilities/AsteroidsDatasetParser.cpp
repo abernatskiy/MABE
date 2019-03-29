@@ -1,6 +1,7 @@
 #include "AsteroidsDatasetParser.h"
 
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <iomanip>
 #include <cstdlib>
@@ -53,6 +54,33 @@ std::string AsteroidsDatasetParser::getDescriptionPath(std::string asteroidName)
 	std::string descpath = ( fsDatasetPath / fs::path(asteroidName) / fs::path("logfile.txt") ).string();
 	checkIfRegularFile(descpath);
 	return descpath;
+}
+
+const std::vector<command_type>& AsteroidsDatasetParser::cachingGetDescription(std::string asteroidName) {
+	auto itDesc = descriptionCache.find(asteroidName);
+	if(itDesc==descriptionCache.end()) {
+		std::string descPath = getDescriptionPath(asteroidName);
+		std::ifstream commandsFstream(descPath);
+		std::string cline;
+		std::vector<command_type> desc;
+		while( std::getline(commandsFstream, cline) ) {
+			command_type com;
+			std::istringstream cstream(cline);
+			for(auto it=std::istream_iterator<command_field_type>(cstream); it!=std::istream_iterator<command_field_type>(); it++)
+				com.push_back(*it);
+			desc.push_back(com);
+		}
+	  commandsFstream.close();
+		descriptionCache[asteroidName] = desc;
+//		for(const auto& com : desc) {
+//			for(const auto& f : com)
+//				std::cout << f << ' ';
+//			std::cout << std::endl;
+//		}
+		itDesc = descriptionCache.find(asteroidName); // I am sleepy. Minimizing the number of possible points of failure
+	}
+
+	return itDesc->second;
 }
 
 std::set<std::string> AsteroidsDatasetParser::getAllPicturePaths(std::string asteroidName) {
