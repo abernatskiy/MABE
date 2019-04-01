@@ -163,8 +163,6 @@ void SpikesOnCubeMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, st
 	org->dataMap.append("score", score );
 	org->dataMap.append("guidingFunction", -score);
 	org->dataMap.append("numCorrectCommands", numCorrectCommands);
-
-//	std::cout << "id " << org->ID << " score " << score  << " number of correct commands " << numCorrectCommands << std::endl << std::flush;
 }
 
 int SpikesOnCubeMentalImage::numInputs() {

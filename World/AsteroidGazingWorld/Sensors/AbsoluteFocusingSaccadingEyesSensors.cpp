@@ -188,19 +188,17 @@ unsigned AbsoluteFocusingSaccadingEyesSensors::getNumControls() {
 }
 
 void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
-//	visualize = 1; // enable for debug
-
 	// Converting the controls into a vector of bools
 	std::vector<bool> controls(numMotors);
 	for(unsigned i=0; i<numMotors; i++)
 		controls[i] = brain->readOutput(i) > 0.5;
 
-	if(visualize) {
-		std::cout << "Control inputs of AbsoluteFocusingSaccadingEyes:";
-		for(int ci : controls)
-			std::cout << ' ' << ci;
-		std::cout << std::endl << std::flush;
-	}
+//	if(visualize) {
+//		std::cout << "Control inputs of AbsoluteFocusingSaccadingEyes:";
+//		for(int ci : controls)
+//			std::cout << ' ' << ci;
+//		std::cout << std::endl << std::flush;
+//	}
 
 	// Parsing it and getting the sensor values in meantime:
 	//  1. Determining which snapshot we want to see
@@ -211,9 +209,8 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 	//     ... we now know it is asteroidSnapshots[*currentAsteroidName][condition][distance][phase]
 	//     Let's get some useful params of that snapshot
 
-	if(visualize) {
-		std::cout << "Snapshot summary: asteroid name " << *currentAsteroidName << ", condition " << condition << ", distance " << distance << ", phase " << phase << std::endl;
-	}
+//	if(visualize)
+//		std::cout << "Snapshot summary: asteroid name " << *currentAsteroidName << ", condition " << condition << ", distance " << distance << ", phase " << phase << std::endl;
 
 	AsteroidSnapshot& astSnap = asteroidSnapshots.at(*currentAsteroidName).at(condition).at(distance).at(phase);
 
@@ -264,15 +261,16 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 
 	unsigned pixNum = 0;
 	savedPercept.clear();
-	if(visualize) std::cout << "Thresholding at " << binarizationThreshold << " and printing the resulting bitmap" << std::endl;
+//	if(visualize)
+//		std::cout << "Thresholding at " << binarizationThreshold << " and printing the resulting bitmap" << std::endl;
 	for(unsigned i=0; i<foveaResolution; i++) {
 		for(unsigned j=0; j<foveaResolution; j++) {
 			brain->setInput(pixNum++, view.getBinary(i,j));
 			savedPercept.push_back(view.getBinary(i,j));
 		}
 	}
-	if(visualize)
-		view.printBinary();
+//	if(visualize)
+//		view.printBinary();
 
 	AbstractSensors::update(visualize); // increment the clock
 }

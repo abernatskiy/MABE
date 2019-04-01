@@ -63,6 +63,7 @@ public:
 		for(int r=0; r<evaluationsPerGeneration; r++)
 			evaluateOnce(org, visualize);
 		evaluateOrganism(org, visualize);
+		if(visualize) std::cout << "Organism data map after the evaluation:" << std::endl << org->dataMap.getTextualRepresentation();
 	};
 	void evaluate(std::map<std::string, std::shared_ptr<Group>> &groups, int analyze, int visualize, int debug) {
 		int popSize = groups[groupName]->population.size();
