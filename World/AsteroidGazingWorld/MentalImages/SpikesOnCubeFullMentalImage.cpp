@@ -117,12 +117,15 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 		correctCommandsStateScores.push_back(0);
 		stateScores.push_back(0.);
 
-//		std::cout << "Original commands are ";
-//		for(unsigned i=0; i<3; i++) {
-//			printCommand(originalCommands[i]);
-//			std::cout << ( i==2 ? "" : ", " );
-//		}
-//		std::cout << std::endl;
+		if(mVisualize) {
+			std::cout << "For shape " << *currentAsteroidNamePtr << ":" << std::endl
+								<< "Original commands are ";
+			for(unsigned i=0; i<3; i++) {
+				printCommand(originalCommands[i]);
+				std::cout << ( i==2 ? "" : ", " );
+			}
+			std::cout << std::endl;
+		}
 	}
 
 	if(currentCommandRanges.size() != 0) {
@@ -149,7 +152,19 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 
 	if(stateTime == statePeriod-1) {
 		stateScores.back() /= statePeriod-1;
-//		std::cout << "Final score: " << stateScores.back() << " final hits: " << correctCommandsStateScores.back() << std::endl;
+
+		if(mVisualize) {
+			std::cout << "Brain generated command ranges at the end of evaluation:";
+			for(const auto& curRange : currentCommandRanges)
+				std::cout << " " << commandRangeToStr(curRange);
+			std::cout << std::endl;
+			std::cout << "Final score: " << stateScores.back() << " final hits: " << correctCommandsStateScores.back() << std::endl << std::endl;
+//			std::cout << "Full evaluations:";
+//			for(auto sc : stateScores)
+//				std::cout << ' ' << sc;
+//			std::cout << std::endl;
+		}
+
 	}
 }
 

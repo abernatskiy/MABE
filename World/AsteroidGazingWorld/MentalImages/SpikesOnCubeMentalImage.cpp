@@ -99,23 +99,20 @@ void SpikesOnCubeMentalImage::recordRunningScoresWithinState(std::shared_ptr<Org
 
 		if(mVisualize) cl.logMapping(originalCommands, std::vector<std::vector<CommandType>>({lastCommands}));
 
-//		std::cout << "Evaluation of the current individual was " << cumulativeDivergence << std::endl << std::endl;
+		if(mVisualize) {
+			std::cout << "Brain generated commands for " << *currentAsteroidNamePtr  << ":" << std::endl;
+			for(auto it=currentCommands.end()-numOriginalCommands; it!=currentCommands.end(); it++) {
+				printCommand(*it);
+				std::cout << std::endl;
+			}
+			std::cout << std::endl;
 
-/*
-		std::cout << "Brain generated commands for " << *currentAsteroidNamePtr  << ":" << std::endl;
-		for(auto it=currentCommands.end()-numOriginalCommands; it!=currentCommands.end(); it++) {
-			printCommand(*it);
+			std::cout << "Added " << cumulativeDivergence << " to evaluations of " << *currentAsteroidNamePtr << std::endl;
+			std::cout << "Full evaluations:";
+			for(auto sc : correctCommandsStateScores)
+				std::cout << ' ' << sc;
 			std::cout << std::endl;
 		}
-		std::cout << std::endl;
-
-		std::cout << "Added " << cumulativeDivergence << " to evaluations of " << *currentAsteroidNamePtr << std::endl;
-		std::cout << "Full evaluations:";
-		for(auto sc : correctCommandsStateScores)
-			std::cout << ' ' << sc;
-		std::cout << std::endl;
-*/
-
 	}
 }
 
