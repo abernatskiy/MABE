@@ -35,5 +35,5 @@ public:
 	int numInputs() override;
 
 private:
-	std::tuple<double,bool> evaluateRangeVSSet(const CommandRangeType& guessesRange);
+	std::tuple<double,bool> evaluateRangeVSSet(const CommandRangeType& guessesRange, unsigned index);
 };

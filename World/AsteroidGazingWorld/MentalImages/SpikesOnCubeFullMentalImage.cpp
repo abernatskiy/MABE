@@ -136,8 +136,8 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 		bool curHit;
 
 		std::fill(ocApproximationAttempted.begin(), ocApproximationAttempted.end(), false);
-		for(const auto& curRange : currentCommandRanges) {
-			std::tie(curScore, curHit) = evaluateRangeVSSet(curRange);
+		for(unsigned i=0; i<currentCommandRanges.size(); i++) {
+			std::tie(curScore, curHit) = evaluateRangeVSSet(currentCommandRanges.at(i), i);
 			cumulativeScore += curScore;
 			if(curHit)
 				numCorrectCommands++;
@@ -174,36 +174,22 @@ int SpikesOnCubeFullMentalImage::numInputs() {
 
 /***** Private SpikesOnCubeFullMentalImage class definitions *****/
 
-std::tuple<double,bool> SpikesOnCubeFullMentalImage::evaluateRangeVSSet(const CommandRangeType& guessesRange) {
+std::tuple<double,bool> SpikesOnCubeFullMentalImage::evaluateRangeVSSet(const CommandRangeType& guessesRange, unsigned i) {
 
+	// DESCRIPTION DEPRECATED
 	// returns a score that shows how close the range is to the closest original command,
 	//         a Boolean telling if there were any direct hits,
 	//     and the index of the closest original command
 	// Takes into account and modifies the mask.
 
-	double highestEval;
 	bool preciseHit = false;
-	int highestIdx = -1;
 
-	for(unsigned i=0; i<originalCommands.size(); i++) {
-		if(!ocApproximationAttempted[i]) {
-			double curEval;
-			bool curHit;
+	double curEval;
+	bool curHit;
+	std::tie(curEval, curHit) = evaluateRange(guessesRange, originalCommands.at(i));
 
-			std::tie(curEval, curHit) = evaluateRange(guessesRange, originalCommands.at(i));
+	if(curHit)
+		preciseHit = true;
 
-			if(highestIdx==-1 || (highestIdx>=0 && curEval>highestEval) ) {
-				highestEval = curEval;
-				highestIdx = i;
-			}
-
-			if(curHit)
-				preciseHit = true;
-		}
-	}
-	ocApproximationAttempted[highestIdx] = true;
-
-//	std::cout << "Range vs set yielded " << highestEval << " and " << ( preciseHit ? "a precise hit" : "no precise hit") << std::endl;
-
-	return std::make_tuple(highestEval, preciseHit);
+	return std::make_tuple(curEval, preciseHit);
 }

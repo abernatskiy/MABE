@@ -71,12 +71,28 @@ const std::vector<command_type>& AsteroidsDatasetParser::cachingGetDescription(s
 			desc.push_back(com);
 		}
 	  commandsFstream.close();
+
+		std::sort(desc.begin(), desc.end(),
+		          [](const command_type& a, const command_type& b) {
+		          	if(a[0]==b[0]) {
+		          		if(a[1]==b[1])
+		                return a[2]<b[2];
+		          		else
+		          			return a[1]<b[1];
+		            }
+		            else
+		          		return a[0]<b[0];
+		           }
+		);
+
+
 		descriptionCache[asteroidName] = desc;
 //		for(const auto& com : desc) {
 //			for(const auto& f : com)
 //				std::cout << f << ' ';
 //			std::cout << std::endl;
 //		}
+//		std::cout << std::endl;
 		itDesc = descriptionCache.find(asteroidName); // I am sleepy. Minimizing the number of possible points of failure
 	}
 
