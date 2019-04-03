@@ -401,11 +401,11 @@ void AbsoluteFocusingSaccadingEyesSensors::analyzeDataset() {
 	// Computing and logging the maximum number of commands that can be recovered with the available percepts
 	unsigned numRecoverableCommands = 0;
 	for(unsigned i=0; i<perceptShots.size(); i++)
-		numRecoverableCommands += 3 + commandIntersections[i].size()*(perceptAsteroidNames[i].size()-1);
+		numRecoverableCommands += 1 + commandIntersections[i].size()*(perceptAsteroidNames[i].size()-1);
 	logfile << "Total number of recoverable commands is " << numRecoverableCommands
-	        << " out of " << 3*asteroidSnapshots.size()
-	        << " (" << 3*perceptShots.size() << " from unique percepts plus "
-	        << numRecoverableCommands-3*perceptShots.size() << " by giving the same answer on same percept)" << endl;
+	        << " out of " << 1*asteroidSnapshots.size()
+	        << " (" << 1*perceptShots.size() << " from unique percepts plus "
+	        << numRecoverableCommands-1*perceptShots.size() << " by giving the same answer on same percept)" << endl;
 	logfile << endl;
 
 	// Logging the list of different percepts

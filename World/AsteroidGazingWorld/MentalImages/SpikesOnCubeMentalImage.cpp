@@ -235,7 +235,7 @@ double SpikesOnCubeMentalImage::maxCommandDivergence() {
 	// TODO: figure out what to do here for ANN-based guiding functions
 
 	// For manually designed guiding funciton: Hamming distance
-	return 3*(5+2*q);
+	return 1*(5+2*q);
 }
 
 double SpikesOnCubeMentalImage::evaluateCommand(const CommandType& command) {

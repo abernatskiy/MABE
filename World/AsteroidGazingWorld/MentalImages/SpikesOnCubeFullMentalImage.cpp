@@ -96,7 +96,7 @@ void SpikesOnCubeFullMentalImage::updateWithInputs(std::vector<double> inputs) {
 	}
 
 	currentCommandRanges.clear();
-	for(unsigned ci=0; ci<3; ci++) {
+	for(unsigned ci=0; ci<1; ci++) {
 		auto it = inputs.begin() + ci*(lBitsForFace+2*lBitsForCoordinate);
 //		std::cout << "Bit pattern " << bitRangeToStr(it, lBitsForFace+2*lBitsForCoordinate);
 		auto faceRange = decodeMHVUInt(it, it+lBitsForFace);
@@ -120,9 +120,9 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 		if(mVisualize) {
 			std::cout << "For shape " << *currentAsteroidNamePtr << ":" << std::endl
 								<< "Original commands are ";
-			for(unsigned i=0; i<3; i++) {
+			for(unsigned i=0; i<1; i++) {
 				printCommand(originalCommands[i]);
-				std::cout << ( i==2 ? "" : ", " );
+				std::cout << ( i==0 ? "" : ", " );
 			}
 			std::cout << std::endl;
 		}
@@ -169,7 +169,7 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 }
 
 int SpikesOnCubeFullMentalImage::numInputs() {
-	return 3*(lBitsForFace + 2*lBitsForCoordinate);
+	return 1*(lBitsForFace + 2*lBitsForCoordinate);
 }
 
 /***** Private SpikesOnCubeFullMentalImage class definitions *****/
