@@ -361,17 +361,17 @@ void AbsoluteFocusingSaccadingEyesSensors::analyzeDataset() {
 	logfile << endl;
 
 	// Counting common sculpting commands for each percept
-	typedef tuple<unsigned,unsigned,unsigned> commandType;
+	typedef tuple<unsigned> commandType;
 	vector<set<commandType>> commandIntersections(perceptShots.size());
 	for(unsigned p=0; p<perceptShots.size(); p++) {
 		{
 			ifstream initialCommandsStream(datasetParser->getDescriptionPath(perceptAsteroidNames[p][0]));
 			string cline;
 			while(getline(initialCommandsStream, cline)) {
-				unsigned face, i, j;
+				unsigned digit;
 				stringstream cstream(cline);
-				cstream >> face >> i >> j;
-				commandIntersections[p].insert(make_tuple(face, i, j));
+				cstream >> digit;
+				commandIntersections[p].insert(make_tuple(digit));
 			}
 			initialCommandsStream.close();
 		}
@@ -382,10 +382,10 @@ void AbsoluteFocusingSaccadingEyesSensors::analyzeDataset() {
 			ifstream currentCommandsStream(datasetParser->getDescriptionPath(perceptAsteroidNames[p][j]));
 			string cline;
 			while(getline(currentCommandsStream, cline)) {
-				unsigned face, i, j;
+				unsigned digit;
 				stringstream cstream(cline);
-				cstream >> face >> i >> j;
-				curCommands.insert(make_tuple(face, i, j));
+				cstream >> digit;
+				curCommands.insert(make_tuple(digit));
 			}
 			currentCommandsStream.close();
 
@@ -416,9 +416,7 @@ void AbsoluteFocusingSaccadingEyesSensors::analyzeDataset() {
 			logfile << " " << astName;
 		logfile << " (which have " << commandIntersections[i].size() << " common intersecting commands:";
 		for(const auto& comCom : commandIntersections[i])
-			logfile << " " << get<0>(comCom)
-			        << " " << get<1>(comCom)
-			        << " " << get<2>(comCom) << ",";
+			logfile << " " << get<0>(comCom) << " ";
 		logfile << ")" << endl;
 		logfile << perceptShots[i].getPrintedBinary();
 	}

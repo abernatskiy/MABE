@@ -5,18 +5,10 @@
 
 std::string commandRangeToStr(const CommandRangeType& crange) {
 	const std::vector<unsigned>& frange = std::get<0>(crange);
-	const std::vector<unsigned>& irange = std::get<1>(crange);
-	const std::vector<unsigned>& jrange = std::get<2>(crange);
 	std::ostringstream s;
 	s << "[{";
 	for(auto it=frange.cbegin(); it!=frange.cend(); it++)
 		s << *it << ( it!=frange.cend()-1 ? "," : "" );
-	s << "},{";
-	for(auto it=irange.cbegin(); it!=irange.cend(); it++)
-		s << *it << ( it!=irange.cend()-1 ? "," : "" );
-	s << "},{";
-	for(auto it=jrange.cbegin(); it!=jrange.cend(); it++)
-		s << *it << ( it!=jrange.cend()-1 ? "," : "" );
 	s << "}]";
 	return s.str();
 }
@@ -30,34 +22,16 @@ std::string bitRangeToStr(std::vector<double>::iterator startAt, unsigned bits) 
 
 std::tuple<double,bool> evaluateRange(const CommandRangeType& guessesRange, const CommandType& originalCommand) {
 	// returns a score that shows how close the range is to the original command and a Boolean telling if it's a direct hit
-	unsigned of, oi, oj;
-	std::tie(of, oi, oj) = originalCommand;
+	unsigned od;
+	std::tie(od) = originalCommand;
 
 	double eval = 0.;
 	bool preciseHit = true;
 
 	if(std::find(std::get<0>(guessesRange).begin(),
-	             std::get<0>(guessesRange).end(), of) != std::get<0>(guessesRange).end()) {
+	             std::get<0>(guessesRange).end(), od) != std::get<0>(guessesRange).end()) {
 		eval += 1./static_cast<double>(std::get<0>(guessesRange).size()); // Arend suggests to square the size. I'll try without it
 		if(std::get<0>(guessesRange).size()!=1)
-			preciseHit = false;
-	}
-	else
-		preciseHit = false;
-
-	if(std::find(std::get<1>(guessesRange).begin(),
-	             std::get<1>(guessesRange).end(), oi) != std::get<1>(guessesRange).end()) {
-		eval += 1./static_cast<double>(std::get<1>(guessesRange).size());
-		if(std::get<1>(guessesRange).size()!=1)
-			preciseHit = false;
-	}
-	else
-		preciseHit = false;
-
-	if(std::find(std::get<2>(guessesRange).begin(),
-	             std::get<2>(guessesRange).end(), oj) != std::get<2>(guessesRange).end()) {
-		eval += 1./static_cast<double>(std::get<2>(guessesRange).size());
-		if(std::get<2>(guessesRange).size()!=1)
 			preciseHit = false;
 	}
 	else
@@ -69,7 +43,7 @@ std::tuple<double,bool> evaluateRange(const CommandRangeType& guessesRange, cons
 
 //	if(preciseHit) { std::cout << "Precise hit achieved by range " << commandRangeToStr(guessesRange) << " on command "; printCommand(originalCommand); std::cout << std::endl; }
 
-	return std::make_tuple(eval/3., preciseHit);
+	return std::make_tuple(eval/1., preciseHit);
 }
 
 /***** Public SpikesOnCubeFullMentalImage class definitions *****/
@@ -96,18 +70,11 @@ void SpikesOnCubeFullMentalImage::updateWithInputs(std::vector<double> inputs) {
 	}
 
 	currentCommandRanges.clear();
-	for(unsigned ci=0; ci<1; ci++) {
-		auto it = inputs.begin() + ci*(lBitsForFace+2*lBitsForCoordinate);
-//		std::cout << "Bit pattern " << bitRangeToStr(it, lBitsForFace+2*lBitsForCoordinate);
-		auto faceRange = decodeMHVUInt(it, it+lBitsForFace);
-		it += lBitsForFace;
-		auto iRange = decodeMHVUInt(it, it+lBitsForCoordinate);
-		it += lBitsForCoordinate;
-		auto jRange = decodeMHVUInt(it, it+lBitsForCoordinate);
+	auto it = inputs.begin();
+	auto digitRange = decodeMHVUInt(it, it+mnistNumBits);
 
-		currentCommandRanges.push_back(std::make_tuple(faceRange, iRange, jRange));
+	currentCommandRanges.push_back(std::make_tuple(digitRange));
 //		std::cout << " decoded into range " << commandRangeToStr(std::make_tuple(faceRange, iRange, jRange)) << std::endl;
-	}
 }
 
 void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> org, int stateTime, int statePeriod) {
@@ -169,7 +136,7 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 }
 
 int SpikesOnCubeFullMentalImage::numInputs() {
-	return 1*(lBitsForFace + 2*lBitsForCoordinate);
+	return mnistNumBits;
 }
 
 /***** Private SpikesOnCubeFullMentalImage class definitions *****/

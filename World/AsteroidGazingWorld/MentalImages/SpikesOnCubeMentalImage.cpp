@@ -7,9 +7,9 @@
 #include <cstdlib>
 
 void printCommand(CommandType com) {
-	unsigned f,i,j;
-	std::tie(f,i,j) = com;
-	std::cout << f << ' ' << i << ' ' << j;
+	unsigned d;
+	std::tie(d) = com;
+	std::cout << d;
 }
 
 void printCommandsVector(std::vector<CommandType> commands) {
@@ -57,21 +57,8 @@ void SpikesOnCubeMentalImage::updateWithInputs(std::vector<double> inputs) {
 		return;
 	}
 
-	unsigned face, i, j;
-	auto it = inputs.begin();
-
-//	face = decodeSPUInt(it, it+bitsForFace);
-	face = decodeOHUInt(it, it+bitsForFace);
-	it += bitsForFace;
-
-//	i = decodeSPUInt(it, it+bitsForCoordinate);
-	i = decodeOHUInt(it, it+bitsForCoordinate);
-	it += bitsForCoordinate;
-
-//	j = decodeSPUInt(it, it+bitsForCoordinate);
-	j = decodeOHUInt(it, it+bitsForCoordinate);
-
-	currentCommands.push_back(std::make_tuple(face,i,j));
+	std::cerr << "updateWithInputs called from SpikesOnCubeMentalImage - should never happen in this branch" << std::endl;
+	exit(EXIT_FAILURE);
 }
 
 void SpikesOnCubeMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> org, int stateTime, int statePeriod) {
@@ -163,7 +150,7 @@ void SpikesOnCubeMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, st
 }
 
 int SpikesOnCubeMentalImage::numInputs() {
-	return bitsForFace + 2*bitsForCoordinate;
+	return mnistNumBits;
 }
 
 /***** Private SpikesOnCubeMentalImage class definitions *****/
@@ -173,7 +160,7 @@ void SpikesOnCubeMentalImage::readOriginalCommands() {
 	const std::vector<std::vector<unsigned>>& commands = datasetParserPtr->cachingGetDescription(*currentAsteroidNamePtr);
 
 	for(const auto& com : commands)
-		originalCommands.push_back(std::make_tuple(com[0], com[1], com[2]));
+		originalCommands.push_back(std::make_tuple(com[0]));
 }
 
 void SpikesOnCubeMentalImage::readHelperANN() {
@@ -194,17 +181,17 @@ void SpikesOnCubeMentalImage::readHelperANN() {
 }
 
 inline std::vector<double> SpikesOnCubeMentalImage::encodeStatement(const CommandType& st) {
-	std::vector<double> nw_input(ANN_INPUT_SIZE);
+	std::vector<double> nw_input(ANN_INPUT_SIZE, 0);
 
-	unsigned f,i,j;
-	std::tie(f,i,j) = st;
+//	unsigned d;
+//	std::tie(d) = st;
 
-	nw_input[0] = 0.;
-	nw_input[1] = propEnc(f, 6-1);
-	nw_input[2] = propEnc(1, 3); // MAX_FEATURE_SIZE is erroneously set to 3 in the craterless ALSD runs,
-	                             // but the corresponding ANN input never changes (stays equal to 1/3) so it should be fine
-	nw_input[3] = propEnc(i, q);
-	nw_input[4] = propEnc(j, q);
+//	nw_input[0] = 0.;
+//	nw_input[1] = propEnc(f, 6-1);
+//	nw_input[2] = propEnc(1, 3); // MAX_FEATURE_SIZE is erroneously set to 3 in the craterless ALSD runs,
+//	                             // but the corresponding ANN input never changes (stays equal to 1/3) so it should be fine
+//	nw_input[3] = propEnc(i, q);
+//	nw_input[4] = propEnc(j, q);
 
 	return nw_input;
 }
@@ -222,12 +209,10 @@ double SpikesOnCubeMentalImage::commandDivergence(const CommandType& lhs, const 
 */
 
 	// Manually designed guiding function: Hamming distance
-	unsigned f0, i0, j0, f1, i1, j1;
-	std::tie(f0, i0, j0) = lhs;
-	std::tie(f1, i1, j1) = rhs;
-	return static_cast<double>( (f0>f1 ? f0-f1 : f1-f0) +
-	                            (i0>i1 ? i0-i1 : i1-i0) +
-	                            (j0>j1 ? j0-j1 : j1-j0) );
+	unsigned d0, d1;
+	std::tie(d0) = lhs;
+	std::tie(d1) = rhs;
+	return static_cast<double>( (d0>d1 ? d0-d1 : d1-d0) );
 }
 
 double SpikesOnCubeMentalImage::maxCommandDivergence() {
@@ -235,11 +220,15 @@ double SpikesOnCubeMentalImage::maxCommandDivergence() {
 	// TODO: figure out what to do here for ANN-based guiding functions
 
 	// For manually designed guiding funciton: Hamming distance
-	return 1*(5+2*q);
+	return mnistNumDigits-1;
 }
 
 double SpikesOnCubeMentalImage::evaluateCommand(const CommandType& command) {
 
+	std::cerr << "evaluateCommand called from SpikesOnCubeMentalImage - should never happen in this branch" << std::endl;
+	exit(EXIT_FAILURE);
+
+/*
 	if(originalCommands.empty()) {
 		std::cerr << "Evalution of a command asked before list of original comands was read, exiting" << std::endl << std::flush;
 		exit(EXIT_FAILURE);
@@ -271,6 +260,8 @@ double SpikesOnCubeMentalImage::evaluateCommand(const CommandType& command) {
 //	std::cout << "Marking statement #" << minDivergenceCommandIdx << " ("; printCommand(originalCommands[minDivergenceCommandIdx]); std::cout << ", divergence " << minDivergence << ") as attempted" << std::endl;
 
 	return minDivergence;
+*/
+	return 0;
 }
 
 const std::vector<unsigned>& SpikesOnCubeMentalImage::getEvaluationOrder(unsigned lineageID, unsigned numAsteroids) {

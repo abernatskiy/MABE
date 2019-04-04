@@ -13,7 +13,7 @@
 
 #include "commandLogger.h"
 
-typedef std::tuple<unsigned,unsigned,unsigned> CommandType; // location of the spike is determined by three numbers
+typedef std::tuple<unsigned> CommandType; // digit is determined by a single number
 
 void printCommand(CommandType com);
 void printCommandsVector(std::vector<CommandType> commands);
@@ -31,16 +31,8 @@ protected:
 	std::vector<double> stateScores;
 	std::vector<unsigned> correctCommandsStateScores;
 
-	const unsigned k = 2;
-	const unsigned q = 1<<k;
-
-	// "One-hot" encoding version
-	const unsigned bitsForFace = 6;
-	const unsigned bitsForCoordinate = q+1;
-
-	// Standard positional encoding version
-	//const unsigned bitsForFace = 3;
-	//const unsigned bitsForCoordinate = k+1;
+	const unsigned mnistNumDigits = 10;
+	const unsigned mnistNumBits = 2*mnistNumDigits;
 
 	bool justReset;
 

@@ -3,7 +3,7 @@
 #include <string>
 #include <fstream>
 
-typedef std::tuple<unsigned,unsigned,unsigned> CommandType;
+typedef std::tuple<unsigned> CommandType;
 
 class CommandLogger {
 
@@ -36,9 +36,9 @@ private:
 	void logCommand(const CommandType& cmd) {
 		if(!logfile.is_open()) return;
 
-		unsigned f, i, j;
-		std::tie(f, i, j) = cmd;
-		logfile << '[' << f << ',' << i << ',' << j << ']';
+		unsigned d;
+		std::tie(d) = cmd;
+		logfile << '[' << d << ']';
 	}
 
 	void logCommands(const std::vector<CommandType>& cmds) {
