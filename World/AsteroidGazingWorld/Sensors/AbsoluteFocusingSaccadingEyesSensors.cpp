@@ -361,35 +361,51 @@ void AbsoluteFocusingSaccadingEyesSensors::analyzeDataset() {
 	logfile << endl;
 
 	// Counting common sculpting commands for each percept
-	typedef tuple<unsigned,unsigned,unsigned> commandType;
-	vector<set<commandType>> commandIntersections(perceptShots.size());
+	vector<set<command_type>> commandIntersections(perceptShots.size()); // command_type is defined at AsteroidsDatasetParser.h
+	unsigned numCommands;
 	for(unsigned p=0; p<perceptShots.size(); p++) {
 		{
 			ifstream initialCommandsStream(datasetParser->getDescriptionPath(perceptAsteroidNames[p][0]));
 			string cline;
 			while(getline(initialCommandsStream, cline)) {
-				unsigned face, i, j;
 				stringstream cstream(cline);
-				cstream >> face >> i >> j;
-				commandIntersections[p].insert(make_tuple(face, i, j));
+				command_type com;
+				for(auto it=istream_iterator<command_field_type>(cstream); it!=istream_iterator<command_field_type>(); it++)
+					com.push_back(*it);
+				commandIntersections[p].insert(com);
 			}
 			initialCommandsStream.close();
+
+			if(p==0)
+				numCommands = commandIntersections[p].size();
+			else if(commandIntersections[p].size()!=numCommands) {
+				logfile << "Variation in number of commands detected. Such datasets are not yet sopported. Exiting analyzer" << endl;
+				logfile.close();
+				return;
+			}
 		}
 
 		for(unsigned j=1; j<perceptAsteroidNames[p].size(); j++) {
-			set<commandType> curCommands;
+			set<command_type> curCommands;
 
 			ifstream currentCommandsStream(datasetParser->getDescriptionPath(perceptAsteroidNames[p][j]));
 			string cline;
 			while(getline(currentCommandsStream, cline)) {
-				unsigned face, i, j;
 				stringstream cstream(cline);
-				cstream >> face >> i >> j;
-				curCommands.insert(make_tuple(face, i, j));
+				command_type com;
+				for(auto it=istream_iterator<command_field_type>(cstream); it!=istream_iterator<command_field_type>(); it++)
+					com.push_back(*it);
+				curCommands.insert(com);
 			}
 			currentCommandsStream.close();
 
-			vector<set<commandType>::iterator> toRemove;
+			if(curCommands.size()!=numCommands) {
+				logfile << "Variation in number of commands detected. Such datasets are not yet sopported. Exiting analyzer" << endl;
+				logfile.close();
+				return;
+			}
+
+			vector<set<command_type>::iterator> toRemove;
 			for(auto it=commandIntersections[p].begin(); it!=commandIntersections[p].end(); it++)
 				if(curCommands.find(*it)==curCommands.end())
 					toRemove.push_back(it);
@@ -401,11 +417,11 @@ void AbsoluteFocusingSaccadingEyesSensors::analyzeDataset() {
 	// Computing and logging the maximum number of commands that can be recovered with the available percepts
 	unsigned numRecoverableCommands = 0;
 	for(unsigned i=0; i<perceptShots.size(); i++)
-		numRecoverableCommands += 3 + commandIntersections[i].size()*(perceptAsteroidNames[i].size()-1);
+		numRecoverableCommands += numCommands + commandIntersections[i].size()*(perceptAsteroidNames[i].size()-1);
 	logfile << "Total number of recoverable commands is " << numRecoverableCommands
-	        << " out of " << 3*asteroidSnapshots.size()
-	        << " (" << 3*perceptShots.size() << " from unique percepts plus "
-	        << numRecoverableCommands-3*perceptShots.size() << " by giving the same answer on same percept)" << endl;
+	        << " out of " << numCommands*asteroidSnapshots.size()
+	        << " (" << numCommands*perceptShots.size() << " from unique percepts plus "
+	        << numRecoverableCommands-numCommands*perceptShots.size() << " by giving the same answer on same percept)" << endl;
 	logfile << endl;
 
 	// Logging the list of different percepts
@@ -415,10 +431,11 @@ void AbsoluteFocusingSaccadingEyesSensors::analyzeDataset() {
 		for(const auto& astName : perceptAsteroidNames[i])
 			logfile << " " << astName;
 		logfile << " (which have " << commandIntersections[i].size() << " common intersecting commands:";
-		for(const auto& comCom : commandIntersections[i])
-			logfile << " " << get<0>(comCom)
-			        << " " << get<1>(comCom)
-			        << " " << get<2>(comCom) << ",";
+		for(const auto& comCom : commandIntersections[i]) {
+			for(const auto& comField : comCom)
+				logfile << " " << comField;
+			logfile << ",";
+		}
 		logfile << ")" << endl;
 		logfile << perceptShots[i].getPrintedBinary();
 	}
