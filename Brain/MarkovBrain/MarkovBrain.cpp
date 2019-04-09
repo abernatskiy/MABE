@@ -387,6 +387,8 @@ std::vector<std::shared_ptr<AbstractBrain>> MarkovBrain::getAllSingleGateKnockou
 
 void* MarkovBrain::logTimeSeries(const std::string& label) {
 
+	const unsigned m = 2;
+
 	png::image<std::uint8_t> eegImage(128, 128);
 	for(unsigned y=0; y<eegImage.get_height(); y++) {
 		for(unsigned x=0; x<eegImage.get_width(); x++) {
@@ -394,4 +396,6 @@ void* MarkovBrain::logTimeSeries(const std::string& label) {
 		}
 	}
 	eegImage.write(label);
+
+	return nullptr;
 }
