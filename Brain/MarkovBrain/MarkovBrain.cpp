@@ -10,6 +10,7 @@
 
 #include <sstream>
 #include <iomanip>
+#include <png++/png.hpp>
 
 #include "MarkovBrain.h"
 
@@ -382,4 +383,15 @@ std::vector<std::shared_ptr<AbstractBrain>> MarkovBrain::getAllSingleGateKnockou
 		res.push_back(bmut);
 	}
 	return res;
+}
+
+void* MarkovBrain::logTimeSeries(const std::string& label) {
+
+	png::image<std::uint8_t> eegImage(128, 128);
+	for(unsigned y=0; y<eegImage.get_height(); y++) {
+		for(unsigned x=0; x<eegImage.get_width(); x++) {
+			eegImage[y][x] = (std::uint8_t) (x+y);
+		}
+	}
+	eegImage.write(label);
 }

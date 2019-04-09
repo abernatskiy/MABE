@@ -53,4 +53,6 @@ public:
 	};
 
 	bool stateIsFinal() override { return terminalState; };
+
+	const std::string& currentStateDescription() override { return asteroidNames.at(currentAsteroidIndex); };
 };

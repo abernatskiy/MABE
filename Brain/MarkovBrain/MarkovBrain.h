@@ -261,9 +261,9 @@ public:
 		return {genomeNamePL->get(PT)};
 	}
 
-
 	std::vector<std::shared_ptr<AbstractBrain>> getAllSingleGateKnockouts();
 
+	void* logTimeSeries(const std::string& label) override;
 };
 
 inline std::shared_ptr<AbstractBrain>

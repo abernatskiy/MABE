@@ -232,4 +232,6 @@ public:
   }
 
 	virtual void logNote(std::string) {};
+
+	virtual void* logTimeSeries(const std::string& label) {}; // optionally returns a pointer to an arbitrary data structure for global processing
 };
