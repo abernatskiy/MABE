@@ -189,8 +189,10 @@ void MarkovBrain::update() {
 	for (int i = 0; i < nrInputValues; i++)
 		nodes[i] = inputValues[i];
 
-	if(visualize)
+	if(visualize) {
 		log.logStateBeforeUpdate(nodes);
+		nodesStatesTimeSeries.push_back(nodes);
+	}
 
 	if (recordIOMapPL->get())
 		for (int i = 0; i < nrInputValues; i++)
@@ -240,10 +242,8 @@ void MarkovBrain::update() {
 		IOMap.clearMap();
 	}
 
-	if(visualize) {
+	if(visualize)
 		log.logStateAfterUpdate(nodes);
-		nodesStatesTimeSeries.push_back(nodes);
-	}
 }
 
 void MarkovBrain::inOutReMap() { // remaps genome site values to valid brain
