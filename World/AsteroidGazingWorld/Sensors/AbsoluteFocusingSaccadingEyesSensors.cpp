@@ -231,6 +231,8 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 //		std::cout << " to split the range 0 to " << astSnap.width << " with a splitting factor of " << splittingFactor << " to a zoom level of " << zoomLevel << std::endl;
 //	}
 
+	auto foveaPosControlsStartIt = controlsIter;
+
 	std::tie(x0, x1) = splittingFactor==3 ? triSplitRange( 0, astSnap.width, zoomLevel, controlsIter, controlsIter+(zoomPositionControls/2) ) :
 	                                         biSplitRange( 0, astSnap.width, zoomLevel, controlsIter, controlsIter+(zoomPositionControls/2) );
 	controlsIter += (zoomPositionControls/2);
@@ -246,6 +248,8 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 	std::tie(y0, y1) = splittingFactor==3 ? triSplitRange( 0, astSnap.height, zoomLevel, controlsIter, controlsIter+(zoomPositionControls/2) ) :
 	                                         biSplitRange( 0, astSnap.height, zoomLevel, controlsIter, controlsIter+(zoomPositionControls/2) );
 	controlsIter += (zoomPositionControls/2);
+
+	auto foveaPosControlsEndIt = controlsIter;
 
 //	if(visualize) {
 //		std::cout << "Resulting range: " << y0 << ' ' << y1 << std::endl;
@@ -272,7 +276,23 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 //	if(visualize)
 //		view.printBinary();
 
+	if(visualize) {
+		std::vector<unsigned> apr;
+		apr.push_back(condition);
+		apr.push_back(distance);
+		apr.push_back(phase);
+		apr.push_back(zoomLevel);
+		for(auto it=foveaPosControlsStartIt; it!=foveaPosControlsEndIt; it++)
+			apr.push_back(static_cast<unsigned>(*it));
+		perceptionControlsTimeSeries.push_back(apr);
+	}
+
 	AbstractSensors::update(visualize); // increment the clock
+}
+
+void AbsoluteFocusingSaccadingEyesSensors::reset(int visualize) {
+	AbstractSensors::reset(visualize);
+	perceptionControlsTimeSeries.clear();
 }
 
 void AbsoluteFocusingSaccadingEyesSensors::analyzeDataset() {
@@ -442,4 +462,17 @@ void AbsoluteFocusingSaccadingEyesSensors::analyzeDataset() {
 
 	// Closing the log file
 	logfile.close();
+}
+
+void* AbsoluteFocusingSaccadingEyesSensors::logTimeSeries(const std::string& label) {
+
+	std::ofstream ctrlog(std::string("sensorControls_") + label + std::string(".log"));
+	for(const auto& apr : perceptionControlsTimeSeries) {
+		for(auto it=apr.begin(); it!=apr.end(); it++)
+			ctrlog << *it << ( it==apr.end()-1 ? "" : " " );
+		ctrlog << std::endl;
+	}
+	ctrlog.close();
+
+	return nullptr;
 }

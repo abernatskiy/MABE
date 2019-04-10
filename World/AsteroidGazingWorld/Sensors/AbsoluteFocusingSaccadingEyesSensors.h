@@ -21,11 +21,12 @@ public:
 	                                     unsigned splittingFactor);
 	void update(int visualize) override;
 
-	void reset(int visualize) override { AbstractSensors::reset(visualize); }; // sensors themselves are stateless
+	void reset(int visualize) override;
 	int numOutputs() override { return numSensors; };
 	int numInputs() override { return numMotors; };
 
 	const std::vector<bool>& getLastPercept() { return savedPercept; };
+	void* logTimeSeries(const std::string& label) override;
 
 private:
 	// Primary settings
@@ -63,4 +64,5 @@ private:
 
 	// Even more temporary values
 	std::vector<bool> savedPercept;
+	std::vector<std::vector<unsigned>> perceptionControlsTimeSeries;
 };
