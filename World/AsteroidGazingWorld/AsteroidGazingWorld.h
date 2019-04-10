@@ -16,6 +16,7 @@ private:
 	static std::shared_ptr<ParameterLink<int>> foveaResolutionPL;
 	static std::shared_ptr<ParameterLink<int>> splittingFactorPL;
 	static std::shared_ptr<ParameterLink<int>> maxZoomPL;
+	static std::shared_ptr<ParameterLink<int>> activeThresholdingDepthPL;
 	std::shared_ptr<AsteroidsDatasetParser> datasetParser;
 
 	bool resetAgentBetweenStates() override { return true; };

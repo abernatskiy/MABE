@@ -103,8 +103,10 @@ std::pair<unsigned,unsigned> biSplitRange(unsigned x0, unsigned x1, unsigned spl
 
 AbsoluteFocusingSaccadingEyesSensors::AbsoluteFocusingSaccadingEyesSensors(std::shared_ptr<std::string> curAstName,
                                                                            std::shared_ptr<AsteroidsDatasetParser> dsParser,
-                                                                           unsigned fovRes, unsigned mzoom, unsigned splitFac) :
+                                                                           unsigned fovRes, unsigned mzoom, unsigned splitFac,
+                                                                           int actThreshDepth) :
 	currentAsteroidName(curAstName), foveaResolution(fovRes), maxZoom(mzoom), splittingFactor(splitFac),
+	useConstantThreshold(actThreshDepth<0), activeThresholdingDepth(actThreshDepth<0 ? 0 : static_cast<unsigned>(actThreshDepth)),
 	phaseControls(bitsFor(numPhases)), zoomLevelControls(maxZoom), zoomPositionControls(2*maxZoom*bitsFor(splittingFactor)),
 	numSensors(getNumSensoryChannels()), numMotors(getNumControls()),
 	datasetParser(dsParser) {
@@ -175,6 +177,28 @@ AbsoluteFocusingSaccadingEyesSensors::AbsoluteFocusingSaccadingEyesSensors(std::
 	analyzeDataset();
 }
 
+std::uint8_t AbsoluteFocusingSaccadingEyesSensors::getThreshold(std::vector<bool>::iterator begin, std::vector<bool>::iterator end) {
+
+	// I could use bitshifts for that, but chose not to - A.B.
+
+	if(useConstantThreshold)
+		return constantBinarizationThreshold;
+
+	std::uint8_t min = 0;
+	std::uint8_t max = 255;
+	std::uint8_t mid;
+	for(auto it=begin; it!=end; it+=2) {
+		mid = min+(max-min)/2;
+		if(!(*it))
+			return mid;
+		if(*(it+1))
+			min = mid;
+		else
+			max = mid+1;
+	}
+	return mid;
+}
+
 unsigned AbsoluteFocusingSaccadingEyesSensors::getNumSensoryChannels() {
 	return foveaResolution*foveaResolution; // TODO: implement color depth
 }
@@ -184,7 +208,8 @@ unsigned AbsoluteFocusingSaccadingEyesSensors::getNumControls() {
 	       distanceControls +
 	       phaseControls +
 	       zoomLevelControls +
-	       zoomPositionControls;
+	       zoomPositionControls +
+	       2*activeThresholdingDepth;
 }
 
 void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
@@ -251,12 +276,14 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 
 	auto foveaPosControlsEndIt = controlsIter;
 
+	std::uint8_t threshold = getThreshold(controlsIter, controlsIter+2*activeThresholdingDepth);
+
 //	if(visualize) {
 //		std::cout << "Resulting range: " << y0 << ' ' << y1 << std::endl;
 //	}
 
 	// 3. Getting that part and feeding it to the brain line by line
-	const AsteroidSnapshot& view = astSnap.cachingResampleArea(x0, y0, x1, y1, foveaResolution, foveaResolution, constantBinarizationThreshold);
+	const AsteroidSnapshot& view = astSnap.cachingResampleArea(x0, y0, x1, y1, foveaResolution, foveaResolution, threshold);
 
 //	if(visualize) {
 //		std::cout << "Resulting view in full resolution:" << std::endl;
@@ -284,6 +311,7 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 		apr.push_back(zoomLevel);
 		for(auto it=foveaPosControlsStartIt; it!=foveaPosControlsEndIt; it++)
 			apr.push_back(static_cast<unsigned>(*it));
+		apr.push_back(static_cast<unsigned>(threshold));
 		perceptionControlsTimeSeries.push_back(apr);
 	}
 

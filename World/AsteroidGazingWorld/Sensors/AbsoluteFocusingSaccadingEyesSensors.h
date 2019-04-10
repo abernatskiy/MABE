@@ -18,7 +18,8 @@ public:
 	                                     std::shared_ptr<AsteroidsDatasetParser> datasetParser,
 	                                     unsigned foveaResolution,
 	                                     unsigned maxZoom,
-	                                     unsigned splittingFactor);
+	                                     unsigned splittingFactor,
+	                                     int activeThresholdingDepth);
 	void update(int visualize) override;
 
 	void reset(int visualize) override;
@@ -35,6 +36,8 @@ private:
 	const unsigned splittingFactor;
 //	const unsigned numPhases = 16;
 	const unsigned numPhases = 1;
+	const bool useConstantThreshold;
+	const unsigned activeThresholdingDepth;
 
 	const unsigned conditionControls = 0; // we're assuming that the spacecraft has pictures from one angle only for now (TODO: make tunable conditions)
 	const unsigned distanceControls = 0; // neglecting distance control for now (TODO: make tunable distances)
@@ -57,6 +60,7 @@ private:
 
 	asteroid_snapshots_library_type asteroidSnapshots;
 
+	std::uint8_t getThreshold(std::vector<bool>::iterator begin, std::vector<bool>::iterator end);
 	unsigned getNumSensoryChannels();
 	unsigned getNumControls();
 
