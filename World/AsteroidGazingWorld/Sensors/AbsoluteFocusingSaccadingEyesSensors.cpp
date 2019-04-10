@@ -103,8 +103,10 @@ std::pair<unsigned,unsigned> biSplitRange(unsigned x0, unsigned x1, unsigned spl
 
 AbsoluteFocusingSaccadingEyesSensors::AbsoluteFocusingSaccadingEyesSensors(std::shared_ptr<std::string> curAstName,
                                                                            std::shared_ptr<AsteroidsDatasetParser> dsParser,
-                                                                           unsigned fovRes, unsigned mzoom, unsigned splitFac) :
+                                                                           unsigned fovRes, unsigned mzoom, unsigned splitFac,
+                                                                           int actThreshDepth) :
 	currentAsteroidName(curAstName), foveaResolution(fovRes), maxZoom(mzoom), splittingFactor(splitFac),
+	useConstantThreshold(actThreshDepth<0), activeThresholdingDepth(actThreshDepth<0 ? 0 : static_cast<unsigned>(actThreshDepth)),
 	phaseControls(bitsFor(numPhases)), zoomLevelControls(maxZoom), zoomPositionControls(2*maxZoom*bitsFor(splittingFactor)),
 	numSensors(getNumSensoryChannels()), numMotors(getNumControls()),
 	datasetParser(dsParser) {
@@ -155,7 +157,7 @@ AbsoluteFocusingSaccadingEyesSensors::AbsoluteFocusingSaccadingEyesSensors(std::
 				const std::string snapshotPath = datasetParser->getPicturePath(an, condition, distance, phase);
 				asteroidSnapshots[an][condition][distance].emplace(std::piecewise_construct,
 				                                                   std::forward_as_tuple(phase),
-				                                                   std::forward_as_tuple(snapshotPath, binarizationThreshold)); // TODO: downsample based on allowed zoom levels for memory efficiency
+				                                                   std::forward_as_tuple(snapshotPath, constantBinarizationThreshold)); // TODO: downsample based on allowed zoom levels for memory efficiency
 			}
 		}
   }
@@ -175,6 +177,28 @@ AbsoluteFocusingSaccadingEyesSensors::AbsoluteFocusingSaccadingEyesSensors(std::
 	analyzeDataset();
 }
 
+std::uint8_t AbsoluteFocusingSaccadingEyesSensors::getThreshold(std::vector<bool>::iterator begin, std::vector<bool>::iterator end) {
+
+	// I could use bitshifts for that, but chose not to - A.B.
+
+	if(useConstantThreshold)
+		return constantBinarizationThreshold;
+
+	std::uint8_t min = 0;
+	std::uint8_t max = 255;
+	std::uint8_t mid;
+	for(auto it=begin; it!=end; it+=2) {
+		mid = min+(max-min)/2;
+		if(!(*it))
+			return mid;
+		if(*(it+1))
+			min = mid;
+		else
+			max = mid+1;
+	}
+	return mid;
+}
+
 unsigned AbsoluteFocusingSaccadingEyesSensors::getNumSensoryChannels() {
 	return foveaResolution*foveaResolution; // TODO: implement color depth
 }
@@ -184,7 +208,8 @@ unsigned AbsoluteFocusingSaccadingEyesSensors::getNumControls() {
 	       distanceControls +
 	       phaseControls +
 	       zoomLevelControls +
-	       zoomPositionControls;
+	       zoomPositionControls +
+	       2*activeThresholdingDepth;
 }
 
 void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
@@ -231,6 +256,8 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 //		std::cout << " to split the range 0 to " << astSnap.width << " with a splitting factor of " << splittingFactor << " to a zoom level of " << zoomLevel << std::endl;
 //	}
 
+	auto foveaPosControlsStartIt = controlsIter;
+
 	std::tie(x0, x1) = splittingFactor==3 ? triSplitRange( 0, astSnap.width, zoomLevel, controlsIter, controlsIter+(zoomPositionControls/2) ) :
 	                                         biSplitRange( 0, astSnap.width, zoomLevel, controlsIter, controlsIter+(zoomPositionControls/2) );
 	controlsIter += (zoomPositionControls/2);
@@ -247,12 +274,16 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 	                                         biSplitRange( 0, astSnap.height, zoomLevel, controlsIter, controlsIter+(zoomPositionControls/2) );
 	controlsIter += (zoomPositionControls/2);
 
+	auto foveaPosControlsEndIt = controlsIter;
+
+	std::uint8_t threshold = getThreshold(controlsIter, controlsIter+2*activeThresholdingDepth);
+
 //	if(visualize) {
 //		std::cout << "Resulting range: " << y0 << ' ' << y1 << std::endl;
 //	}
 
 	// 3. Getting that part and feeding it to the brain line by line
-	const AsteroidSnapshot& view = astSnap.cachingResampleArea(x0, y0, x1, y1, foveaResolution, foveaResolution);
+	const AsteroidSnapshot& view = astSnap.cachingResampleArea(x0, y0, x1, y1, foveaResolution, foveaResolution, threshold);
 
 //	if(visualize) {
 //		std::cout << "Resulting view in full resolution:" << std::endl;
@@ -272,7 +303,24 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 //	if(visualize)
 //		view.printBinary();
 
+	if(visualize) {
+		std::vector<unsigned> apr;
+		apr.push_back(condition);
+		apr.push_back(distance);
+		apr.push_back(phase);
+		apr.push_back(zoomLevel);
+		for(auto it=foveaPosControlsStartIt; it!=foveaPosControlsEndIt; it++)
+			apr.push_back(static_cast<unsigned>(*it));
+		apr.push_back(static_cast<unsigned>(threshold));
+		perceptionControlsTimeSeries.push_back(apr);
+	}
+
 	AbstractSensors::update(visualize); // increment the clock
+}
+
+void AbsoluteFocusingSaccadingEyesSensors::reset(int visualize) {
+	AbstractSensors::reset(visualize);
+	perceptionControlsTimeSeries.clear();
 }
 
 void AbsoluteFocusingSaccadingEyesSensors::analyzeDataset() {
@@ -331,7 +379,7 @@ void AbsoluteFocusingSaccadingEyesSensors::analyzeDataset() {
 	vector<vector<string>> perceptAsteroidNames;
 	for(const auto& astRec : asteroidSnapshots) {
 		const auto& currentShot = astRec.second.at(theCondition).at(theDistance).at(thePhase);
-		const auto& currentPerceptShot = currentShot.resampleArea(0, 0, currentShot.width, currentShot.height, maxRes, maxRes);
+		const auto& currentPerceptShot = currentShot.resampleArea(0, 0, currentShot.width, currentShot.height, maxRes, maxRes, currentShot.binarizationThreshold);
 
 		bool perceptFound = false;
 		for(unsigned i=0; i<perceptShots.size(); i++) {
@@ -442,4 +490,17 @@ void AbsoluteFocusingSaccadingEyesSensors::analyzeDataset() {
 
 	// Closing the log file
 	logfile.close();
+}
+
+void* AbsoluteFocusingSaccadingEyesSensors::logTimeSeries(const std::string& label) {
+
+	std::ofstream ctrlog(std::string("sensorControls_") + label + std::string(".log"));
+	for(const auto& apr : perceptionControlsTimeSeries) {
+		for(auto it=apr.begin(); it!=apr.end(); it++)
+			ctrlog << *it << ( it==apr.end()-1 ? "" : " " );
+		ctrlog << std::endl;
+	}
+	ctrlog.close();
+
+	return nullptr;
 }

@@ -15,4 +15,5 @@ public:
 	void reset(int visualize) override { curState=0; setWorldState(curState); };
 	void advance(int visualize) override { curState++; setWorldState(curState); };
 	bool stateIsFinal() override { return curState>=testWorldStates.size(); };
+	const std::string& currentStateDescription() { return std::to_string(*worldState); };
 };

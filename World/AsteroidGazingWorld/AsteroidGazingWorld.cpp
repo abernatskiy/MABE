@@ -22,6 +22,9 @@ std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::splittingFactorPL =
 std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::maxZoomPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING-maxZoom", 3,
                                  "the number of allowed zoom levels");
+std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::activeThresholdingDepthPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING-activeThresholdingDepth", -1,
+                                 "number of bisections of the 0..255 interval that the sensors can make to get thresholds (e.g. 0..127 yields a threshold of 63), negatives meaning fixed threshold of 160");
 
 AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) : AbstractSlideshowWorld(PT_) {
 	// Localizing settings
@@ -32,7 +35,12 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 	// Drawing the rest of the owl
 	currentAsteroidName = std::make_shared<std::string>("");
 	stateSchedule = std::make_shared<ExhaustiveAsteroidGazingSchedule>(currentAsteroidName, datasetParser);
-	auto sensorsPtr = std::make_shared<AbsoluteFocusingSaccadingEyesSensors>(currentAsteroidName, datasetParser, foveaResolutionPL->get(PT_), maxZoomPL->get(PT_), splittingFactorPL->get(PT_));
+	auto sensorsPtr = std::make_shared<AbsoluteFocusingSaccadingEyesSensors>(currentAsteroidName,
+	                                                                         datasetParser,
+	                                                                         foveaResolutionPL->get(PT_),
+	                                                                         maxZoomPL->get(PT_),
+	                                                                         splittingFactorPL->get(PT_),
+	                                                                         activeThresholdingDepthPL->get(PT_));
 	sensors = static_cast<std::shared_ptr<AbstractSensors>>(sensorsPtr);
 
 //	mentalImage = std::make_shared<SpikesOnCubeMentalImage>(currentAsteroidName, datasetParser);

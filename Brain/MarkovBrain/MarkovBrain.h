@@ -189,6 +189,8 @@ public:
 	std::vector<int> inputNodeMap;
 	std::vector<int> outputNodeMap;
 
+	std::vector<std::vector<double>> nodesStatesTimeSeries;
+
 	/*
 		* Builds a look up table to convert genome site values into brain state
 		* addresses - this is only used when there is a fixed number of brain states
@@ -261,9 +263,9 @@ public:
 		return {genomeNamePL->get(PT)};
 	}
 
-
 	std::vector<std::shared_ptr<AbstractBrain>> getAllSingleGateKnockouts();
 
+	void* logTimeSeries(const std::string& label) override;
 };
 
 inline std::shared_ptr<AbstractBrain>

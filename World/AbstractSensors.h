@@ -16,4 +16,5 @@ public:
 	virtual void update(int visualize) { clock++; };
 	virtual int numOutputs() = 0;
 	virtual int numInputs() { return 0; }; // reload for active perception
+	virtual void* logTimeSeries(const std::string& label) { return nullptr; }; // optionally returns a pointer to an arbitrary data structure for global processing
 };

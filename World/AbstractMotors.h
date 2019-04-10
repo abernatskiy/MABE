@@ -15,7 +15,7 @@ public:
 	virtual void update(int visualize) { clock++; };
 	virtual int numInputs() = 0;
 	virtual int numOutputs() { return 0; }; // reload for proprioception
-
+	virtual void* logTimeSeries(const std::string& label) { return nullptr; }; // optionally returns a pointer to an arbitrary data structure for global processing
 private:
 	unsigned long clock;
 };

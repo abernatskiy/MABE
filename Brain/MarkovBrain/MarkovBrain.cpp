@@ -10,6 +10,7 @@
 
 #include <sstream>
 #include <iomanip>
+#include <png++/png.hpp>
 
 #include "MarkovBrain.h"
 
@@ -155,8 +156,10 @@ void MarkovBrain::resetBrain() {
 	for (auto &g :gates)
 		g->resetGate();
 
-	if(visualize)
+	if(visualize) {
 		log.logBrainReset();
+		nodesStatesTimeSeries.clear();
+	}
 }
 
 void MarkovBrain::resetInputs() {
@@ -186,8 +189,10 @@ void MarkovBrain::update() {
 	for (int i = 0; i < nrInputValues; i++)
 		nodes[i] = inputValues[i];
 
-	if(visualize)
+	if(visualize) {
 		log.logStateBeforeUpdate(nodes);
+		nodesStatesTimeSeries.push_back(nodes);
+	}
 
 	if (recordIOMapPL->get())
 		for (int i = 0; i < nrInputValues; i++)
@@ -382,4 +387,39 @@ std::vector<std::shared_ptr<AbstractBrain>> MarkovBrain::getAllSingleGateKnockou
 		res.push_back(bmut);
 	}
 	return res;
+}
+
+void* MarkovBrain::logTimeSeries(const std::string& label) {
+
+	const unsigned m = 4;
+
+	if(nodesStatesTimeSeries[0].size()!=nrNodes) {
+		std::cerr << "Wrong number of nodes in the saved time series! Exiting..." << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
+	png::image<png::rgb_pixel> eegImage(m*(nrNodes+3), m*nodesStatesTimeSeries.size());
+	for(unsigned Y=0; Y<nodesStatesTimeSeries.size(); Y++)
+		for(unsigned y=Y*m; y<(Y+1)*m; y++)
+			for(unsigned X=0; X<(nrNodes+3); X++)
+				for(unsigned x=X*m; x<(X+1)*m; x++) {
+					png::rgb_pixel p;
+					if(X==nrInputValues)
+						p = png::rgb_pixel(0, 255, 0);
+					else if(X==nrInputValues+nrOutputValues+1)
+						p = png::rgb_pixel(255, 0, 0);
+					else if(X==nrNodes+2)
+						p = png::rgb_pixel(0, 0, 255);
+					else {
+						unsigned localX = X>=nrInputValues ? (X>=nrInputValues+nrOutputValues+1 ? X-2 : X-1 ) : X;
+						p = nodesStatesTimeSeries[Y][localX]==0 ? png::rgb_pixel(0,0,0) : png::rgb_pixel(255,255,255);
+					}
+					eegImage[y][x] = p;
+				}
+
+	eegImage.write(std::string("markovBrainStates_") + label);
+
+	log.log(std::string("States for ") + label + std::string(" are written into an image\n"));
+
+	return nullptr;
 }
