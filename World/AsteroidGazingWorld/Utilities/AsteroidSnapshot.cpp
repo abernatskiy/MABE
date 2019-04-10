@@ -5,12 +5,13 @@
 
 // Public member definitions
 
-AsteroidSnapshot::AsteroidSnapshot(std::string filePath, unsigned binThreshold) :
+AsteroidSnapshot::AsteroidSnapshot(std::string filePath, std::uint8_t binThreshold) :
 	AsteroidSnapshot(png::image<pixel_value_type>(filePath), binThreshold) {}
 
 AsteroidSnapshot AsteroidSnapshot::resampleArea(std::uint32_t x0, std::uint32_t y0,
                                                 std::uint32_t x1, std::uint32_t y1,
-                                                std::uint32_t newWidth, std::uint32_t newHeight) const {
+                                                std::uint32_t newWidth, std::uint32_t newHeight,
+                                                std::uint8_t binThresh) const {
 
 	// Validating the arguments - comment out for slight increase in performance
 	get(x0, y0);
@@ -42,18 +43,19 @@ AsteroidSnapshot AsteroidSnapshot::resampleArea(std::uint32_t x0, std::uint32_t 
 			areaTexture[i][j] = static_cast<pixel_value_type>( accumulator / ((xpp1-xpp0)*(ypp1-ypp0)) );
 		}
 
-	return AsteroidSnapshot(newWidth, newHeight, areaTexture, binarizationThreshold);
+	return AsteroidSnapshot(newWidth, newHeight, areaTexture, binThresh);
 }
 
 const AsteroidSnapshot& AsteroidSnapshot::cachingResampleArea(std::uint32_t x0, std::uint32_t y0,
                                                        std::uint32_t x1, std::uint32_t y1,
-                                                       std::uint32_t newWidth, std::uint32_t newHeight) {
+                                                       std::uint32_t newWidth, std::uint32_t newHeight,
+                                                       std::uint8_t binThresh) {
 
-	std::tuple<std::uint32_t,std::uint32_t,std::uint32_t,std::uint32_t,std::uint32_t,std::uint32_t> callParams = std::make_tuple(x0, y0, x1, y1, newWidth, newHeight);
+	std::tuple<std::uint32_t,std::uint32_t,std::uint32_t,std::uint32_t,std::uint32_t,std::uint32_t,std::uint8_t> callParams = std::make_tuple(x0, y0, x1, y1, newWidth, newHeight, binThresh);
 
 	auto callit = areaCache.find(callParams);
 	if(callit == areaCache.end()) {
-		areaCache.emplace(callParams, resampleArea(x0, y0, x1, y1, newWidth, newHeight));
+		areaCache.emplace(callParams, resampleArea(x0, y0, x1, y1, newWidth, newHeight, binThresh));
 		callit = areaCache.find(callParams);
 	}
 	return areaCache[callParams];
@@ -63,7 +65,7 @@ const AsteroidSnapshot& AsteroidSnapshot::cachingResampleArea(std::uint32_t x0, 
 void AsteroidSnapshot::print(unsigned thumbSize, bool shades) const {
 
 	std::cout << "Asteroid snapshot of width " << width << " and height " << height << std::endl;
-	AsteroidSnapshot thumb = resampleArea(0, 0, width, height, thumbSize, thumbSize);
+	AsteroidSnapshot thumb = resampleArea(0, 0, width, height, thumbSize, thumbSize, binarizationThreshold);
 	for(unsigned i=0; i<thumbSize; i++) {
 		for(unsigned j=0; j<thumbSize; j++)
 			if(shades)
@@ -106,7 +108,7 @@ std::string AsteroidSnapshot::getPrintedBinary(bool shades) const {
 
 unsigned long AsteroidSnapshot::allocatedPixels = 0;
 
-AsteroidSnapshot::AsteroidSnapshot(const png::image<pixel_value_type>& picture, unsigned binThreshold) :
+AsteroidSnapshot::AsteroidSnapshot(const png::image<pixel_value_type>& picture, std::uint8_t binThreshold) :
 	width(picture.get_width()),
 	height(picture.get_height()),
 	texture(boost::extents[width][height]),
@@ -131,7 +133,7 @@ AsteroidSnapshot::AsteroidSnapshot(const png::image<pixel_value_type>& picture, 
 	fillBinaryTexture();
 }
 
-AsteroidSnapshot::AsteroidSnapshot(std::uint32_t wt, std::uint32_t ht, texture_type txtr, unsigned binThreshold) :
+AsteroidSnapshot::AsteroidSnapshot(std::uint32_t wt, std::uint32_t ht, texture_type txtr, std::uint8_t binThreshold) :
 	width(wt),
 	height(ht),
 	texture(txtr),

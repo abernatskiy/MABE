@@ -155,7 +155,7 @@ AbsoluteFocusingSaccadingEyesSensors::AbsoluteFocusingSaccadingEyesSensors(std::
 				const std::string snapshotPath = datasetParser->getPicturePath(an, condition, distance, phase);
 				asteroidSnapshots[an][condition][distance].emplace(std::piecewise_construct,
 				                                                   std::forward_as_tuple(phase),
-				                                                   std::forward_as_tuple(snapshotPath, binarizationThreshold)); // TODO: downsample based on allowed zoom levels for memory efficiency
+				                                                   std::forward_as_tuple(snapshotPath, constantBinarizationThreshold)); // TODO: downsample based on allowed zoom levels for memory efficiency
 			}
 		}
   }
@@ -256,7 +256,7 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 //	}
 
 	// 3. Getting that part and feeding it to the brain line by line
-	const AsteroidSnapshot& view = astSnap.cachingResampleArea(x0, y0, x1, y1, foveaResolution, foveaResolution);
+	const AsteroidSnapshot& view = astSnap.cachingResampleArea(x0, y0, x1, y1, foveaResolution, foveaResolution, constantBinarizationThreshold);
 
 //	if(visualize) {
 //		std::cout << "Resulting view in full resolution:" << std::endl;
@@ -351,7 +351,7 @@ void AbsoluteFocusingSaccadingEyesSensors::analyzeDataset() {
 	vector<vector<string>> perceptAsteroidNames;
 	for(const auto& astRec : asteroidSnapshots) {
 		const auto& currentShot = astRec.second.at(theCondition).at(theDistance).at(thePhase);
-		const auto& currentPerceptShot = currentShot.resampleArea(0, 0, currentShot.width, currentShot.height, maxRes, maxRes);
+		const auto& currentPerceptShot = currentShot.resampleArea(0, 0, currentShot.width, currentShot.height, maxRes, maxRes, currentShot.binarizationThreshold);
 
 		bool perceptFound = false;
 		for(unsigned i=0; i<perceptShots.size(); i++) {

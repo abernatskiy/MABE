@@ -20,7 +20,7 @@ public:
 
 	const std::uint8_t binarizationThreshold;
 
-	AsteroidSnapshot(std::string filePath, unsigned binarizationThreshold);
+	AsteroidSnapshot(std::string filePath, std::uint8_t binThreshold);
 	AsteroidSnapshot() : width(0), height(0), binarizationThreshold(127) {};
 
 	inline pixel_value_type get(std::uint32_t x, std::uint32_t y) const {
@@ -33,10 +33,12 @@ public:
 
 	AsteroidSnapshot resampleArea(std::uint32_t x0, std::uint32_t y0,
 	                              std::uint32_t x1, std::uint32_t y1,
-	                              std::uint32_t newWidth, std::uint32_t newHeight) const;
+	                              std::uint32_t newWidth, std::uint32_t newHeight,
+	                              std::uint8_t binThresh) const;
 	const AsteroidSnapshot& cachingResampleArea(std::uint32_t x0, std::uint32_t y0,
 	                                            std::uint32_t x1, std::uint32_t y1,
-	                                            std::uint32_t newWidth, std::uint32_t newHeight);
+	                                            std::uint32_t newWidth, std::uint32_t newHeight,
+	                                            std::uint8_t binThresh);
 	void print(unsigned thumbSize=20, bool shades=true) const;
 
 	inline bool getBinary(std::uint32_t x, std::uint32_t y) const { return binaryTexture[x][y]; };
@@ -50,12 +52,12 @@ private:
 	const unsigned long maxMebibytes = 1024; // dataset must fit into 1 GiB
 	const unsigned long maxPixels = maxMebibytes * 1024 * 1024 / sizeof(pixel_value_type);
 
-	std::map<std::tuple<std::uint32_t,std::uint32_t,std::uint32_t,std::uint32_t,std::uint32_t,std::uint32_t>,AsteroidSnapshot> areaCache;
+	std::map<std::tuple<std::uint32_t,std::uint32_t,std::uint32_t,std::uint32_t,std::uint32_t,std::uint32_t,std::uint8_t>,AsteroidSnapshot> areaCache;
 
 	bitmap_type binaryTexture;
 
-	AsteroidSnapshot(const png::image<pixel_value_type>& picture, unsigned binarizationThreshold);
-	AsteroidSnapshot(std::uint32_t width, std::uint32_t height, texture_type texture, unsigned binarizationThreshold);
+	AsteroidSnapshot(const png::image<pixel_value_type>& picture, std::uint8_t binThreshold);
+	AsteroidSnapshot(std::uint32_t width, std::uint32_t height, texture_type texture, std::uint8_t binThreshold);
 
 	void fillBinaryTexture();
 };
