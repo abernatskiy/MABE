@@ -175,8 +175,14 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 	for(const auto& mvtuple : minValues)
 		std::cout << " " << mvtuple.first << "=" << mvtuple.second << "@" << minValueCarriers[mvtuple.first];
 	std::cout << " extant_lineages=";
-	for(auto pii=paretoFront.begin(); pii!=paretoFront.end(); pii++)
-		std::cout << (*pii)->dataMap.getInt("lineageID") << (pii==paretoFront.end()-1 ? "" : ",") ;
+
+	std::vector<int> lineages;
+	for(const auto& pi : paretoFront)
+		lineages.push_back(pi->dataMap.getInt("lineageID"));
+	std::sort(lineages.begin(), lineages.end());
+
+	for(auto li=lineages.begin(); li!=lineages.end(); li++)
+		std::cout << (*li) << (li==lineages.end()-1 ? "" : ",") ;
 	std::cout << std::flush;
 /*
 	// Detailed messages : full population & Pareto front snapshot
