@@ -25,6 +25,12 @@ std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::maxZoomPL =
 std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::activeThresholdingDepthPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING-activeThresholdingDepth", -1,
                                  "number of bisections of the 0..255 interval that the sensors can make to get thresholds (e.g. 0..127 yields a threshold of 63), negatives meaning fixed threshold of 160");
+std::shared_ptr<ParameterLink<bool>> AsteroidGazingWorld::lockAtMaxZoomPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING-lockAtMaxZoom", false,
+                                 "should sensors be locked at max zoom level? If true, zooming out is impossible/disabled");
+std::shared_ptr<ParameterLink<bool>> AsteroidGazingWorld::startZoomedInPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING-startZoomedIn", false,
+                                 "should the default state of the nodes (0000...) correspond to max zoom level instead of the min level (no zoom)?");
 
 AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) : AbstractSlideshowWorld(PT_) {
 	// Localizing settings
@@ -40,7 +46,9 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 	                                                                         foveaResolutionPL->get(PT_),
 	                                                                         maxZoomPL->get(PT_),
 	                                                                         splittingFactorPL->get(PT_),
-	                                                                         activeThresholdingDepthPL->get(PT_));
+	                                                                         activeThresholdingDepthPL->get(PT_),
+	                                                                         lockAtMaxZoomPL->get(PT_),
+	                                                                         startZoomedInPL->get(PT_));
 	sensors = static_cast<std::shared_ptr<AbstractSensors>>(sensorsPtr);
 
 //	mentalImage = std::make_shared<SpikesOnCubeMentalImage>(currentAsteroidName, datasetParser);
