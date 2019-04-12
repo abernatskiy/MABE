@@ -104,10 +104,11 @@ std::pair<unsigned,unsigned> biSplitRange(unsigned x0, unsigned x1, unsigned spl
 AbsoluteFocusingSaccadingEyesSensors::AbsoluteFocusingSaccadingEyesSensors(std::shared_ptr<std::string> curAstName,
                                                                            std::shared_ptr<AsteroidsDatasetParser> dsParser,
                                                                            unsigned fovRes, unsigned mzoom, unsigned splitFac,
-                                                                           int actThreshDepth) :
+                                                                           int actThreshDepth, bool lckAtMaxZoom, bool strtZoomedIn) :
 	currentAsteroidName(curAstName), foveaResolution(fovRes), maxZoom(mzoom), splittingFactor(splitFac),
 	useConstantThreshold(actThreshDepth<0), activeThresholdingDepth(actThreshDepth<0 ? 0 : static_cast<unsigned>(actThreshDepth)),
-	phaseControls(bitsFor(numPhases)), zoomLevelControls(maxZoom), zoomPositionControls(2*maxZoom*bitsFor(splittingFactor)),
+	lockAtMaxZoom(lckAtMaxZoom), startZoomedIn(strtZoomedIn),
+	phaseControls(bitsFor(numPhases)), zoomLevelControls(lckAtMaxZoom ? 0 : maxZoom), zoomPositionControls(2*maxZoom*bitsFor(splittingFactor)),
 	numSensors(getNumSensoryChannels()), numMotors(getNumControls()),
 	datasetParser(dsParser) {
 
@@ -245,7 +246,11 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 //	}
 
 	// 2. Determining which part of the snapshot we want to see
-	const unsigned zoomLevel = bitsRangeToZeroBiasedParallelBusValue(controlsIter, controlsIter+zoomLevelControls);
+	const unsigned zoomLevel = lockAtMaxZoom ?
+	                                           maxZoom :
+	                                           (startZoomedIn ?
+                                                              maxZoom-bitsRangeToZeroBiasedParallelBusValue(controlsIter, controlsIter+zoomLevelControls) :
+                                                              bitsRangeToZeroBiasedParallelBusValue(controlsIter, controlsIter+zoomLevelControls));
 	controlsIter += zoomLevelControls;
 	unsigned x0, x1, y0, y1;
 

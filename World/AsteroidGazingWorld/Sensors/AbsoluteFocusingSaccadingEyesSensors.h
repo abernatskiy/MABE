@@ -19,7 +19,9 @@ public:
 	                                     unsigned foveaResolution,
 	                                     unsigned maxZoom,
 	                                     unsigned splittingFactor,
-	                                     int activeThresholdingDepth);
+	                                     int activeThresholdingDepth,
+	                                     bool lockAtMaxZoom,
+	                                     bool startZoomedIn);
 	void update(int visualize) override;
 
 	void reset(int visualize) override;
@@ -38,6 +40,8 @@ private:
 	const unsigned numPhases = 1;
 	const bool useConstantThreshold;
 	const unsigned activeThresholdingDepth;
+	const bool lockAtMaxZoom;
+	const bool startZoomedIn;
 
 	const unsigned conditionControls = 0; // we're assuming that the spacecraft has pictures from one angle only for now (TODO: make tunable conditions)
 	const unsigned distanceControls = 0; // neglecting distance control for now (TODO: make tunable distances)

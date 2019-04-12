@@ -17,6 +17,8 @@ private:
 	static std::shared_ptr<ParameterLink<int>> splittingFactorPL;
 	static std::shared_ptr<ParameterLink<int>> maxZoomPL;
 	static std::shared_ptr<ParameterLink<int>> activeThresholdingDepthPL;
+	static std::shared_ptr<ParameterLink<bool>> lockAtMaxZoomPL;
+	static std::shared_ptr<ParameterLink<bool>> startZoomedInPL;
 	std::shared_ptr<AsteroidsDatasetParser> datasetParser;
 
 	bool resetAgentBetweenStates() override { return true; };
