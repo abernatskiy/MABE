@@ -28,10 +28,6 @@ private:
 	void postEvaluationOuterWorldUpdate(std::shared_ptr<Organism> org, unsigned long timeStep, int visualize) override {
 		mentalImage->recordRunningScoresWithinState(org, timeStep%brainUpdatesPerWorldState(), brainUpdatesPerWorldState());
 		if(timeStep>0 && (timeStep+1)%brainUpdatesPerWorldState() == 0) {
-//			std::cout << "Advancing the schedule: period " << brainUpdatesPerWorldState() << ", timeStep " << timeStep << std::endl << std::flush;
-//			std::cout << "State schedule pointer: " << stateSchedule << std::endl << std::flush;
-			stateSchedule->advance(visualize);
-//			std::cout << "State schedule has been advanced" << std::endl << std::flush;
 			if(resetAgentBetweenStates()) {
 //				std::cout << "Resetting everything" << std::endl << std::flush;
 				if(visualize) {
@@ -48,8 +44,12 @@ private:
 				motors->reset(visualize);
 				// no need to reattach brain to sensors and motors since it doesn't come off in the reset
 				mentalImage->resetAfterWorldStateChange(visualize);
+//				std::cout << "Optional reset stage passed" << std::endl << std::flush;
 			}
-//			std::cout << "Optional reset stage passed" << std::endl << std::flush;
+//			std::cout << "Advancing the schedule: period " << brainUpdatesPerWorldState() << ", timeStep " << timeStep << std::endl << std::flush;
+//			std::cout << "State schedule pointer: " << stateSchedule << std::endl << std::flush;
+			stateSchedule->advance(visualize);
+//			std::cout << "State schedule has been advanced" << std::endl << std::flush;
 		}
 	};
 

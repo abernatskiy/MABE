@@ -13,6 +13,15 @@ std::string commandRangeToStr(const CommandRangeType& crange) {
 	return s.str();
 }
 
+std::string commandToStr(const CommandType& com) {
+	std::ostringstream s;
+	s << "[" << std::get<0>(com) // << ","
+//	         << std::get<1>(com) << ","
+//	         << std::get<2>(com)
+	         << "]";
+	return s.str();
+}
+
 std::string bitRangeToStr(std::vector<double>::iterator startAt, unsigned bits) {
 	std::ostringstream s;
 	for(auto it=startAt; it!=startAt+bits; it++)
@@ -61,12 +70,14 @@ void SpikesOnCubeFullMentalImage::reset(int visualize) { // called in the beginn
 void SpikesOnCubeFullMentalImage::resetAfterWorldStateChange(int visualize) { // called after each discrete world state change
 	SpikesOnCubeMentalImage::resetAfterWorldStateChange(visualize);
 	currentCommandRanges.clear();
+	if(visualize)
+		commandRangesTS.clear();
 }
 
 void SpikesOnCubeFullMentalImage::updateWithInputs(std::vector<double> inputs) {
 	if(justReset) {
 		justReset = false;
-		return;
+//		return; // NOTE: if the image has just been reset, we can return early here to save a few CPU cycles
 	}
 
 	currentCommandRanges.clear();
@@ -74,7 +85,9 @@ void SpikesOnCubeFullMentalImage::updateWithInputs(std::vector<double> inputs) {
 	auto digitRange = decodeMHVUInt(it, it+mnistNumBits);
 
 	currentCommandRanges.push_back(std::make_tuple(digitRange));
-//		std::cout << " decoded into range " << commandRangeToStr(std::make_tuple(faceRange, iRange, jRange)) << std::endl;
+
+//  std::cout << "Got range " << commandRangeToStr(currentCommandRanges.back()) << " from bits " << bitRangeToStr(inputs.begin(), mnistNumBits) << std::endl;
+//  exit(0);
 }
 
 void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> org, int stateTime, int statePeriod) {
@@ -92,6 +105,7 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 				std::cout << ( i==0 ? "" : ", " );
 			}
 			std::cout << std::endl;
+			commandRangesTS.push_back(currentCommandRanges);
 		}
 	}
 
@@ -115,6 +129,9 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 			correctCommandsStateScores.back() = numCorrectCommands;
 		stateScores.back() += cumulativeScore/currentCommandRanges.size();
 //		std::cout << "t=" << stateTime << ": cumulativeScore " << cumulativeScore/currentCommandRanges.size() << " hits " << numCorrectCommands << std::endl;
+
+		if(mVisualize)
+			commandRangesTS.push_back(currentCommandRanges);
 	}
 
 	if(stateTime == statePeriod-1) {
@@ -137,6 +154,20 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 
 int SpikesOnCubeFullMentalImage::numInputs() {
 	return mnistNumBits;
+}
+
+void* SpikesOnCubeFullMentalImage::logTimeSeries(const std::string& label) {
+
+	std::ofstream guessesLog(std::string("guessLog_") + label + std::string(".log"));
+	for(const auto& guess : commandRangesTS) {
+		for(auto ocit=originalCommands.cbegin(); ocit!=originalCommands.cend(); ocit++)
+			guessesLog << commandToStr(*ocit) << " ";
+		for(auto gueit=guess.cbegin(); gueit!=guess.cend(); gueit++)
+			guessesLog << commandRangeToStr(*gueit) << ( gueit!=guess.end()-1 ? " " : "" );
+		guessesLog << std::endl;
+	}
+	guessesLog.close();
+	return nullptr;
 }
 
 /***** Private SpikesOnCubeFullMentalImage class definitions *****/
