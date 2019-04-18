@@ -86,6 +86,9 @@ void SpikesOnCubeFullMentalImage::updateWithInputs(std::vector<double> inputs) {
 
 	currentCommandRanges.push_back(std::make_tuple(digitRange));
 
+	if(mVisualize)
+		commandRangesTS.push_back(currentCommandRanges);
+
 //  std::cout << "Got range " << commandRangeToStr(currentCommandRanges.back()) << " from bits " << bitRangeToStr(inputs.begin(), mnistNumBits) << std::endl;
 //  exit(0);
 }
@@ -105,7 +108,6 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 				std::cout << ( i==0 ? "" : ", " );
 			}
 			std::cout << std::endl;
-			commandRangesTS.push_back(currentCommandRanges);
 		}
 	}
 
@@ -129,9 +131,6 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 			correctCommandsStateScores.back() = numCorrectCommands;
 		stateScores.back() += cumulativeScore/currentCommandRanges.size();
 //		std::cout << "t=" << stateTime << ": cumulativeScore " << cumulativeScore/currentCommandRanges.size() << " hits " << numCorrectCommands << std::endl;
-
-		if(mVisualize)
-			commandRangesTS.push_back(currentCommandRanges);
 	}
 
 	if(stateTime == statePeriod-1) {
@@ -158,7 +157,7 @@ int SpikesOnCubeFullMentalImage::numInputs() {
 
 void* SpikesOnCubeFullMentalImage::logTimeSeries(const std::string& label) {
 
-	std::ofstream guessesLog(std::string("guessLog_") + label + std::string(".log"));
+	std::ofstream guessesLog(std::string("guesses_") + label + std::string(".log"));
 	for(const auto& guess : commandRangesTS) {
 		for(auto ocit=originalCommands.cbegin(); ocit!=originalCommands.cend(); ocit++)
 			guessesLog << commandToStr(*ocit) << " ";
