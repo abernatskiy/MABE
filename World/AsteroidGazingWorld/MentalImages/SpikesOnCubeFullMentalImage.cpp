@@ -58,8 +58,9 @@ std::tuple<double,bool> evaluateRange(const CommandRangeType& guessesRange, cons
 /***** Public SpikesOnCubeFullMentalImage class definitions *****/
 
 SpikesOnCubeFullMentalImage::SpikesOnCubeFullMentalImage(std::shared_ptr<std::string> curAstNamePtr,
-	                                                       std::shared_ptr<AsteroidsDatasetParser> dsParserPtr) :
-	SpikesOnCubeMentalImage(curAstNamePtr, dsParserPtr) {}
+	                                                       std::shared_ptr<AsteroidsDatasetParser> dsParserPtr,
+	                                                       std::shared_ptr<AbsoluteFocusingSaccadingEyesSensors> sPtr) :
+	SpikesOnCubeMentalImage(curAstNamePtr, dsParserPtr), sensorsPtr(sPtr) {}
 
 
 void SpikesOnCubeFullMentalImage::reset(int visualize) { // called in the beginning of each evaluation cycle
@@ -135,8 +136,10 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 
 	if(stateTime == statePeriod-1) {
 		stateScores.back() /= statePeriod-1;
+		sensorActivityStateScores.push_back(static_cast<double>(sensorsPtr->numSaccades())/static_cast<double>(statePeriod));
 
 		if(mVisualize) {
+//			std::cout << "Num saccades: " << sensorsPtr->numSaccades() << std::endl;
 			std::cout << "Brain generated command ranges at the end of evaluation:";
 			for(const auto& curRange : currentCommandRanges)
 				std::cout << " " << commandRangeToStr(curRange);

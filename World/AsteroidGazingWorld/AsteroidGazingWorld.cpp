@@ -52,7 +52,7 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 	sensors = static_cast<std::shared_ptr<AbstractSensors>>(sensorsPtr);
 
 //	mentalImage = std::make_shared<SpikesOnCubeMentalImage>(currentAsteroidName, datasetParser);
-	mentalImage = std::make_shared<SpikesOnCubeFullMentalImage>(currentAsteroidName, datasetParser);
+	mentalImage = std::make_shared<SpikesOnCubeFullMentalImage>(currentAsteroidName, datasetParser, sensorsPtr);
 //	mentalImage = std::make_shared<IdentityMentalImage>(sensorsPtr);
 
 	makeMotors();

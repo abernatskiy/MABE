@@ -37,6 +37,7 @@ SpikesOnCubeMentalImage::SpikesOnCubeMentalImage(std::shared_ptr<std::string> cu
 void SpikesOnCubeMentalImage::reset(int visualize) { // called in the beginning of each evaluation cycle
 	stateScores.clear();
 	correctCommandsStateScores.clear();
+	sensorActivityStateScores.clear();
 	currentCommands.clear();
 	// originalCommands are taken care of in readOriginalCommands()
 	justReset = true;
@@ -125,6 +126,7 @@ void SpikesOnCubeMentalImage::recordSampleScores(std::shared_ptr<Organism> org, 
 //	std::cout << std::endl;
 
 	unsigned ncc = 0;
+	double totSensoryActivity = 0;
 	const unsigned astsTotal = stateScores.size();
 	double score = 0;
 	for(unsigned i=0; i<astsTotal; i++) {
@@ -133,20 +135,27 @@ void SpikesOnCubeMentalImage::recordSampleScores(std::shared_ptr<Organism> org, 
 //		std::cout << i << "th asteroid is " << curAstIdx << ", evaluation is " << stsc << ", correct commands are " << correctCommandsStateScores[curAstIdx] << std::endl;
 		score += stsc;
 		ncc += correctCommandsStateScores[curAstIdx];
+		if(sensorActivityStateScores.size()!=0)
+			totSensoryActivity += sensorActivityStateScores[curAstIdx];
 //		if(correctCommandsStateScores[curAstIdx]<3)
 //			break;
 	}
 
 	sampleScoresMap->append("score", score);
 	sampleScoresMap->append("numCorrectCommands", static_cast<double>(ncc));
+	sampleScoresMap->append("sensorActivity", totSensoryActivity/static_cast<double>(astsTotal));
 }
 
 void SpikesOnCubeMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) {
 	double score = sampleScoresMap->getAverage("score");
 	double numCorrectCommands = sampleScoresMap->getAverage("numCorrectCommands");
+	double sensorActivity = sampleScoresMap->getAverage("sensorActivity");
+	unsigned tieredSensorActivity = static_cast<unsigned>(sensorActivity*10);
 	org->dataMap.append("score", score );
 	org->dataMap.append("guidingFunction", -score);
 	org->dataMap.append("numCorrectCommands", numCorrectCommands);
+	org->dataMap.append("sensorActivity", sensorActivity);
+	org->dataMap.append("tieredSensorActivity", static_cast<double>(tieredSensorActivity));
 }
 
 int SpikesOnCubeMentalImage::numInputs() {

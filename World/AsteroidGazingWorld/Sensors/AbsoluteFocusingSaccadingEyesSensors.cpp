@@ -308,7 +308,9 @@ void AbsoluteFocusingSaccadingEyesSensors::update(int visualize) {
 //	if(visualize)
 //		view.printBinary();
 
-	if(visualize) {
+
+//	if(visualize)
+	{
 		std::vector<unsigned> apr;
 		apr.push_back(condition);
 		apr.push_back(distance);
@@ -508,4 +510,12 @@ void* AbsoluteFocusingSaccadingEyesSensors::logTimeSeries(const std::string& lab
 	ctrlog.close();
 
 	return nullptr;
+}
+
+unsigned AbsoluteFocusingSaccadingEyesSensors::numSaccades() {
+
+	std::set<std::vector<unsigned>> saccades;
+	for(const auto& sc : perceptionControlsTimeSeries)
+		saccades.insert(sc);
+	return saccades.size();
 }

@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "SpikesOnCubeMentalImage.h"
+#include "../Sensors/AbsoluteFocusingSaccadingEyesSensors.h"
 
 typedef std::tuple<std::vector<unsigned>> CommandRangeType;
 
@@ -14,7 +15,7 @@ private:
 	std::vector<std::vector<CommandRangeType>> commandRangesTS;
 
 public:
-	SpikesOnCubeFullMentalImage(std::shared_ptr<std::string> curAstName, std::shared_ptr<AsteroidsDatasetParser> dsParser);
+	SpikesOnCubeFullMentalImage(std::shared_ptr<std::string> curAstName, std::shared_ptr<AsteroidsDatasetParser> dsParser, std::shared_ptr<AbsoluteFocusingSaccadingEyesSensors> sPtr);
 
 	void reset(int visualize) override;
 	void resetAfterWorldStateChange(int visualize) override;
@@ -29,4 +30,5 @@ public:
 
 private:
 	std::tuple<double,bool> evaluateRangeVSSet(const CommandRangeType& guessesRange);
+	std::shared_ptr<AbsoluteFocusingSaccadingEyesSensors> sensorsPtr;
 };

@@ -30,6 +30,7 @@ protected:
 
 	std::vector<double> stateScores;
 	std::vector<unsigned> correctCommandsStateScores;
+	std::vector<double> sensorActivityStateScores;
 
 	const unsigned mnistNumDigits = 10;
 	const unsigned mnistNumBits = 2*mnistNumDigits;

@@ -31,6 +31,8 @@ public:
 	const std::vector<bool>& getLastPercept() { return savedPercept; };
 	void* logTimeSeries(const std::string& label) override;
 
+	unsigned numSaccades();
+
 private:
 	// Primary settings
 	const unsigned foveaResolution;
