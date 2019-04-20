@@ -31,6 +31,12 @@ std::shared_ptr<ParameterLink<bool>> AsteroidGazingWorld::lockAtMaxZoomPL =
 std::shared_ptr<ParameterLink<bool>> AsteroidGazingWorld::startZoomedInPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING-startZoomedIn", false,
                                  "should the default state of the nodes (0000...) correspond to max zoom level instead of the min level (no zoom)?");
+std::shared_ptr<ParameterLink<bool>> AsteroidGazingWorld::integrateFitnessPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING-integrateFitness", true,
+                                 "should the fitness be integrated over simulation time? (default: yes)");
+std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::numTriggerBitsPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING-numTriggerBits", 0,
+                                 "how many trigger bits should be used? the bits will be ANDed (default: none)");
 
 AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) : AbstractSlideshowWorld(PT_) {
 	// Localizing settings
@@ -52,7 +58,11 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 	sensors = static_cast<std::shared_ptr<AbstractSensors>>(sensorsPtr);
 
 //	mentalImage = std::make_shared<SpikesOnCubeMentalImage>(currentAsteroidName, datasetParser);
-	mentalImage = std::make_shared<SpikesOnCubeFullMentalImage>(currentAsteroidName, datasetParser, sensorsPtr);
+	mentalImage = std::make_shared<SpikesOnCubeFullMentalImage>(currentAsteroidName,
+	                                                            datasetParser,
+	                                                            sensorsPtr,
+	                                                            numTriggerBitsPL->get(PT_),
+	                                                            integrateFitnessPL->get(PT_));
 //	mentalImage = std::make_shared<IdentityMentalImage>(sensorsPtr);
 
 	makeMotors();

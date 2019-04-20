@@ -47,3 +47,12 @@ inline std::vector<unsigned> decodeMHVUInt(std::vector<double>::iterator begin, 
 	}
 	return outs;
 }
+
+// Miscellaneous decoders
+
+inline bool decodeTriggerBits(std::vector<double>::iterator begin, std::vector<double>::iterator end) {
+	for(auto it=begin; it!=end; it++)
+		if(*it==0)
+			return false;
+	return true;
+}

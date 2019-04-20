@@ -19,6 +19,8 @@ private:
 	static std::shared_ptr<ParameterLink<int>> activeThresholdingDepthPL;
 	static std::shared_ptr<ParameterLink<bool>> lockAtMaxZoomPL;
 	static std::shared_ptr<ParameterLink<bool>> startZoomedInPL;
+	static std::shared_ptr<ParameterLink<bool>> integrateFitnessPL;
+	static std::shared_ptr<ParameterLink<int>> numTriggerBitsPL;
 	std::shared_ptr<AsteroidsDatasetParser> datasetParser;
 
 	bool resetAgentBetweenStates() override { return true; };

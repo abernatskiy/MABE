@@ -15,7 +15,11 @@ private:
 	std::vector<std::vector<CommandRangeType>> commandRangesTS;
 
 public:
-	SpikesOnCubeFullMentalImage(std::shared_ptr<std::string> curAstName, std::shared_ptr<AsteroidsDatasetParser> dsParser, std::shared_ptr<AbsoluteFocusingSaccadingEyesSensors> sPtr);
+	SpikesOnCubeFullMentalImage(std::shared_ptr<std::string> curAstName,
+	                            std::shared_ptr<AsteroidsDatasetParser> dsParser,
+	                            std::shared_ptr<AbsoluteFocusingSaccadingEyesSensors> sPtr,
+	                            unsigned numTriggerBits,
+	                            bool integrateFitness);
 
 	void reset(int visualize) override;
 	void resetAfterWorldStateChange(int visualize) override;
@@ -31,4 +35,10 @@ public:
 private:
 	std::tuple<double,bool> evaluateRangeVSSet(const CommandRangeType& guessesRange);
 	std::shared_ptr<AbsoluteFocusingSaccadingEyesSensors> sensorsPtr;
+
+	unsigned numTriggerBits;
+	bool integrateFitness;
+
+	bool answerGiven;
+	bool answerReceived;
 };

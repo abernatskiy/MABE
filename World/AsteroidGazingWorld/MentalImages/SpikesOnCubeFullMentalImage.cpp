@@ -59,18 +59,28 @@ std::tuple<double,bool> evaluateRange(const CommandRangeType& guessesRange, cons
 
 SpikesOnCubeFullMentalImage::SpikesOnCubeFullMentalImage(std::shared_ptr<std::string> curAstNamePtr,
 	                                                       std::shared_ptr<AsteroidsDatasetParser> dsParserPtr,
-	                                                       std::shared_ptr<AbsoluteFocusingSaccadingEyesSensors> sPtr) :
-	SpikesOnCubeMentalImage(curAstNamePtr, dsParserPtr), sensorsPtr(sPtr) {}
-
+	                                                       std::shared_ptr<AbsoluteFocusingSaccadingEyesSensors> sPtr,
+                                                         unsigned nTriggerBits,
+                                                         bool intFitness) :
+	SpikesOnCubeMentalImage(curAstNamePtr, dsParserPtr),
+	sensorsPtr(sPtr),
+	numTriggerBits(nTriggerBits),
+	integrateFitness(intFitness),
+	answerGiven(false),
+	answerReceived(false) {}
 
 void SpikesOnCubeFullMentalImage::reset(int visualize) { // called in the beginning of each evaluation cycle
 	SpikesOnCubeMentalImage::reset(visualize);
 	currentCommandRanges.clear();
+	answerGiven = false;
+	answerReceived = false;
 }
 
 void SpikesOnCubeFullMentalImage::resetAfterWorldStateChange(int visualize) { // called after each discrete world state change
 	SpikesOnCubeMentalImage::resetAfterWorldStateChange(visualize);
 	currentCommandRanges.clear();
+	answerGiven = false;
+	answerReceived = false;
 	if(visualize)
 		commandRangesTS.clear();
 }
@@ -84,17 +94,19 @@ void SpikesOnCubeFullMentalImage::updateWithInputs(std::vector<double> inputs) {
 	currentCommandRanges.clear();
 	auto it = inputs.begin();
 	auto digitRange = decodeMHVUInt(it, it+mnistNumBits);
-
 	currentCommandRanges.push_back(std::make_tuple(digitRange));
-
 	if(mVisualize)
 		commandRangesTS.push_back(currentCommandRanges);
-
 //  std::cout << "Got range " << commandRangeToStr(currentCommandRanges.back()) << " from bits " << bitRangeToStr(inputs.begin(), mnistNumBits) << std::endl;
 //  exit(0);
+
+	answerGiven = decodeTriggerBits(it+mnistNumBits, it+mnistNumBits+numTriggerBits);
 }
 
 void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> org, int stateTime, int statePeriod) {
+	if(answerReceived)
+		return;
+
 	if(stateTime == 0) {
 		readOriginalCommands();
 		ocApproximationAttempted.resize(originalCommands.size());
@@ -112,10 +124,11 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 		}
 	}
 
-	if(currentCommandRanges.size() != 0) {
-		unsigned numCorrectCommands = 0;
-		double cumulativeScore = 0.;
+	double curEval = -42;
+	unsigned numCorrectCommands = 0;
 
+	if(currentCommandRanges.size() != 0) {
+		double cumulativeScore = 0.;
 		double curScore;
 		bool curHit;
 
@@ -125,21 +138,32 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 			cumulativeScore += curScore;
 			if(curHit)
 				numCorrectCommands++;
-//			std::cout << "t=" << stateTime << ": command range " << commandRangeToStr(curRange) << " scored " << curScore << " " << (curHit ? "h" : "m") << "\n";
 		}
 
-		if( correctCommandsStateScores.back() < numCorrectCommands )
+		if(correctCommandsStateScores.back() < numCorrectCommands)
 			correctCommandsStateScores.back() = numCorrectCommands;
-		stateScores.back() += cumulativeScore/currentCommandRanges.size();
-//		std::cout << "t=" << stateTime << ": cumulativeScore " << cumulativeScore/currentCommandRanges.size() << " hits " << numCorrectCommands << std::endl;
+
+		if(integrateFitness)
+			stateScores.back() += cumulativeScore/currentCommandRanges.size();
+		else
+			stateScores.back() = cumulativeScore/currentCommandRanges.size();
+
+		curEval = cumulativeScore/currentCommandRanges.size();
 	}
 
-	if(stateTime == statePeriod-1) {
-		stateScores.back() /= statePeriod-1;
+	if(answerGiven || stateTime == statePeriod-1) {
+		if(answerGiven) {
+			stateScores.back() = curEval;
+			correctCommandsStateScores.back() = numCorrectCommands;
+		}
+		else if(integrateFitness)
+			stateScores.back() /= statePeriod-1;
+
 		sensorActivityStateScores.push_back(static_cast<double>(sensorsPtr->numSaccades())/static_cast<double>(statePeriod));
 
+		answerReceived = true;
+
 		if(mVisualize) {
-//			std::cout << "Num saccades: " << sensorsPtr->numSaccades() << std::endl;
 			std::cout << "Brain generated command ranges at the end of evaluation:";
 			for(const auto& curRange : currentCommandRanges)
 				std::cout << " " << commandRangeToStr(curRange);
@@ -155,7 +179,7 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 }
 
 int SpikesOnCubeFullMentalImage::numInputs() {
-	return mnistNumBits;
+	return mnistNumBits + numTriggerBits;
 }
 
 void* SpikesOnCubeFullMentalImage::logTimeSeries(const std::string& label) {
