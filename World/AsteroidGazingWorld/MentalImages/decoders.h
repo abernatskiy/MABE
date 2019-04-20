@@ -51,6 +51,8 @@ inline std::vector<unsigned> decodeMHVUInt(std::vector<double>::iterator begin, 
 // Miscellaneous decoders
 
 inline bool decodeTriggerBits(std::vector<double>::iterator begin, std::vector<double>::iterator end) {
+	if(begin==end)
+		return false;
 	for(auto it=begin; it!=end; it++)
 		if(*it==0)
 			return false;

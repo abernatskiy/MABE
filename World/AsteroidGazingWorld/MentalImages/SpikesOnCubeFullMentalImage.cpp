@@ -101,6 +101,7 @@ void SpikesOnCubeFullMentalImage::updateWithInputs(std::vector<double> inputs) {
 //  exit(0);
 
 	answerGiven = decodeTriggerBits(it+mnistNumBits, it+mnistNumBits+numTriggerBits);
+//  std::cout << "Got trigger value " << answerGiven << " from bits " << bitRangeToStr(it+mnistNumBits, numTriggerBits) << std::endl;
 }
 
 void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> org, int stateTime, int statePeriod) {
@@ -153,6 +154,7 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 
 	if(answerGiven || stateTime == statePeriod-1) {
 		if(answerGiven) {
+			std::cout << "Trigger pressed at " << stateTime << std::endl;
 			stateScores.back() = curEval;
 			correctCommandsStateScores.back() = numCorrectCommands;
 		}
