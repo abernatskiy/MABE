@@ -154,7 +154,7 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 
 	if(answerGiven || stateTime == statePeriod-1) {
 		if(answerGiven) {
-			std::cout << "Trigger pressed at " << stateTime << std::endl;
+//			std::cout << "Trigger pressed at " << stateTime << std::endl;
 			stateScores.back() = curEval;
 			correctCommandsStateScores.back() = numCorrectCommands;
 		}
