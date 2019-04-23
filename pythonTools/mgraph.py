@@ -40,7 +40,7 @@ parser.add_argument('-lastOnly', action='store_true', default = False, help='sho
 
 parser.add_argument('-verbose', action='store_true', default = False, help='adding this flag will provide more text output while running (useful if you are working with a lot of data to make sure that you are not hanging) - default (if not set) : OFF', required=False)
 
-parser.add_argument('-legendLocation', type=str, choices=('ur','ul','lr','ll','cr','cl','lc','uc','c'), default = 'lr', help='if ledgends are needed this is determins placement (first letter u = upper, c = center, l = lower. second letter l = left, c = center, r = right) - default : lr (lower right)', required=False)
+parser.add_argument('-legendLocation', type=str, choices=('ur','ul','lr','ll','cr','cl','lc','uc','c','none'), default = 'lr', help='if ledgends are needed this is determins placement (first letter u = upper, c = center, l = lower. second letter l = left, c = center, r = right) - default : lr (lower right)', required=False)
 parser.add_argument('-legendLineWeight', type=int, default = -1, help='changes line thickness in legend - default : lineWeight', required=False)
 parser.add_argument('-lineWeight', type=int, default = 1, help='changes line thickness of lines in plots - default : 1', required=False)
 
@@ -256,7 +256,7 @@ def MultiPlot(data, NamesList, ConditionsList, dataIndex, CombineData = False, P
 						plt.errorbar(aveXCoordinate, aveLine,xerr = errorLineX,yerr = errorLineY,color = PltColor, alpha = .5,fmt='.')
 					if (ErrorStyle == 'region'):
 						plt.fill_between(aveXCoordinate, aveLine - errorLineY,aveLine + errorLineY, color = PltColor, alpha = .15)
-			if ((len(ConditionsList) > 1) or (CombineData))and legendLocation != '':
+			if ((len(ConditionsList) > 1) or (CombineData))and legendLocation != 'none':
 				if args.lastOnly:
 					plt.xlabel('Conditions', fontsize=MinorFontSize)
 				else:
@@ -325,8 +325,8 @@ if args.saveName != "" and args.save == "png" and len(args.files) > 1:
 	print("\n\n-saveName was provided, but more then one image file will be created becasue more then input file was listed and -save is png.\n\n  either save as type pdf (for a combined image file),\n  or run mGraph for each input file\n  or remove -saveName")
 	exit()
 
-realLedgendList = ['upper right','upper left','lower right','lower left','center right','center left','lower center','upper center','center']
-abrvLedgendList = ['ur','ul','lr','ll','cr','cl','lc','uc','c']
+realLedgendList = ['upper right','upper left','lower right','lower left','center right','center left','lower center','upper center','center','none']
+abrvLedgendList = ['ur','ul','lr','ll','cr','cl','lc','uc','c','none']
 args.legendLocation = realLedgendList[abrvLedgendList.index(args.legendLocation)]
 
 namesList = args.data
