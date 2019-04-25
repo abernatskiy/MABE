@@ -1,7 +1,8 @@
 #include "AsteroidGazingWorld.h"
 
+#include "MentalImages/DigitMentalImage.h"
 //#include "MentalImages/SpikesOnCubeMentalImage.h"
-#include "MentalImages/SpikesOnCubeFullMentalImage.h"
+//#include "MentalImages/SpikesOnCubeFullMentalImage.h"
 //#include "MentalImages/IdentityMentalImage.h"
 
 #include "Sensors/AbsoluteFocusingSaccadingEyesSensors.h"
@@ -57,13 +58,10 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 	                                                                         startZoomedInPL->get(PT_));
 	sensors = static_cast<std::shared_ptr<AbstractSensors>>(sensorsPtr);
 
-//	mentalImage = std::make_shared<SpikesOnCubeMentalImage>(currentAsteroidName, datasetParser);
-	mentalImage = std::make_shared<SpikesOnCubeFullMentalImage>(currentAsteroidName,
-	                                                            datasetParser,
-	                                                            sensorsPtr,
-	                                                            numTriggerBitsPL->get(PT_),
-	                                                            integrateFitnessPL->get(PT_));
-//	mentalImage = std::make_shared<IdentityMentalImage>(sensorsPtr);
-
+	mentalImage = std::make_shared<DigitMentalImage>(currentAsteroidName,
+	                                                 datasetParser,
+	                                                 sensorsPtr,
+	                                                 numTriggerBitsPL->get(PT_),
+	                                                 integrateFitnessPL->get(PT_));
 	makeMotors();
 };

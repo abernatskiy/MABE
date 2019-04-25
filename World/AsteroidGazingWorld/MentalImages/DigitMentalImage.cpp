@@ -1,5 +1,10 @@
-#include "SpikesOnCubeFullMentalImage.h"
+#include "DigitMentalImage.h"
 #include "decoders.h"
+
+#include <algorithm>
+#include <fstream>
+#include <sstream>
+#include <cstdlib>
 
 /***** Utility funcs *****/
 
@@ -15,10 +20,7 @@ std::string commandRangeToStr(const CommandRangeType& crange) {
 
 std::string commandToStr(const CommandType& com) {
 	std::ostringstream s;
-	s << "[" << std::get<0>(com) // << ","
-//	         << std::get<1>(com) << ","
-//	         << std::get<2>(com)
-	         << "]";
+	s << "[" << std::get<0>(com) << "]";
 	return s.str();
 }
 
@@ -46,65 +48,70 @@ std::tuple<double,bool> evaluateRange(const CommandRangeType& guessesRange, cons
 	else
 		preciseHit = false;
 
-//	std::cout << "Range " << commandRangeToStr(guessesRange) << " evaluated with respect to command ";
-//	printCommand(originalCommand);
-//	std::cout << ", yielding " << eval/3. << " and " << ( preciseHit ? "a precise hit" : "no precise hit") << std::endl;
-
-//	if(preciseHit) { std::cout << "Precise hit achieved by range " << commandRangeToStr(guessesRange) << " on command "; printCommand(originalCommand); std::cout << std::endl; }
-
 	return std::make_tuple(eval/1., preciseHit);
 }
 
-/***** Public SpikesOnCubeFullMentalImage class definitions *****/
+/***** Public DigitMentalImage class definitions *****/
 
-SpikesOnCubeFullMentalImage::SpikesOnCubeFullMentalImage(std::shared_ptr<std::string> curAstNamePtr,
-	                                                       std::shared_ptr<AsteroidsDatasetParser> dsParserPtr,
-	                                                       std::shared_ptr<AbsoluteFocusingSaccadingEyesSensors> sPtr,
-                                                         unsigned nTriggerBits,
-                                                         bool intFitness) :
-	SpikesOnCubeMentalImage(curAstNamePtr, dsParserPtr),
+DigitMentalImage::DigitMentalImage(std::shared_ptr<std::string> curAstNamePtr,
+                                   std::shared_ptr<AsteroidsDatasetParser> dsParserPtr,
+                                   std::shared_ptr<AbsoluteFocusingSaccadingEyesSensors> sPtr,
+                                   unsigned nTriggerBits,
+                                   bool intFitness) :
+	currentAsteroidNamePtr(curAstNamePtr),
+	datasetParserPtr(dsParserPtr),
+	justReset(true),
+	cl(Global::outputPrefixPL->get() + "commands.log"),
+	mVisualize(Global::modePL->get() == "visualize"),
 	sensorsPtr(sPtr),
 	numTriggerBits(nTriggerBits),
 	integrateFitness(intFitness),
 	answerGiven(false),
-	answerReceived(false) {}
+	answerReceived(false) {
 
-void SpikesOnCubeFullMentalImage::reset(int visualize) { // called in the beginning of each evaluation cycle
-	SpikesOnCubeMentalImage::reset(visualize);
-	currentCommandRanges.clear();
-	answerGiven = false;
-	answerReceived = false;
+	if(mVisualize)
+		cl.open();
 }
 
-void SpikesOnCubeFullMentalImage::resetAfterWorldStateChange(int visualize) { // called after each discrete world state change
-	SpikesOnCubeMentalImage::resetAfterWorldStateChange(visualize);
+void DigitMentalImage::reset(int visualize) { // called in the beginning of each evaluation cycle
+	stateScores.clear();
+	correctCommandsStateScores.clear();
+	sensorActivityStateScores.clear();
+	justReset = true;
 	currentCommandRanges.clear();
 	answerGiven = false;
 	answerReceived = false;
-	if(visualize)
+	// originalCommands are taken care of in readOriginalCommands()
+}
+
+void DigitMentalImage::resetAfterWorldStateChange(int visualize) { // called after each discrete world state change
+	justReset = true;
+	currentCommandRanges.clear();
+	answerGiven = false;
+	answerReceived = false;
+	// originalCommands are taken care of in readOriginalCommands()
+	if(visualize) {
 		commandRangesTS.clear();
+//		cl.logMessage("resetAfterWorldStateChange called");
+	}
 }
 
-void SpikesOnCubeFullMentalImage::updateWithInputs(std::vector<double> inputs) {
-	if(justReset) {
+void DigitMentalImage::updateWithInputs(std::vector<double> inputs) {
+	if(justReset)
 		justReset = false;
-//		return; // NOTE: if the image has just been reset, we can return early here to save a few CPU cycles
-	}
 
 	currentCommandRanges.clear();
 	auto it = inputs.begin();
 	auto digitRange = decodeMHVUInt(it, it+mnistNumBits);
 	currentCommandRanges.push_back(std::make_tuple(digitRange));
-	if(mVisualize)
-		commandRangesTS.push_back(currentCommandRanges);
-//  std::cout << "Got range " << commandRangeToStr(currentCommandRanges.back()) << " from bits " << bitRangeToStr(inputs.begin(), mnistNumBits) << std::endl;
-//  exit(0);
 
 	answerGiven = decodeTriggerBits(it+mnistNumBits, it+mnistNumBits+numTriggerBits);
-//  std::cout << "Got trigger value " << answerGiven << " from bits " << bitRangeToStr(it+mnistNumBits, numTriggerBits) << std::endl;
+
+	if(mVisualize)
+		commandRangesTS.push_back(currentCommandRanges);
 }
 
-void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> org, int stateTime, int statePeriod) {
+void DigitMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> org, int stateTime, int statePeriod) {
 	if(answerReceived)
 		return;
 
@@ -117,10 +124,8 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 		if(mVisualize) {
 			std::cout << "For shape " << *currentAsteroidNamePtr << ":" << std::endl
 								<< "Original commands are ";
-			for(unsigned i=0; i<1; i++) {
-				printCommand(originalCommands[i]);
-				std::cout << ( i==0 ? "" : ", " );
-			}
+			for(unsigned i=0; i<1; i++)
+				std::cout << commandToStr(originalCommands[i]) << ( i==0 ? "" : ", " );
 			std::cout << std::endl;
 		}
 	}
@@ -154,7 +159,6 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 
 	if(answerGiven || stateTime == statePeriod-1) {
 		if(answerGiven) {
-//			std::cout << "Trigger pressed at " << stateTime << std::endl;
 			stateScores.back() = curEval;
 			correctCommandsStateScores.back() = numCorrectCommands;
 		}
@@ -171,21 +175,51 @@ void SpikesOnCubeFullMentalImage::recordRunningScoresWithinState(std::shared_ptr
 				std::cout << " " << commandRangeToStr(curRange);
 			std::cout << std::endl;
 			std::cout << "Final score: " << stateScores.back() << " final hits: " << correctCommandsStateScores.back() << std::endl << std::endl;
-//			std::cout << "Full evaluations:";
-//			for(auto sc : stateScores)
-//				std::cout << ' ' << sc;
-//			std::cout << std::endl;
 		}
-
 	}
 }
 
-int SpikesOnCubeFullMentalImage::numInputs() {
+void DigitMentalImage::recordRunningScores(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {}
+
+void DigitMentalImage::recordSampleScores(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {
+	unsigned lineageID = org->dataMap.findKeyInData("lineageID")!=0 ? org->dataMap.getInt("lineageID") : org->ID;
+	const auto& evaluationOrder = getEvaluationOrder(lineageID, stateScores.size());
+	unsigned ncc = 0;
+	double totSensoryActivity = 0;
+	const unsigned astsTotal = stateScores.size();
+	double score = 0;
+	for(unsigned i=0; i<astsTotal; i++) {
+		unsigned curAstIdx = evaluationOrder[i];
+		double stsc = stateScores[curAstIdx];
+		score += stsc;
+		ncc += correctCommandsStateScores[curAstIdx];
+		if(sensorActivityStateScores.size()!=0)
+			totSensoryActivity += sensorActivityStateScores[curAstIdx];
+//		if(correctCommandsStateScores[curAstIdx]<3)
+//			break;
+	}
+	sampleScoresMap->append("score", score);
+	sampleScoresMap->append("numCorrectCommands", static_cast<double>(ncc));
+	sampleScoresMap->append("sensorActivity", totSensoryActivity/static_cast<double>(astsTotal));
+}
+
+void DigitMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) {
+	double score = sampleScoresMap->getAverage("score");
+	double numCorrectCommands = sampleScoresMap->getAverage("numCorrectCommands");
+	double sensorActivity = sampleScoresMap->getAverage("sensorActivity");
+	unsigned tieredSensorActivity = static_cast<unsigned>(sensorActivity*10);
+	org->dataMap.append("score", score );
+	org->dataMap.append("guidingFunction", -score);
+	org->dataMap.append("numCorrectCommands", numCorrectCommands);
+	org->dataMap.append("sensorActivity", sensorActivity);
+	org->dataMap.append("tieredSensorActivity", static_cast<double>(tieredSensorActivity));
+}
+
+int DigitMentalImage::numInputs() {
 	return mnistNumBits + numTriggerBits;
 }
 
-void* SpikesOnCubeFullMentalImage::logTimeSeries(const std::string& label) {
-
+void* DigitMentalImage::logTimeSeries(const std::string& label) {
 	std::ofstream guessesLog(std::string("guesses_") + label + std::string(".log"));
 	for(const auto& guess : commandRangesTS) {
 		for(auto ocit=originalCommands.cbegin(); ocit!=originalCommands.cend(); ocit++)
@@ -198,10 +232,33 @@ void* SpikesOnCubeFullMentalImage::logTimeSeries(const std::string& label) {
 	return nullptr;
 }
 
-/***** Private SpikesOnCubeFullMentalImage class definitions *****/
+/***** Private DigitMentalImage class definitions *****/
 
-std::tuple<double,bool> SpikesOnCubeFullMentalImage::evaluateRangeVSSet(const CommandRangeType& guessesRange) {
+void DigitMentalImage::readOriginalCommands() {
+	originalCommands.clear();
+	const std::vector<std::vector<unsigned>>& commands = datasetParserPtr->cachingGetDescription(*currentAsteroidNamePtr);
 
+	for(const auto& com : commands)
+		originalCommands.push_back(std::make_tuple(com[0]));
+}
+
+const std::vector<unsigned>& DigitMentalImage::getEvaluationOrder(unsigned lineageID, unsigned numAsteroids) {
+	std::map<unsigned,std::vector<unsigned>>::iterator itToEvalOrder;
+	bool orderIsNew;
+	std::tie(itToEvalOrder,orderIsNew) = lineageToEvaluationOrder.emplace(lineageID, numAsteroids);
+
+	if(orderIsNew) {
+		for(unsigned i=0; i<numAsteroids; i++)
+			itToEvalOrder->second.at(i) = i;
+
+		std::mt19937 rng(42*lineageID); // common RNG works only in single-threaded setting
+		std::shuffle(itToEvalOrder->second.begin(), itToEvalOrder->second.end(), rng);
+	}
+
+	return itToEvalOrder->second;
+}
+
+std::tuple<double,bool> DigitMentalImage::evaluateRangeVSSet(const CommandRangeType& guessesRange) {
 	// returns a score that shows how close the range is to the closest original command,
 	//         a Boolean telling if there were any direct hits,
 	//     and the index of the closest original command
@@ -230,6 +287,5 @@ std::tuple<double,bool> SpikesOnCubeFullMentalImage::evaluateRangeVSSet(const Co
 	ocApproximationAttempted[highestIdx] = true;
 
 //	std::cout << "Range vs set yielded " << highestEval << " and " << ( preciseHit ? "a precise hit" : "no precise hit") << std::endl;
-
 	return std::make_tuple(highestEval, preciseHit);
 }
