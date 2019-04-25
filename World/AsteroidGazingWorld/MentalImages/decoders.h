@@ -1,7 +1,9 @@
-#include "SphericalHarmonicsBasedAsteroidImageMentalImage.h"
+#pragma once
 
 #include <algorithm>
 #include <vector>
+#include <string>
+#include <sstream>
 
 // Decoders based on "one-hot" encoding
 // Quotes are due to the fact that only the leftmost one counts, if there are any more ones to the right of it the decoder does not care
@@ -57,4 +59,13 @@ inline bool decodeTriggerBits(std::vector<double>::iterator begin, std::vector<d
 		if(*it==0)
 			return false;
 	return true;
+}
+
+// Utilities
+
+inline std::string bitRangeToStr(std::vector<double>::iterator startAt, unsigned bits) {
+	std::ostringstream s;
+	for(auto it=startAt; it!=startAt+bits; it++)
+		s << ( *it==0. ? 0 : 1 );
+	return s.str();
 }

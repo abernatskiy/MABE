@@ -24,13 +24,6 @@ std::string commandToStr(const CommandType& com) {
 	return s.str();
 }
 
-std::string bitRangeToStr(std::vector<double>::iterator startAt, unsigned bits) {
-	std::ostringstream s;
-	for(auto it=startAt; it!=startAt+bits; it++)
-		s << ( *it==0. ? 0 : 1 );
-	return s.str();
-}
-
 std::tuple<double,bool> evaluateRange(const CommandRangeType& guessesRange, const CommandType& originalCommand) {
 	// returns a score that shows how close the range is to the original command and a Boolean telling if it's a direct hit
 	unsigned od;
