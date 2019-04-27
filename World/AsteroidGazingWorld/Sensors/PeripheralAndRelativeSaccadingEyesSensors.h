@@ -1,0 +1,65 @@
+#pragma once
+
+#include "../../AbstractSensors.h"
+#include "../Utilities/AsteroidsDatasetParser.h"
+#include "../Utilities/AsteroidSnapshot.h"
+#include "rangeDecoders.h"
+
+#include <map>
+
+typedef std::tuple<std::string> AsteroidViewParameters;
+typedef std::map<AsteroidViewParameters,AsteroidSnapshot> AsteridSnapshotsLibrary;
+
+//inline std::string getAnAsteroid(const asteroid_snapshots_library_type& ast) { return ast.begin()->first; };
+//inline unsigned getACondition(const asteroid_snapshots_library_type& ast) { return (ast.begin()->second).begin()->first; };
+//inline unsigned getADistance(const asteroid_snapshots_library_type& ast) { return ((ast.begin()->second).begin()->second).begin()->first; };
+
+class PeripheralAndRelativeSaccadingEyesSensors : public AbstractSensors {
+
+public:
+	PeripheralAndRelativeSaccadingEyesSensors(std::shared_ptr<std::string> curAstName,
+	                                          std::shared_ptr<AsteroidsDatasetParser> datasetParser,
+	                                          unsigned frameRes, unsigned peripheralFOVRes, unsigned foveaRes,
+	                                          unsigned jumpType, unsigned jumpGradations);
+	void update(int visualize) override;
+	void reset(int visualize) override;
+
+	int numOutputs() override { return numSensors; };
+	int numInputs() override { return numMotors; };
+
+	const std::vector<bool>& getLastPercept() { return savedPercept; };
+	void* logTimeSeries(const std::string& label) override;
+
+	unsigned numSaccades();
+
+private:
+	std::shared_ptr<std::string> currentAsteroidName;
+	std::shared_ptr<AsteroidsDatasetParser> datasetParser;
+
+	const unsigned frameRes;
+	const unsigned peripheralFOVRes;
+	const unsigned foveaRes;
+	const unsigned jumpType;
+	const unsigned jumpGradations;
+
+	const unsigned conditionControls = 0; // we're assuming that the spacecraft has pictures from one angle only for now (TODO: make tunable conditions)
+	const unsigned distanceControls = 0; // neglecting distance control for now (TODO: make tunable distances)
+	const unsigned numPhases = 1;
+	const unsigned phaseControls = 0; // no controls for one phase
+	const std::uint8_t baseThreshold = 128;
+
+	// Derived vars and facilities
+	std::shared_ptr<AbstractRangeDecoder> rangeDecoder;
+	const unsigned foveaPositionControls;
+	const unsigned numSensors;
+	const unsigned numMotors;
+
+	// Actual state
+	AsteroidSnapshotsLibrary asteroidSnapshots;
+	Range2d foveaPosition;
+	std::vector<bool> savedPercept;
+	std::vector<Range2d> foveaPositionTimeSeries;
+
+	// Private methods
+	void analyzeDataset();
+};
