@@ -8,7 +8,7 @@
 #include <map>
 
 typedef std::tuple<std::string> AsteroidViewParameters;
-typedef std::map<AsteroidViewParameters,AsteroidSnapshot> AsteridSnapshotsLibrary;
+typedef std::map<AsteroidViewParameters,AsteroidSnapshot> AsteroidSnapshotsLibrary;
 
 //inline std::string getAnAsteroid(const asteroid_snapshots_library_type& ast) { return ast.begin()->first; };
 //inline unsigned getACondition(const asteroid_snapshots_library_type& ast) { return (ast.begin()->second).begin()->first; };

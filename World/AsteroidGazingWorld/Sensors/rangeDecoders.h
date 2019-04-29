@@ -25,7 +25,7 @@ public:
 			exit(EXIT_FAILURE);
 		}
 		Range1d xrange = decode1dRangeJump(start.first, controlsStart, controlsStart+numControlsPerDim());
-		Range1d yrange = decode2dRangeJump(start.second, controlsStart+numControlsPerDim(), controlsEnd);
+		Range1d yrange = decode1dRangeJump(start.second, controlsStart+numControlsPerDim(), controlsEnd);
 		return Range2d(xrange, yrange);
 	};
 	unsigned numControls() override {

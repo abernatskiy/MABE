@@ -29,7 +29,8 @@ PeripheralAndRelativeSaccadingEyesSensors::PeripheralAndRelativeSaccadingEyesSen
 		unsigned distance = *(parameterValuesSets["distance"].begin());
 		unsigned phase = *(parameterValuesSets["phase"].begin());
 		string snapshotPath = datasetParser->getPicturePath(an, condition, distance, phase);
-		asteroidSnapshots[an].emplace(snapshotPath, baseThreshold);
+		asteroidSnapshots.emplace(pair<AsteroidViewParameters,AsteroidSnapshot>(make_tuple(an),
+		                                                                        AsteroidSnapshot(snapshotPath, baseThreshold)));
 	}
 
 	analyzeDataset();
@@ -40,7 +41,7 @@ void PeripheralAndRelativeSaccadingEyesSensors::update(int visualize) {
 	for(unsigned i=0; i<numMotors; i++)
 		controls[i] = brain->readOutput(i) > 0.5;
 
-	AsteroidSnapshot& astSnap = asteroidSnapshots.at(*currentAsteroidName);
+	AsteroidSnapshot& astSnap = asteroidSnapshots.at(make_tuple(*currentAsteroidName));
 	savedPercept.clear();
 
 	const AsteroidSnapshot& peripheralView = astSnap.cachingResampleArea(0, 0, astSnap.width, astSnap.height, peripheralFOVRes, peripheralFOVRes, baseThreshold);
@@ -49,7 +50,7 @@ void PeripheralAndRelativeSaccadingEyesSensors::update(int visualize) {
 			savedPercept.push_back(peripheralView.getBinary(i, j));
 
 	foveaPosition = rangeDecoder->decode2dRangeJump(foveaPosition, controls.begin(), controls.end());
-	const AsteroidSnaphot& fovealView = astSnap.cachingResampleArea(foveaPosition.first.first, foveaPosition.second.first,
+	const AsteroidSnapshot& fovealView = astSnap.cachingResampleArea(foveaPosition.first.first, foveaPosition.second.first,
 	                                                                foveaPosition.first.second, foveaPosition.second.second,
 	                                                                foveaRes, foveaRes, baseThreshold);
 	for(unsigned i=0; i<foveaRes; i++)
@@ -57,7 +58,7 @@ void PeripheralAndRelativeSaccadingEyesSensors::update(int visualize) {
 			savedPercept.push_back(fovealView.getBinary(i, j));
 
 	for(unsigned k=0; k<numSensors; k++)
-		brain->setInput(k, savedPercept(k));
+		brain->setInput(k, savedPercept[k]);
 
 	foveaPositionTimeSeries.push_back(foveaPosition);
 
@@ -65,17 +66,14 @@ void PeripheralAndRelativeSaccadingEyesSensors::update(int visualize) {
 }
 
 void PeripheralAndRelativeSaccadingEyesSensors::reset(int visualize) {
-	AbstractSensors::reset();
+	AbstractSensors::reset(visualize);
 	foveaPositionTimeSeries.clear();
 }
 
-void* PeripheralAndRelativeSaccadingEyesSensors::logTimeSeries(const std::string& label) {
-	std::ofstream ctrlog(std::string("foveaPosition_") + label + std::string(".log"));
-	for(const auto& fp : foveaPositionTimeSeries) {
-		for(auto ci=fp.begin(); ci!=fp.end(); ci++)
-			ctrlog << *ci << (ci==fp.end()-1 ? "" : " ");
-		ctrlog << endl;
-	}
+void* PeripheralAndRelativeSaccadingEyesSensors::logTimeSeries(const string& label) {
+	ofstream ctrlog(string("foveaPosition_") + label + string(".log"));
+	for(const auto& fp : foveaPositionTimeSeries)
+		ctrlog << fp.first.first << fp.second.first << fp.first.second << fp.second.second << endl;
 	ctrlog.close();
 	return nullptr;
 }
@@ -89,7 +87,7 @@ unsigned PeripheralAndRelativeSaccadingEyesSensors::numSaccades() {
 
 /********** Private PeripheralAndRelativeSaccadingEyesSensors definitions **********/
 
-void analyzeDataset() {
+void PeripheralAndRelativeSaccadingEyesSensors::analyzeDataset() {
 	cout << "WARNING: PeripheralAndRelativeSaccadingEyesSensors do not implement dataset analysis!" << endl;
 	cout << "If you need this functionality, rerun the simulation with AbsoluteFocusingSaccadingEyesSensors" << endl;
 }
