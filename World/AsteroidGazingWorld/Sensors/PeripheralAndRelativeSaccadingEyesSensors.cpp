@@ -12,8 +12,7 @@ PeripheralAndRelativeSaccadingEyesSensors::PeripheralAndRelativeSaccadingEyesSen
 	rangeDecoder(constructRangeDecoder(jType, jGradations, frRes, fovRes)),
 	foveaPositionControls(rangeDecoder->numControls()),
 	numSensors(periFOVRes*periFOVRes+fovRes*fovRes),
-	numMotors(rangeDecoder->numControls()),
-	foveaPosition(pair<int,int>(0, fovRes), pair<int,int>(0, fovRes)) {
+	numMotors(rangeDecoder->numControls()) {
 
 	// Caching asteroid snapshots
 	set<string> asteroidNames = datasetParser->getAsteroidsNames();
@@ -33,6 +32,7 @@ PeripheralAndRelativeSaccadingEyesSensors::PeripheralAndRelativeSaccadingEyesSen
 		                                                                        AsteroidSnapshot(snapshotPath, baseThreshold)));
 	}
 
+	resetFoveaPosition();
 	analyzeDataset();
 }
 
@@ -67,6 +67,7 @@ void PeripheralAndRelativeSaccadingEyesSensors::update(int visualize) {
 
 void PeripheralAndRelativeSaccadingEyesSensors::reset(int visualize) {
 	AbstractSensors::reset(visualize);
+	resetFoveaPosition();
 	foveaPositionTimeSeries.clear();
 }
 
@@ -90,4 +91,11 @@ unsigned PeripheralAndRelativeSaccadingEyesSensors::numSaccades() {
 void PeripheralAndRelativeSaccadingEyesSensors::analyzeDataset() {
 	cout << "WARNING: PeripheralAndRelativeSaccadingEyesSensors do not implement dataset analysis!" << endl;
 	cout << "If you need this functionality, rerun the simulation with AbsoluteFocusingSaccadingEyesSensors" << endl;
+}
+
+void PeripheralAndRelativeSaccadingEyesSensors::resetFoveaPosition() {
+	foveaPosition.first.first = 0;
+	foveaPosition.first.second = foveaRes;
+	foveaPosition.second.first = 0;
+	foveaPosition.second.second = foveaRes;
 }

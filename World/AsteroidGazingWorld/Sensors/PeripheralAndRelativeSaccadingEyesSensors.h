@@ -57,5 +57,6 @@ private:
 	std::vector<Range2d> foveaPositionTimeSeries;
 
 	// Private methods
+	void resetFoveaPosition();
 	void analyzeDataset();
 };
