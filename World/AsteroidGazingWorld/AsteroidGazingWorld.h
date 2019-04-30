@@ -13,12 +13,6 @@ class AsteroidGazingWorld : public AbstractSlideshowWorld {
 private:
 	static std::shared_ptr<ParameterLink<int>> brainUpdatesPerAsteroidPL; int brainUpdatesPerAsteroid;
 	static std::shared_ptr<ParameterLink<std::string>> datasetPathPL;     std::string datasetPath;
-	static std::shared_ptr<ParameterLink<int>> foveaResolutionPL;
-	static std::shared_ptr<ParameterLink<int>> splittingFactorPL;
-	static std::shared_ptr<ParameterLink<int>> maxZoomPL;
-	static std::shared_ptr<ParameterLink<int>> activeThresholdingDepthPL;
-	static std::shared_ptr<ParameterLink<bool>> lockAtMaxZoomPL;
-	static std::shared_ptr<ParameterLink<bool>> startZoomedInPL;
 	static std::shared_ptr<ParameterLink<bool>> integrateFitnessPL;
 	static std::shared_ptr<ParameterLink<int>> numTriggerBitsPL;
 	std::shared_ptr<AsteroidsDatasetParser> datasetParser;

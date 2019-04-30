@@ -16,21 +16,13 @@ class AbsoluteFocusingSaccadingEyesSensors : public AbstractSensors {
 public:
 	AbsoluteFocusingSaccadingEyesSensors(std::shared_ptr<std::string> curAstName,
 	                                     std::shared_ptr<AsteroidsDatasetParser> datasetParser,
-	                                     unsigned foveaResolution,
-	                                     unsigned maxZoom,
-	                                     unsigned splittingFactor,
-	                                     int activeThresholdingDepth,
-	                                     bool lockAtMaxZoom,
-	                                     bool startZoomedIn);
+	                                     std::shared_ptr<ParametersTable> PT);
 	void update(int visualize) override;
-
 	void reset(int visualize) override;
 	int numOutputs() override { return numSensors; };
 	int numInputs() override { return numMotors; };
-
 	const std::vector<bool>& getLastPercept() override { return savedPercept; };
 	void* logTimeSeries(const std::string& label) override;
-
 	unsigned numSaccades() override;
 
 private:
@@ -75,4 +67,12 @@ private:
 	// Even more temporary values
 	std::vector<bool> savedPercept;
 	std::vector<std::vector<unsigned>> perceptionControlsTimeSeries;
+
+	// Parameter links
+	static std::shared_ptr<ParameterLink<int>> foveaResolutionPL;
+	static std::shared_ptr<ParameterLink<int>> splittingFactorPL;
+	static std::shared_ptr<ParameterLink<int>> maxZoomPL;
+	static std::shared_ptr<ParameterLink<int>> activeThresholdingDepthPL;
+	static std::shared_ptr<ParameterLink<bool>> lockAtMaxZoomPL;
+	static std::shared_ptr<ParameterLink<bool>> startZoomedInPL;
 };

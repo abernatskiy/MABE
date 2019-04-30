@@ -101,16 +101,41 @@ std::pair<unsigned,unsigned> biSplitRange(unsigned x0, unsigned x1, unsigned spl
 
 /***** AbsoluteFocusingSaccadingEyesSensors class definitions *****/
 
+std::shared_ptr<ParameterLink<int>> AbsoluteFocusingSaccadingEyesSensors::foveaResolutionPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING_ABSOLUTE_SACCADING_SENSORS-foveaResolution", 3,
+                                 "number of rows and columns in the sensors fovea (resulting number of sensory inputs is r^2)");
+std::shared_ptr<ParameterLink<int>> AbsoluteFocusingSaccadingEyesSensors::splittingFactorPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING_ABSOLUTE_SACCADING_SENSORS-splittingFactor", 3,
+                                 "the factor z that determines how zoom works, in particular the snapshot is divided into z^2 sub-areas at each zoom level; acceptable values are 2 and 3");
+std::shared_ptr<ParameterLink<int>> AbsoluteFocusingSaccadingEyesSensors::maxZoomPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING_ABSOLUTE_SACCADING_SENSORS-maxZoom", 3,
+                                 "the number of allowed zoom levels");
+std::shared_ptr<ParameterLink<int>> AbsoluteFocusingSaccadingEyesSensors::activeThresholdingDepthPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING_ABSOLUTE_SACCADING_SENSORS-activeThresholdingDepth", -1,
+                                 "number of bisections of the 0..255 interval that the sensors can make to get thresholds (e.g. 0..127 yields a threshold of 63), negatives meaning fixed threshold of 160");
+std::shared_ptr<ParameterLink<bool>> AbsoluteFocusingSaccadingEyesSensors::lockAtMaxZoomPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING_ABSOLUTE_SACCADING_SENSORS-lockAtMaxZoom", false,
+                                 "should sensors be locked at max zoom level? If true, zooming out is impossible/disabled");
+std::shared_ptr<ParameterLink<bool>> AbsoluteFocusingSaccadingEyesSensors::startZoomedInPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING_ABSOLUTE_SACCADING_SENSORS-startZoomedIn", false,
+                                 "should the default state of the nodes (0000...) correspond to max zoom level instead of the min level (no zoom)?");
+
 AbsoluteFocusingSaccadingEyesSensors::AbsoluteFocusingSaccadingEyesSensors(std::shared_ptr<std::string> curAstName,
                                                                            std::shared_ptr<AsteroidsDatasetParser> dsParser,
-                                                                           unsigned fovRes, unsigned mzoom, unsigned splitFac,
-                                                                           int actThreshDepth, bool lckAtMaxZoom, bool strtZoomedIn) :
-	currentAsteroidName(curAstName), foveaResolution(fovRes), maxZoom(mzoom), splittingFactor(splitFac),
-	useConstantThreshold(actThreshDepth<0), activeThresholdingDepth(actThreshDepth<0 ? 0 : static_cast<unsigned>(actThreshDepth)),
-	lockAtMaxZoom(lckAtMaxZoom), startZoomedIn(strtZoomedIn),
-	phaseControls(bitsFor(numPhases)), zoomLevelControls(lckAtMaxZoom ? 0 : maxZoom), zoomPositionControls(2*maxZoom*bitsFor(splittingFactor)),
-	numSensors(getNumSensoryChannels()), numMotors(getNumControls()),
-	datasetParser(dsParser) {
+                                                                           std::shared_ptr<ParametersTable> PT_) :
+	currentAsteroidName(curAstName), datasetParser(dsParser),
+	foveaResolution(foveaResolutionPL->get(PT_)),
+	maxZoom(maxZoomPL->get(PT_)),
+	splittingFactor(splittingFactorPL->get(PT_)),
+	useConstantThreshold(activeThresholdingDepthPL->get(PT_)<0),
+	activeThresholdingDepth(activeThresholdingDepthPL->get(PT_)<0 ? 0 : static_cast<unsigned>(activeThresholdingDepthPL->get(PT_))),
+	lockAtMaxZoom(lockAtMaxZoomPL->get(PT_)),
+	startZoomedIn(startZoomedInPL->get(PT_)),
+	phaseControls(bitsFor(numPhases)),
+	zoomLevelControls(lockAtMaxZoom ? 0 : maxZoom),
+	zoomPositionControls(2*maxZoom*bitsFor(splittingFactor)),
+	numSensors(getNumSensoryChannels()),
+	numMotors(getNumControls()) {
 
 	// Reading asteroid snapshots into RAM for quick access
 	std::set<std::string> asteroidNames = datasetParser->getAsteroidsNames();
