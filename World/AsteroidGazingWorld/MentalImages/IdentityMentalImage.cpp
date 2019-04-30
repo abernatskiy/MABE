@@ -2,7 +2,7 @@
 
 #include "IdentityMentalImage.h"
 
-IdentityMentalImage::IdentityMentalImage(std::shared_ptr<AbsoluteFocusingSaccadingEyesSensors> pointerToSensors) :
+IdentityMentalImage::IdentityMentalImage(std::shared_ptr<AbstractSensors> pointerToSensors) :
 	sensorsPtr(pointerToSensors),
 	justReset(true),
 	sensoryChannels(sensorsPtr->numOutputs()),

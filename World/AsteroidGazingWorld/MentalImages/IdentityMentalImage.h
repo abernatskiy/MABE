@@ -1,12 +1,12 @@
 #pragma once
 
 #include "../../AbstractMentalImage.h"
-#include "../Sensors/AbsoluteFocusingSaccadingEyesSensors.h"
+#include "../../AbstractSensors.h"
 
 class IdentityMentalImage : public AbstractMentalImage {
 
 private:
-	std::shared_ptr<AbsoluteFocusingSaccadingEyesSensors> sensorsPtr;
+	std::shared_ptr<AbstractSensors> sensorsPtr;
 	std::vector<double> stateScores;
 	std::vector<double> stateRunningScores;
 	bool justReset;
@@ -14,7 +14,7 @@ private:
 	unsigned hits;
 
 public:
-	IdentityMentalImage(std::shared_ptr<AbsoluteFocusingSaccadingEyesSensors> pointerToSensors);
+	IdentityMentalImage(std::shared_ptr<AbstractSensors> pointerToSensors);
 	void reset(int visualize) override { justReset = true; stateScores.clear(); stateRunningScores.clear(); hits = 0; };
 	void resetAfterWorldStateChange(int visualize) override { justReset = true; stateRunningScores.clear(); hits = 0; };
 	void updateWithInputs(std::vector<double> inputs) override;

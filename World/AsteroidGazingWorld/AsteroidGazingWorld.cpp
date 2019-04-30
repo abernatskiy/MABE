@@ -5,7 +5,8 @@
 //#include "MentalImages/SpikesOnCubeFullMentalImage.h"
 //#include "MentalImages/IdentityMentalImage.h"
 
-#include "Sensors/AbsoluteFocusingSaccadingEyesSensors.h"
+#include "Sensors/PeripheralAndRelativeSaccadingEyesSensors.h"
+//#include "Sensors/AbsoluteFocusingSaccadingEyesSensors.h"
 #include "Schedules/AsteroidGazingSchedules.h"
 
 std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::brainUpdatesPerAsteroidPL =
@@ -48,19 +49,27 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 	// Drawing the rest of the owl
 	currentAsteroidName = std::make_shared<std::string>("");
 	stateSchedule = std::make_shared<ExhaustiveAsteroidGazingSchedule>(currentAsteroidName, datasetParser);
-	auto sensorsPtr = std::make_shared<AbsoluteFocusingSaccadingEyesSensors>(currentAsteroidName,
-	                                                                         datasetParser,
-	                                                                         foveaResolutionPL->get(PT_),
-	                                                                         maxZoomPL->get(PT_),
-	                                                                         splittingFactorPL->get(PT_),
-	                                                                         activeThresholdingDepthPL->get(PT_),
-	                                                                         lockAtMaxZoomPL->get(PT_),
-	                                                                         startZoomedInPL->get(PT_));
-	sensors = static_cast<std::shared_ptr<AbstractSensors>>(sensorsPtr);
 
+/*
+	sensors = std::make_shared<AbsoluteFocusingSaccadingEyesSensors>(currentAsteroidName,
+	                                                                 datasetParser,
+	                                                                 foveaResolutionPL->get(PT_),
+	                                                                 maxZoomPL->get(PT_),
+	                                                                 splittingFactorPL->get(PT_),
+	                                                                 activeThresholdingDepthPL->get(PT_),
+	                                                                 lockAtMaxZoomPL->get(PT_),
+	                                                                 startZoomedInPL->get(PT_));
+*/
+	sensors = std::make_shared<PeripheralAndRelativeSaccadingEyesSensors>(currentAsteroidName,
+	                                                                      datasetParser,
+	                                                                      28, // frameResolution
+	                                                                      4, // peripheralFOVResolution
+	                                                                      2, // foveaResolutionPL->get(PT_),
+	                                                                      0, // jumpType
+	                                                                      3); // jumpGradations
 	mentalImage = std::make_shared<DigitMentalImage>(currentAsteroidName,
 	                                                 datasetParser,
-	                                                 sensorsPtr,
+	                                                 sensors,
 	                                                 numTriggerBitsPL->get(PT_),
 	                                                 integrateFitnessPL->get(PT_));
 	makeMotors();

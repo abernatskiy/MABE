@@ -48,7 +48,7 @@ std::tuple<double,bool> evaluateRange(const CommandRangeType& guessesRange, cons
 
 DigitMentalImage::DigitMentalImage(std::shared_ptr<std::string> curAstNamePtr,
                                    std::shared_ptr<AsteroidsDatasetParser> dsParserPtr,
-                                   std::shared_ptr<AbsoluteFocusingSaccadingEyesSensors> sPtr,
+                                   std::shared_ptr<AbstractSensors> sPtr,
                                    unsigned nTriggerBits,
                                    bool intFitness) :
 	currentAsteroidNamePtr(curAstNamePtr),

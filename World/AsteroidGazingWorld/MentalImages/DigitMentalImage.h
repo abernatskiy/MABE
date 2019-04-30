@@ -37,7 +37,7 @@ private:
 	std::vector<CommandRangeType> currentCommandRanges;
 	std::vector<std::vector<CommandRangeType>> commandRangesTS;
 
-	std::shared_ptr<AbsoluteFocusingSaccadingEyesSensors> sensorsPtr;
+	std::shared_ptr<AbstractSensors> sensorsPtr;
 
 	unsigned numTriggerBits;
 	bool integrateFitness;
@@ -48,7 +48,7 @@ private:
 public:
 	DigitMentalImage(std::shared_ptr<std::string> curAstName,
 	                 std::shared_ptr<AsteroidsDatasetParser> dsParser,
-	                 std::shared_ptr<AbsoluteFocusingSaccadingEyesSensors> sPtr,
+	                 std::shared_ptr<AbstractSensors> sPtr,
 	                 unsigned numTriggerBits,
 	                 bool integrateFitness);
 

@@ -28,10 +28,10 @@ public:
 	int numOutputs() override { return numSensors; };
 	int numInputs() override { return numMotors; };
 
-	const std::vector<bool>& getLastPercept() { return savedPercept; };
+	const std::vector<bool>& getLastPercept() override { return savedPercept; };
 	void* logTimeSeries(const std::string& label) override;
 
-	unsigned numSaccades();
+	unsigned numSaccades() override;
 
 private:
 	// Primary settings

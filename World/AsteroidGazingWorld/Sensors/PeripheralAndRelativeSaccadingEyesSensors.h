@@ -10,10 +10,6 @@
 typedef std::tuple<std::string> AsteroidViewParameters;
 typedef std::map<AsteroidViewParameters,AsteroidSnapshot> AsteroidSnapshotsLibrary;
 
-//inline std::string getAnAsteroid(const asteroid_snapshots_library_type& ast) { return ast.begin()->first; };
-//inline unsigned getACondition(const asteroid_snapshots_library_type& ast) { return (ast.begin()->second).begin()->first; };
-//inline unsigned getADistance(const asteroid_snapshots_library_type& ast) { return ((ast.begin()->second).begin()->second).begin()->first; };
-
 class PeripheralAndRelativeSaccadingEyesSensors : public AbstractSensors {
 
 public:
@@ -27,10 +23,10 @@ public:
 	int numOutputs() override { return numSensors; };
 	int numInputs() override { return numMotors; };
 
-	const std::vector<bool>& getLastPercept() { return savedPercept; };
+	const std::vector<bool>& getLastPercept() override { return savedPercept; };
 	void* logTimeSeries(const std::string& label) override;
 
-	unsigned numSaccades();
+	unsigned numSaccades() override;
 
 private:
 	std::shared_ptr<std::string> currentAsteroidName;
