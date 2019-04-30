@@ -28,7 +28,7 @@ inline unsigned decodeSPUInt(std::vector<double>::iterator begin, std::vector<do
 	unsigned retval = 0;
 	while(begin != end) {
 		retval <<= 1;
-		retval += static_cast<unsigned>(*begin);
+		retval += static_cast<unsigned>(*begin > 0.5);
 		begin++;
 	}
 	return retval;
