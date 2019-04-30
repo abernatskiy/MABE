@@ -13,7 +13,7 @@ std::shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::f
                                  "resolution of the fovea (default: 2)");
 std::shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::jumpTypePL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-jumpType", 0,
-                                 "type of the saccading jump (0 - linear scale, 1 - sign-and-magnitude, default: 0)");
+                                 "type of the saccading jump (0 - linear scale, 1 - sign-and-magnitude, 2 - Chris's compact, default: 0)");
 std::shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::jumpGradationsPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-jumpGradations", 4,
                                  "number of gradations of the saccade length (default: 4)");
