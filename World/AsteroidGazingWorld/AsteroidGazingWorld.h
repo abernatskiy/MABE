@@ -13,6 +13,7 @@ class AsteroidGazingWorld : public AbstractSlideshowWorld {
 private:
 	static std::shared_ptr<ParameterLink<int>> brainUpdatesPerAsteroidPL; int brainUpdatesPerAsteroid;
 	static std::shared_ptr<ParameterLink<std::string>> datasetPathPL;     std::string datasetPath;
+	static std::shared_ptr<ParameterLink<std::string>> sensorTypePL;
 	static std::shared_ptr<ParameterLink<bool>> integrateFitnessPL;
 	static std::shared_ptr<ParameterLink<int>> numTriggerBitsPL;
 	std::shared_ptr<AsteroidsDatasetParser> datasetParser;

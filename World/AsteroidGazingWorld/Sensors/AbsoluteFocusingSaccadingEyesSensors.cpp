@@ -102,22 +102,22 @@ std::pair<unsigned,unsigned> biSplitRange(unsigned x0, unsigned x1, unsigned spl
 /***** AbsoluteFocusingSaccadingEyesSensors class definitions *****/
 
 std::shared_ptr<ParameterLink<int>> AbsoluteFocusingSaccadingEyesSensors::foveaResolutionPL =
-  Parameters::register_parameter("WORLD_ASTEROID_GAZING_ABSOLUTE_SACCADING_SENSORS-foveaResolution", 3,
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING_ABSOLUTE_SACCADING_EYE-foveaResolution", 3,
                                  "number of rows and columns in the sensors fovea (resulting number of sensory inputs is r^2)");
 std::shared_ptr<ParameterLink<int>> AbsoluteFocusingSaccadingEyesSensors::splittingFactorPL =
-  Parameters::register_parameter("WORLD_ASTEROID_GAZING_ABSOLUTE_SACCADING_SENSORS-splittingFactor", 3,
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING_ABSOLUTE_SACCADING_EYE-splittingFactor", 3,
                                  "the factor z that determines how zoom works, in particular the snapshot is divided into z^2 sub-areas at each zoom level; acceptable values are 2 and 3");
 std::shared_ptr<ParameterLink<int>> AbsoluteFocusingSaccadingEyesSensors::maxZoomPL =
-  Parameters::register_parameter("WORLD_ASTEROID_GAZING_ABSOLUTE_SACCADING_SENSORS-maxZoom", 3,
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING_ABSOLUTE_SACCADING_EYE-maxZoom", 3,
                                  "the number of allowed zoom levels");
 std::shared_ptr<ParameterLink<int>> AbsoluteFocusingSaccadingEyesSensors::activeThresholdingDepthPL =
-  Parameters::register_parameter("WORLD_ASTEROID_GAZING_ABSOLUTE_SACCADING_SENSORS-activeThresholdingDepth", -1,
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING_ABSOLUTE_SACCADING_EYE-activeThresholdingDepth", -1,
                                  "number of bisections of the 0..255 interval that the sensors can make to get thresholds (e.g. 0..127 yields a threshold of 63), negatives meaning fixed threshold of 160");
 std::shared_ptr<ParameterLink<bool>> AbsoluteFocusingSaccadingEyesSensors::lockAtMaxZoomPL =
-  Parameters::register_parameter("WORLD_ASTEROID_GAZING_ABSOLUTE_SACCADING_SENSORS-lockAtMaxZoom", false,
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING_ABSOLUTE_SACCADING_EYE-lockAtMaxZoom", false,
                                  "should sensors be locked at max zoom level? If true, zooming out is impossible/disabled");
 std::shared_ptr<ParameterLink<bool>> AbsoluteFocusingSaccadingEyesSensors::startZoomedInPL =
-  Parameters::register_parameter("WORLD_ASTEROID_GAZING_ABSOLUTE_SACCADING_SENSORS-startZoomedIn", false,
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING_ABSOLUTE_SACCADING_EYE-startZoomedIn", false,
                                  "should the default state of the nodes (0000...) correspond to max zoom level instead of the min level (no zoom)?");
 
 AbsoluteFocusingSaccadingEyesSensors::AbsoluteFocusingSaccadingEyesSensors(std::shared_ptr<std::string> curAstName,

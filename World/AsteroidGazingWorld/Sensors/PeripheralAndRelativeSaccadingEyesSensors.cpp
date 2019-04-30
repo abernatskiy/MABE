@@ -2,16 +2,34 @@
 
 using namespace std;
 
+std::shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::frameResolutionPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-frameResolution", 16,
+                                 "resolution of the frame over which the eye saccades (default: 16)");
+std::shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::peripheralFOVResolutionPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-peripheralFOVResolution", 4,
+                                 "resolution of the thumbnail preview that's shown alongside the retina picture (default: 4)");
+std::shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::foveaResolutionPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-foveaResolution", 2,
+                                 "resolution of the fovea (default: 2)");
+std::shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::jumpTypePL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-jumpType", 0,
+                                 "type of the saccading jump (0 - linear scale, default: 0)");
+std::shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::jumpGradationsPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-jumpGradations", 3,
+                                 "number of gradations of the saccade length (default: 3)");
+
 PeripheralAndRelativeSaccadingEyesSensors::PeripheralAndRelativeSaccadingEyesSensors(shared_ptr<string> curAstName,
                                                                                      shared_ptr<AsteroidsDatasetParser> dsParser,
-                                                                                     unsigned frRes, unsigned periFOVRes, unsigned fovRes,
-                                                                                     unsigned jType, unsigned jGradations) :
+                                                                                     shared_ptr<ParametersTable> PT_) :
 	currentAsteroidName(curAstName), datasetParser(dsParser),
-	frameRes(frRes), peripheralFOVRes(periFOVRes), foveaRes(fovRes),
-	jumpType(jType), jumpGradations(jGradations),
-	rangeDecoder(constructRangeDecoder(jType, jGradations, frRes, fovRes)),
+	frameRes(frameResolutionPL->get(PT_)),
+	peripheralFOVRes(peripheralFOVResolutionPL->get(PT_)),
+	foveaRes(foveaResolutionPL->get(PT_)),
+	jumpType(jumpTypePL->get(PT_)),
+	jumpGradations(jumpGradationsPL->get(PT_)),
+	rangeDecoder(constructRangeDecoder(jumpType, jumpGradations, frameRes, foveaRes)),
 	foveaPositionControls(rangeDecoder->numControls()),
-	numSensors(periFOVRes*periFOVRes+fovRes*fovRes),
+	numSensors(peripheralFOVRes*peripheralFOVRes+foveaRes*foveaRes),
 	numMotors(rangeDecoder->numControls()) {
 
 	// Caching asteroid snapshots

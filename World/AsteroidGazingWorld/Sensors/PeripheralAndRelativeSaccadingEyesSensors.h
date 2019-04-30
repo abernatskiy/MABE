@@ -15,8 +15,7 @@ class PeripheralAndRelativeSaccadingEyesSensors : public AbstractSensors {
 public:
 	PeripheralAndRelativeSaccadingEyesSensors(std::shared_ptr<std::string> curAstName,
 	                                          std::shared_ptr<AsteroidsDatasetParser> datasetParser,
-	                                          unsigned frameRes, unsigned peripheralFOVRes, unsigned foveaRes,
-	                                          unsigned jumpType, unsigned jumpGradations);
+	                                          std::shared_ptr<ParametersTable> PT);
 	void update(int visualize) override;
 	void reset(int visualize) override;
 
@@ -59,4 +58,11 @@ private:
 	// Private methods
 	void resetFoveaPosition();
 	void analyzeDataset();
+
+	// Parameter links
+	static std::shared_ptr<ParameterLink<int>> frameResolutionPL;
+	static std::shared_ptr<ParameterLink<int>> peripheralFOVResolutionPL;
+	static std::shared_ptr<ParameterLink<int>> foveaResolutionPL;
+	static std::shared_ptr<ParameterLink<int>> jumpTypePL;
+	static std::shared_ptr<ParameterLink<int>> jumpGradationsPL;
 };

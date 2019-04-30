@@ -5,8 +5,8 @@
 //#include "MentalImages/SpikesOnCubeFullMentalImage.h"
 //#include "MentalImages/IdentityMentalImage.h"
 
+#include "Sensors/AbsoluteFocusingSaccadingEyesSensors.h"
 #include "Sensors/PeripheralAndRelativeSaccadingEyesSensors.h"
-//#include "Sensors/AbsoluteFocusingSaccadingEyesSensors.h"
 #include "Schedules/AsteroidGazingSchedules.h"
 
 std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::brainUpdatesPerAsteroidPL =
@@ -15,6 +15,9 @@ std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::brainUpdatesPerAsteroid
 std::shared_ptr<ParameterLink<std::string>> AsteroidGazingWorld::datasetPathPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING-datasetPath", (std::string) "./asteroids",
                                  "path to the folder containing the asteroids shapes and snapshots dataset");
+std::shared_ptr<ParameterLink<std::string>> AsteroidGazingWorld::sensorTypePL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING-sensorType", (std::string) "absolute",
+                                 "type of sensors to use (either absolute or relative)");
 std::shared_ptr<ParameterLink<bool>> AsteroidGazingWorld::integrateFitnessPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING-integrateFitness", true,
                                  "should the fitness be integrated over simulation time? (default: yes)");
@@ -32,18 +35,16 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 	currentAsteroidName = std::make_shared<std::string>("");
 	stateSchedule = std::make_shared<ExhaustiveAsteroidGazingSchedule>(currentAsteroidName, datasetParser);
 
+	std::string sensorType = sensorTypePL->get(PT_);
+	if(sensorType=="absolute")
+		sensors = std::make_shared<AbsoluteFocusingSaccadingEyesSensors>(currentAsteroidName, datasetParser, PT_);
+	else if(sensorType=="relative")
+		sensors = std::make_shared<PeripheralAndRelativeSaccadingEyesSensors>(currentAsteroidName, datasetParser, PT_);
+	else {
+		std::cerr << "AsteroidGazingWorld: Unsupported sensor type " << sensorType << std::endl;
+		exit(EXIT_FAILURE);
+	}
 
-	sensors = std::make_shared<AbsoluteFocusingSaccadingEyesSensors>(currentAsteroidName, datasetParser, PT_);
-
-/*
-	sensors = std::make_shared<PeripheralAndRelativeSaccadingEyesSensors>(currentAsteroidName,
-	                                                                      datasetParser,
-	                                                                      28, // frameResolution
-	                                                                      4, // peripheralFOVResolution
-	                                                                      2, // foveaResolutionPL->get(PT_),
-	                                                                      0, // jumpType
-	                                                                      3); // jumpGradations
-*/
 	mentalImage = std::make_shared<DigitMentalImage>(currentAsteroidName,
 	                                                 datasetParser,
 	                                                 sensors,
