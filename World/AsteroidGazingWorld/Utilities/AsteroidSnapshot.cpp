@@ -124,7 +124,7 @@ std::uint8_t AsteroidSnapshot::getBestThreshold(unsigned resolution, unsigned nu
 		if(probabilityOfOne==0)
 			continue;
 		else {
-			double entropy = -1.*probabilityOfOne*log2(probabilityOfOne);
+			double entropy = -1.*probabilityOfOne*log2(probabilityOfOne) - (1.-probabilityOfOne)*log2(1.-probabilityOfOne);
 			// std::cout << "Threshold " << static_cast<unsigned>(threshold) << " prob of one " << probabilityOfOne << " entropy " << entropy << std::endl;
 			if(bestEntropy<entropy) {
 				bestEntropy = entropy;
