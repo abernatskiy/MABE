@@ -5,9 +5,15 @@ using namespace std;
 std::shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::frameResolutionPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-frameResolution", 16,
                                  "resolution of the frame over which the eye saccades (default: 16)");
+std::shared_ptr<ParameterLink<bool>> PeripheralAndRelativeSaccadingEyesSensors::usePeripheralFOVPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-usePeripheralFOV", true,
+                                 "boolean value indicating whether the peripheral field of view should be used (default: 1)");
 std::shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::peripheralFOVResolutionPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-peripheralFOVResolution", 4,
                                  "resolution of the thumbnail preview that's shown alongside the retina picture (default: 4)");
+std::shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::peripheralFOVNumThresholdsToTryPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-peripheralFOVNumThresholdsToTry", 7,
+                                 "number of threshold levels that peripheral FOV entropy maximizer should try, non-positives meaning skip this step and use 127 as the threshold (default: 7)");
 std::shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::foveaResolutionPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-foveaResolution", 2,
                                  "resolution of the fovea (default: 2)");
@@ -23,13 +29,14 @@ PeripheralAndRelativeSaccadingEyesSensors::PeripheralAndRelativeSaccadingEyesSen
                                                                                      shared_ptr<ParametersTable> PT_) :
 	currentAsteroidName(curAstName), datasetParser(dsParser),
 	frameRes(frameResolutionPL->get(PT_)),
+	usePeripheralFOV(usePeripheralFOVPL->get(PT_)),
 	peripheralFOVRes(peripheralFOVResolutionPL->get(PT_)),
 	foveaRes(foveaResolutionPL->get(PT_)),
 	jumpType(jumpTypePL->get(PT_)),
 	jumpGradations(jumpGradationsPL->get(PT_)),
 	rangeDecoder(constructRangeDecoder(jumpType, jumpGradations, frameRes, foveaRes)),
 	foveaPositionControls(rangeDecoder->numControls()),
-	numSensors(peripheralFOVRes*peripheralFOVRes+foveaRes*foveaRes),
+	numSensors(foveaRes*foveaRes + (usePeripheralFOV ? peripheralFOVRes*peripheralFOVRes : 0 )),
 	numMotors(rangeDecoder->numControls()) {
 
 	// Caching asteroid snapshots
@@ -48,6 +55,13 @@ PeripheralAndRelativeSaccadingEyesSensors::PeripheralAndRelativeSaccadingEyesSen
 		string snapshotPath = datasetParser->getPicturePath(an, condition, distance, phase);
 		asteroidSnapshots.emplace(pair<AsteroidViewParameters,AsteroidSnapshot>(make_tuple(an),
 		                                                                        AsteroidSnapshot(snapshotPath, baseThreshold)));
+
+		if(peripheralFOVNumThresholdsToTryPL->get(PT_) > 0) {
+			uint8_t periFOVThresh = asteroidSnapshots[make_tuple(an)].getBestThreshold(peripheralFOVRes, peripheralFOVNumThresholdsToTryPL->get(PT_));
+			peripheralFOVThresholds.emplace(make_tuple(an), periFOVThresh);
+		}
+		else
+			peripheralFOVThresholds.emplace(make_tuple(an), baseThreshold);
 	}
 
 	resetFoveaPosition();
@@ -62,10 +76,16 @@ void PeripheralAndRelativeSaccadingEyesSensors::update(int visualize) {
 	AsteroidSnapshot& astSnap = asteroidSnapshots.at(make_tuple(*currentAsteroidName));
 	savedPercept.clear();
 
-	const AsteroidSnapshot& peripheralView = astSnap.cachingResampleArea(0, 0, astSnap.width, astSnap.height, peripheralFOVRes, peripheralFOVRes, baseThreshold);
-	for(unsigned i=0; i<peripheralFOVRes; i++)
-		for(unsigned j=0; j<peripheralFOVRes; j++)
-			savedPercept.push_back(peripheralView.getBinary(i, j));
+	if(usePeripheralFOV) {
+		uint8_t periFOVThresh = peripheralFOVThresholds.at(make_tuple(*currentAsteroidName));
+		const AsteroidSnapshot& peripheralView = astSnap.cachingResampleArea(0, 0, astSnap.width, astSnap.height, peripheralFOVRes, peripheralFOVRes, periFOVThresh);
+		for(unsigned i=0; i<peripheralFOVRes; i++)
+			for(unsigned j=0; j<peripheralFOVRes; j++)
+				savedPercept.push_back(peripheralView.getBinary(i, j));
+
+//		cout << "Perceiving asteroid " << *currentAsteroidName << endl;
+//		peripheralView.printBinary();
+	}
 
 	foveaPosition = rangeDecoder->decode2dRangeJump(foveaPosition, controls.begin(), controls.end());
 	const AsteroidSnapshot& fovealView = astSnap.cachingResampleArea(foveaPosition.first.first, foveaPosition.second.first,

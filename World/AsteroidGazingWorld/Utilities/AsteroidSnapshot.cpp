@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <cmath>
 
 #include "AsteroidSnapshot.h"
 #include "shades.h"
@@ -102,6 +103,36 @@ std::string AsteroidSnapshot::getPrintedBinary(bool shades) const {
 		ss << std::endl;
 	}
 	return ss.str();
+}
+
+unsigned AsteroidSnapshot::countBinaryOnes() const {
+	unsigned numOnes = 0;
+	for(unsigned i=0; i<width; i++)
+		for(unsigned j=0; j<height; j++)
+			if(binaryTexture[i][j])
+				numOnes++;
+	return numOnes;
+}
+
+std::uint8_t AsteroidSnapshot::getBestThreshold(unsigned resolution, unsigned numLevels) const {
+	std::uint8_t bestThreshold = 127;
+	double bestEntropy = 0;
+	for(unsigned l=1; l<=numLevels; l++) {
+		std::uint8_t threshold = static_cast<std::uint8_t>( (256*l/(numLevels+1)) - 1 ); // -1 is added to avoid issues at edge cases, e.g. when numLevels is 255
+		AsteroidSnapshot testSnap = resampleArea(0, 0, width, height, resolution, resolution, threshold);
+		double probabilityOfOne = static_cast<double>(testSnap.countBinaryOnes())/static_cast<double>(resolution*resolution);
+		if(probabilityOfOne==0)
+			continue;
+		else {
+			double entropy = -1.*probabilityOfOne*log2(probabilityOfOne);
+			// std::cout << "Threshold " << static_cast<unsigned>(threshold) << " prob of one " << probabilityOfOne << " entropy " << entropy << std::endl;
+			if(bestEntropy<entropy) {
+				bestEntropy = entropy;
+				bestThreshold = threshold;
+			}
+		}
+	}
+	return bestThreshold;
 }
 
 // Private member definitions

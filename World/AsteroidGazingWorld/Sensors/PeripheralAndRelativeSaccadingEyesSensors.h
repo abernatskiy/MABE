@@ -32,6 +32,7 @@ private:
 	std::shared_ptr<AsteroidsDatasetParser> datasetParser;
 
 	const unsigned frameRes;
+	const bool usePeripheralFOV;
 	const unsigned peripheralFOVRes;
 	const unsigned foveaRes;
 	const unsigned jumpType;
@@ -51,6 +52,7 @@ private:
 
 	// Actual state
 	AsteroidSnapshotsLibrary asteroidSnapshots;
+	std::map<AsteroidViewParameters,std::uint8_t> peripheralFOVThresholds;
 	Range2d foveaPosition;
 	std::vector<bool> savedPercept;
 	std::vector<Range2d> foveaPositionTimeSeries;
@@ -61,7 +63,9 @@ private:
 
 	// Parameter links
 	static std::shared_ptr<ParameterLink<int>> frameResolutionPL;
+	static std::shared_ptr<ParameterLink<bool>> usePeripheralFOVPL;
 	static std::shared_ptr<ParameterLink<int>> peripheralFOVResolutionPL;
+	static std::shared_ptr<ParameterLink<int>> peripheralFOVNumThresholdsToTryPL;
 	static std::shared_ptr<ParameterLink<int>> foveaResolutionPL;
 	static std::shared_ptr<ParameterLink<int>> jumpTypePL;
 	static std::shared_ptr<ParameterLink<int>> jumpGradationsPL;

@@ -45,6 +45,8 @@ public:
 	bool binaryIsTheSame(const AsteroidSnapshot& other) const;
 	void printBinary(bool shades=true) const;
 	std::string getPrintedBinary(bool shades=true) const;
+	unsigned countBinaryOnes() const;
+	std::uint8_t getBestThreshold(unsigned resolution, unsigned numLevels) const; // returns the threshold that results in the highest entropy of the output (that is, the one that makes the output the closest to 50% ones, 50% zeros)
 
 private:
 	texture_type texture;
