@@ -24,6 +24,7 @@
   - Wire
   + BiLog
   - DerivedMarkov
+  + DEMarkov
 	
 % Optimizer
   * Simple

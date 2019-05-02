@@ -13,7 +13,7 @@ inline double pointEntropy(double p) {
 
 class LogFile {
 private:
-	static int fileSuffix;
+	int fileSuffix;
 	bool isOpen;
 	std::ofstream fs;
 	bool fileExists(std::string fn) {
@@ -37,7 +37,7 @@ private:
 	std::vector<std::vector<unsigned>> nodePairsStatesTS;
 
 public:
-	LogFile() : isOpen(false) {};
+	LogFile() : fileSuffix(0), isOpen(false) {};
 	void open(std::string prefix) {
 		if (!isOpen) {
 			std::string availableFile = getNextAvailableFile(prefix);

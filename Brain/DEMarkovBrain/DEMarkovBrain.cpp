@@ -12,50 +12,50 @@
 #include <iomanip>
 #include <png++/png.hpp>
 
-#include "MarkovBrain.h"
+#include "DEMarkovBrain.h"
 
-std::shared_ptr<ParameterLink<bool>> MarkovBrain::recordIOMapPL=
+std::shared_ptr<ParameterLink<bool>> DEMarkovBrain::recordIOMapPL=
     Parameters::register_parameter(
-        "BRAIN_MARKOV_ADVANCED-recordIOMap", false,
+        "BRAIN_DEMARKOV_ADVANCED-recordIOMap", false,
         "if true, all inoput output and hidden nodes will be recorderd on every brain update");
-std::shared_ptr<ParameterLink<std::string>> MarkovBrain::IOMapFileNamePL=
-    Parameters::register_parameter("BRAIN_MARKOV_ADVANCED-recordIOMap_fileName",
+std::shared_ptr<ParameterLink<std::string>> DEMarkovBrain::IOMapFileNamePL=
+    Parameters::register_parameter("BRAIN_DEMARKOV_ADVANCED-recordIOMap_fileName",
                                    (std::string) "markov_IO_map.csv",
                                    "Name of file where IO mappings are saved");
-std::shared_ptr<ParameterLink<bool>> MarkovBrain::randomizeUnconnectedOutputsPL =
+std::shared_ptr<ParameterLink<bool>> DEMarkovBrain::randomizeUnconnectedOutputsPL =
     Parameters::register_parameter(
-        "BRAIN_MARKOV_ADVANCED-randomizeUnconnectedOutputs", false,
+        "BRAIN_DEMARKOV_ADVANCED-randomizeUnconnectedOutputs", false,
         "output nodes with no connections will be set randomly (default : "
         "false, behavior set to 0)");
-std::shared_ptr<ParameterLink<int>> MarkovBrain::randomizeUnconnectedOutputsTypePL =
+std::shared_ptr<ParameterLink<int>> DEMarkovBrain::randomizeUnconnectedOutputsTypePL =
     Parameters::register_parameter(
-        "BRAIN_MARKOV_ADVANCED-randomizeUnconnectedOutputsType", 0,
+        "BRAIN_DEMARKOV_ADVANCED-randomizeUnconnectedOutputsType", 0,
         "determines type of values resulting from randomizeUnconnectedOutput "
         "[0 = int, 1 = double]");
 std::shared_ptr<ParameterLink<double>>
-    MarkovBrain::randomizeUnconnectedOutputsMinPL =
+    DEMarkovBrain::randomizeUnconnectedOutputsMinPL =
         Parameters::register_parameter(
-            "BRAIN_MARKOV_ADVANCED-randomizeUnconnectedOutputsMin", 0.0,
+            "BRAIN_DEMARKOV_ADVANCED-randomizeUnconnectedOutputsMin", 0.0,
             "random values resulting from randomizeUnconnectedOutput will be "
             "in the range of randomizeUnconnectedOutputsMin to "
             "randomizeUnconnectedOutputsMax");
 std::shared_ptr<ParameterLink<double>>
-    MarkovBrain::randomizeUnconnectedOutputsMaxPL =
+    DEMarkovBrain::randomizeUnconnectedOutputsMaxPL =
         Parameters::register_parameter(
-            "BRAIN_MARKOV_ADVANCED-randomizeUnconnectedOutputsMax", 1.0,
+            "BRAIN_DEMARKOV_ADVANCED-randomizeUnconnectedOutputsMax", 1.0,
             "random values resulting from randomizeUnconnectedOutput will be "
             "in the range of randomizeUnconnectedOutputsMin to "
             "randomizeUnconnectedOutputsMax");
-std::shared_ptr<ParameterLink<int>> MarkovBrain::hiddenNodesPL =
-    Parameters::register_parameter("BRAIN_MARKOV-hiddenNodes", 8,
+std::shared_ptr<ParameterLink<int>> DEMarkovBrain::hiddenNodesPL =
+    Parameters::register_parameter("BRAIN_DEMARKOV-hiddenNodes", 8,
                                    "number of hidden nodes");
-std::shared_ptr<ParameterLink<std::string>> MarkovBrain::genomeNamePL =
-    Parameters::register_parameter("BRAIN_MARKOV-genomeNameSpace",
+std::shared_ptr<ParameterLink<std::string>> DEMarkovBrain::genomeNamePL =
+    Parameters::register_parameter("BRAIN_DEMARKOV-genomeNameSpace",
                                    (std::string) "root::",
                                    "namespace used to set parameters for "
                                    "genome used to encode this brain");
 
-void MarkovBrain::readParameters() {
+void DEMarkovBrain::readParameters() {
 	randomizeUnconnectedOutputs = randomizeUnconnectedOutputsPL->get(PT);
 	randomizeUnconnectedOutputsType = randomizeUnconnectedOutputsTypePL->get(PT);
 	randomizeUnconnectedOutputsMin = randomizeUnconnectedOutputsMinPL->get(PT);
@@ -69,7 +69,7 @@ void MarkovBrain::readParameters() {
 	nextNodes.resize(nrNodes, 0);
 }
 
-MarkovBrain::MarkovBrain(std::vector<std::shared_ptr<AbstractGate>> _gates,
+DEMarkovBrain::DEMarkovBrain(std::vector<std::shared_ptr<AbstractGate>> _gates,
                          int _nrInNodes, int _nrOutNodes,
                          std::shared_ptr<ParametersTable> PT_)
     : AbstractBrain(_nrInNodes, _nrOutNodes, PT_),
@@ -90,7 +90,7 @@ MarkovBrain::MarkovBrain(std::vector<std::shared_ptr<AbstractGate>> _gates,
 	fillInConnectionsLists();
 }
 
-MarkovBrain::MarkovBrain(std::shared_ptr<AbstractGateListBuilder> GLB_,
+DEMarkovBrain::DEMarkovBrain(std::shared_ptr<AbstractGateListBuilder> GLB_,
                          int _nrInNodes, int _nrOutNodes,
                          std::shared_ptr<ParametersTable> PT_)
     : AbstractBrain(_nrInNodes, _nrOutNodes, PT_),
@@ -116,11 +116,11 @@ MarkovBrain::MarkovBrain(std::shared_ptr<AbstractGateListBuilder> GLB_,
 
 }
 
-MarkovBrain::MarkovBrain(std::shared_ptr<AbstractGateListBuilder> GLB_,
+DEMarkovBrain::DEMarkovBrain(std::shared_ptr<AbstractGateListBuilder> GLB_,
                          std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& _genomes,
                          int _nrInNodes, int _nrOutNodes, std::shared_ptr<ParametersTable> PT_)
-  : MarkovBrain(GLB_, _nrInNodes, _nrOutNodes, PT_) {
-	// cout << "in MarkovBrain::MarkovBrain(std::shared_ptr<Base_GateListBuilder> GLB_,
+  : DEMarkovBrain(GLB_, _nrInNodes, _nrOutNodes, PT_) {
+	// cout << "in DEMarkovBrain::DEMarkovBrain(std::shared_ptr<Base_GateListBuilder> GLB_,
 	// std::shared_ptr<AbstractGenome> genome, int _nrOfBrainStates)\n\tabout to -
 	// gates = GLB->buildGateList(genome, nrOfBrainStates);" << endl;
 	gates = GLB->buildGateList(_genomes[genomeName], nrNodes, PT_);
@@ -134,18 +134,18 @@ MarkovBrain::MarkovBrain(std::shared_ptr<AbstractGateListBuilder> GLB_,
 	}
 }
 
-void MarkovBrain::logBrainStructure() {
+void DEMarkovBrain::logBrainStructure() {
 	log.log("begin brain desription\n" + description() + "end brain description\n");
 }
 
 // Make a brain like the brain that called this function, using genomes and
 // initalizing other elements.
-std::shared_ptr<AbstractBrain> MarkovBrain::makeBrain(std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& _genomes) {
-  std::shared_ptr<MarkovBrain> newBrain = std::make_shared<MarkovBrain>(GLB, _genomes, nrInputValues, nrOutputValues, PT);
+std::shared_ptr<AbstractBrain> DEMarkovBrain::makeBrain(std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& _genomes) {
+  std::shared_ptr<DEMarkovBrain> newBrain = std::make_shared<DEMarkovBrain>(GLB, _genomes, nrInputValues, nrOutputValues, PT);
 	return newBrain;
 }
 
-void MarkovBrain::resetBrain() {
+void DEMarkovBrain::resetBrain() {
 	AbstractBrain::resetBrain();
 	nodes.assign(nrNodes, 0.0);
 	for (auto &g :gates)
@@ -157,7 +157,7 @@ void MarkovBrain::resetBrain() {
 	}
 }
 
-void MarkovBrain::resetInputs() {
+void DEMarkovBrain::resetInputs() {
 	AbstractBrain::resetInputs();
 	for (int i = 0; i < nrInputValues; i++)
 		nodes[i] = 0.0;
@@ -166,7 +166,7 @@ void MarkovBrain::resetInputs() {
 		log.log("Inputs were reset\n");
 }
 
-void MarkovBrain::resetOutputs() {
+void DEMarkovBrain::resetOutputs() {
 	AbstractBrain::resetOutputs();
 	// note nrInputValues+i gets us the index for the node related to each output
 	for (int i = 0; i < nrOutputValues; i++)
@@ -176,7 +176,7 @@ void MarkovBrain::resetOutputs() {
 		log.log("Outputs were reset\n");
 }
 
-void MarkovBrain::update() {
+void DEMarkovBrain::update() {
 
 	nextNodes.assign(nrNodes, 0.0);
 	DataMap IOMap;
@@ -213,7 +213,7 @@ void MarkovBrain::update() {
 			//break;
 		//default:
 			//std::cout
-			//    << "  ERROR! BRAIN_MARKOV_ADVANCED::randomizeUnconnectedOutputsType "
+			//    << "  ERROR! BRAIN_DEMARKOV_ADVANCED::randomizeUnconnectedOutputsType "
 			//       "is invalid. current value: "
 			//    << randomizeUnconnectedOutputsType << std::endl;
 			//exit(1);
@@ -241,14 +241,14 @@ void MarkovBrain::update() {
 		log.logStateAfterUpdate(nodes);
 }
 
-void MarkovBrain::inOutReMap() { // remaps genome site values to valid brain
+void DEMarkovBrain::inOutReMap() { // remaps genome site values to valid brain
                                  // state addresses
 	for (auto &g : gates)
 		g->applyNodeMaps(inputNodeMap, outputNodeMap);
 }
 
-std::string MarkovBrain::description() {
-  std::string S = "Markov Brain\nins:" + std::to_string(nrInputValues) + " outs:" +
+std::string DEMarkovBrain::description() {
+  std::string S = "DEMarkov Brain\nins:" + std::to_string(nrInputValues) + " outs:" +
              std::to_string(nrOutputValues) + " hidden:" + std::to_string(hiddenNodes);
 	S += "\nInput IDs:";
 	for(int i=0; i<nrInputValues; i++)
@@ -263,7 +263,7 @@ std::string MarkovBrain::description() {
 	return S;
 }
 
-void MarkovBrain::fillInConnectionsLists() {
+void DEMarkovBrain::fillInConnectionsLists() {
 	nodesConnections.resize(nrNodes);
 	nextNodesConnections.resize(nrNodes);
 	for (auto &g : gates) {
@@ -275,7 +275,7 @@ void MarkovBrain::fillInConnectionsLists() {
 	}
 }
 
-DataMap MarkovBrain::getStats(std::string &prefix) {
+DataMap DEMarkovBrain::getStats(std::string &prefix) {
 	DataMap dataMap;
 	dataMap.set(prefix + "markovBrainGates", (int)gates.size());
 	std::map<std::string, int> gatecounts;
@@ -306,14 +306,14 @@ DataMap MarkovBrain::getStats(std::string &prefix) {
 	return dataMap;
 }
 
-std::string MarkovBrain::gateList() {
+std::string DEMarkovBrain::gateList() {
 	std::string S = "";
 	for (auto &g : gates)
 		S += g->description();
 	return S;
 }
 
-std::vector<std::vector<int>> MarkovBrain::getConnectivityMatrix() {
+std::vector<std::vector<int>> DEMarkovBrain::getConnectivityMatrix() {
   std::vector<std::vector<int>> M(nrNodes,std::vector<int>(nrNodes,0));
 	for (auto &g : gates) {
 		auto I = g->getIns();
@@ -325,11 +325,11 @@ std::vector<std::vector<int>> MarkovBrain::getConnectivityMatrix() {
 	return M;
 }
 
-int MarkovBrain::brainSize() { return gates.size(); }
+int DEMarkovBrain::brainSize() { return gates.size(); }
 
-int MarkovBrain::numGates() { return brainSize(); }
+int DEMarkovBrain::numGates() { return brainSize(); }
 
-std::vector<int> MarkovBrain::getHiddenNodes() {
+std::vector<int> DEMarkovBrain::getHiddenNodes() {
 	std::vector<int> temp ;
 	for (size_t i = nrInputValues + nrOutputValues; i < nodes.size(); i++)
 		temp.push_back(Bit(nodes[i]));
@@ -337,7 +337,7 @@ std::vector<int> MarkovBrain::getHiddenNodes() {
 	return temp;
 }
 
-void MarkovBrain::initializeGenomes(std::unordered_map<std::string,std::shared_ptr<AbstractGenome>> &_genomes) {
+void DEMarkovBrain::initializeGenomes(std::unordered_map<std::string,std::shared_ptr<AbstractGenome>> &_genomes) {
 	int codonMax = (1 << Gate_Builder::bitsPerCodonPL->get()) - 1;
 	_genomes[genomeName]->fillRandom();
 
@@ -352,7 +352,7 @@ void MarkovBrain::initializeGenomes(std::unordered_map<std::string,std::shared_p
 	}
 }
 
-std::shared_ptr<AbstractBrain> MarkovBrain::makeCopy(std::shared_ptr<ParametersTable> PT_) {
+std::shared_ptr<AbstractBrain> DEMarkovBrain::makeCopy(std::shared_ptr<ParametersTable> PT_) {
 	if (PT_ == nullptr) {
 		PT_ = PT;
 	}
@@ -360,11 +360,11 @@ std::shared_ptr<AbstractBrain> MarkovBrain::makeCopy(std::shared_ptr<ParametersT
 	for (auto gate : gates) {
 		_gates.push_back(gate->makeCopy());
 	}
-	auto newBrain = std::make_shared<MarkovBrain>(_gates, nrInputValues, nrOutputValues, PT_);
+	auto newBrain = std::make_shared<DEMarkovBrain>(_gates, nrInputValues, nrOutputValues, PT_);
 	return newBrain;
 }
 
-std::vector<std::shared_ptr<AbstractBrain>> MarkovBrain::getAllSingleGateKnockouts() {
+std::vector<std::shared_ptr<AbstractBrain>> DEMarkovBrain::getAllSingleGateKnockouts() {
 	std::vector<std::shared_ptr<AbstractBrain>> res;
 	auto numg = gates.size();
 	if (!numg) std::cout <<"No gates?" << std::endl;
@@ -375,13 +375,13 @@ std::vector<std::shared_ptr<AbstractBrain>> MarkovBrain::getAllSingleGateKnockou
 			if (c++ != i)
 				gmut.push_back(g->makeCopy());
 		auto bmut =
-				std::make_shared<MarkovBrain>(gmut, nrInputValues, nrOutputValues, PT);
+				std::make_shared<DEMarkovBrain>(gmut, nrInputValues, nrOutputValues, PT);
 		res.push_back(bmut);
 	}
 	return res;
 }
 
-void* MarkovBrain::logTimeSeries(const std::string& label) {
+void* DEMarkovBrain::logTimeSeries(const std::string& label) {
 
 	const unsigned m = 4;
 
