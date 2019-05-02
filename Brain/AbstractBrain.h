@@ -16,8 +16,6 @@
 #include <set>
 #include <vector>
 
-//#include "Gate/GateBuilder.h"
-//#include "GateListBuilder/GateListBuilder.h"
 #include "../Genome/AbstractGenome.h"
 #include "../Utilities/Parameters.h"
 #include "../Global.h"
@@ -40,8 +38,9 @@ public:
 
   AbstractBrain() = delete;
 
-  AbstractBrain(int ins, int outs, std::shared_ptr<ParametersTable> PT_)
-      : PT(PT_) {
+  AbstractBrain(int ins, int outs, std::shared_ptr<ParametersTable> PT_) :
+		PT(PT_) {
+
     nrInputValues = ins;
     nrOutputValues = outs;
     recordActivity = false;
@@ -68,7 +67,7 @@ public:
   }
 
   // convert a brain into data map with data that can be saved to file
-  virtual DataMap serialize(std::string &name) {
+  virtual DataMap serialize(std::string& name) {
     // cout << "ERROR! In AbstractBrain::serialize(). This method has not been
     // written for the type of brain use are using.\n  Exiting.";
     // exit(1);
@@ -80,8 +79,8 @@ public:
 
   // given an unordered_map<string, string> and PT, load data into this brain
   virtual void deserialize(std::shared_ptr<ParametersTable> PT,
-                           std::unordered_map<std::string, std::string> &orgData,
-                           std::string &name) {
+                           std::unordered_map<std::string,std::string>& orgData,
+                           std::string& name) {
     // cout << "ERROR! In AbstractBrain::deserialize(). This method has not been
     // written for the type of brain use are using.\n  Exiting.";
     // exit(1);
@@ -89,8 +88,7 @@ public:
     // be done.
   }
 
-  virtual void initializeGenomes(
-      std::unordered_map<std::string, std::shared_ptr<AbstractGenome>> &_genomes){
+  virtual void initializeGenomes(std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& _genomes) {
       // do nothing by default... if this is a direct encoded brain, then no
       // action is needed.
       // should this be a madiatory function?
@@ -98,12 +96,9 @@ public:
 
   // Make a brain like the brain that called this function, using genomes and
   // initalizing other elements.
-  virtual std::shared_ptr<AbstractBrain>
-  makeBrain(std::unordered_map<std::string, std::shared_ptr<AbstractGenome>> &_genomes) {
-    std::cout << "WARRNING! you have called AbstractBrain::encodeBarin - This "
-            "function must be defined from each brain type."
-         << std::endl
-         << "Exiting." << std::endl;
+  virtual std::shared_ptr<AbstractBrain> makeBrain(std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& _genomes) {
+    std::cout << "WARRNING! you have called AbstractBrain::encodeBarin - This function must be defined from each brain type." << std::endl
+		          << "Exiting." << std::endl;
     exit(1);
     return makeCopy();
   }
@@ -112,9 +107,8 @@ public:
   // inheriting other elements from parent.
   // in the default case, we assume geneticly encoded brains, so this just calls
   // the no parent version (i.e. build from genomes)
-  virtual std::shared_ptr<AbstractBrain>
-  makeBrainFrom(std::shared_ptr<AbstractBrain> parent,
-                std::unordered_map<std::string, std::shared_ptr<AbstractGenome>> &_genomes) {
+  virtual std::shared_ptr<AbstractBrain> makeBrainFrom(std::shared_ptr<AbstractBrain> parent,
+                                                       std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& _genomes) {
     return makeBrain(_genomes);
   }
 
@@ -122,9 +116,8 @@ public:
   // inheriting other elements from parents.
   // in the default case, we assume geneticly encoded brains, so this just calls
   // the no parent version (i.e. build from genomes)
-  virtual std::shared_ptr<AbstractBrain> makeBrainFromMany(
-      std::vector<std::shared_ptr<AbstractBrain>> parents,
-      std::unordered_map<std::string, std::shared_ptr<AbstractGenome>> &_genomes) {
+  virtual std::shared_ptr<AbstractBrain> makeBrainFromMany(std::vector<std::shared_ptr<AbstractBrain>> parents,
+                                                           std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& _genomes) {
     return makeBrain(_genomes);
   }
 
@@ -140,38 +133,29 @@ public:
     resetOutputs();
   }
 
-  virtual void inline setRecordActivity(bool _recordActivity) {
-    recordActivity = _recordActivity;
-  }
-
-  virtual void inline setRecordFileName(std::string _recordActivityFileName) {
-    recordActivityFileName = _recordActivityFileName;
-  }
-
+  virtual void inline setRecordActivity(bool _recordActivity) { recordActivity = _recordActivity; }
+  virtual void inline setRecordFileName(std::string _recordActivityFileName) { recordActivityFileName = _recordActivityFileName; }
   virtual void inline resetOutputs() {
-    for (int i = 0; i < nrOutputValues; i++) {
+    for (int i = 0; i < nrOutputValues; i++)
       outputValues[i] = 0.0;
-    }
   }
-
   virtual void inline resetInputs() {
-    for (int i = 0; i < nrInputValues; i++) {
+    for (int i = 0; i < nrInputValues; i++)
       inputValues[i] = 0.0;
-    }
   }
 
-  inline virtual void setInput(const int &inputAddress, const double &value) {
+  inline virtual void setInput(const int& inputAddress, const double& value) {
     if (inputAddress < nrInputValues) {
       inputValues[inputAddress] = value;
     } else {
-      std::cout << "in Brain::setInput() : Writing to invalid input ("
-           << inputAddress << ") - this brain needs more inputs!\nExiting"
-           << std::endl;
+      std::cout << "in Brain::setInput() : Writing to invalid input (" <<
+                   inputAddress << ") - this brain needs more inputs!" << std::endl <<
+                   "Exiting" << std::endl;
       exit(1);
     }
   }
 
-  inline virtual double readInput(const int &inputAddress) {
+  inline virtual double readInput(const int& inputAddress) {
     if (inputAddress < nrInputValues) {
       return inputValues[inputAddress];
     } else {
@@ -182,7 +166,7 @@ public:
     }
   }
 
-  inline virtual void setOutput(const int &outputAddress, const double &value) {
+  inline virtual void setOutput(const int& outputAddress, const double& value) {
     if (outputAddress < nrOutputValues) {
       outputValues[outputAddress] = value;
     } else {
@@ -193,7 +177,7 @@ public:
     }
   }
 
-  inline virtual double readOutput(const int &outputAddress) {
+  inline virtual double readOutput(const int& outputAddress) {
     if (outputAddress < nrOutputValues) {
       return outputValues[outputAddress];
     } else {
@@ -215,11 +199,9 @@ public:
   //
   //	}
 
-  virtual std::shared_ptr<AbstractBrain>
-  makeCopy(std::shared_ptr<ParametersTable> PT_ = nullptr) {
+  virtual std::shared_ptr<AbstractBrain> makeCopy(std::shared_ptr<ParametersTable> PT_ = nullptr) {
     std::cout << "ERROR IN AbstractBrain::makeCopy() - You are using the abstract "
-            "copy constructor for brains. You must define your own"
-         << std::endl;
+            "copy constructor for brains. You must define your own" << std::endl;
     exit(1);
   }
 
