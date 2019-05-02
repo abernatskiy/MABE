@@ -61,8 +61,7 @@ public:
                                                 // tracking (etc.)
 
   virtual std::string getType() {
-    std::cout << "ERROR! In AbstractBrain::getType()...\n This genome needs a "
-            "getType function...\n  exiting.";
+    std::cout << "ERROR! In AbstractBrain::getType()...\n This genome needs a getType function...\n  exiting.";
     exit(1);
     return "Undefined";
   }
@@ -98,7 +97,7 @@ public:
   // Make a brain like the brain that called this function, using genomes and
   // initalizing other elements.
   virtual std::shared_ptr<AbstractBrain> makeBrain(std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& _genomes) {
-    std::cout << "WARRNING! you have called AbstractBrain::encodeBarin - This function must be defined from each brain type." << std::endl
+    std::cout << "WARRNING! you have called AbstractBrain::makeBrain - This function must be defined from each brain type." << std::endl
 		          << "Exiting." << std::endl;
     exit(1);
     return makeCopy();
@@ -189,20 +188,8 @@ public:
     }
   }
 
-  //	// converts the value of each value in nodes[] to bit and converts the
-  //bits to an int
-  //	// useful to generate values for lookups, useful for caching
-  //	int allNodesToBitToInt() {
-  //		int result = 0;
-  //		for (int i = 0; i < nrOfBrainNodes; i++)
-  //			result = (result) + Bit(nodes[i]);
-  //		return result;
-  //
-  //	}
-
   virtual std::shared_ptr<AbstractBrain> makeCopy(std::shared_ptr<ParametersTable> PT_ = nullptr) {
-    std::cout << "ERROR IN AbstractBrain::makeCopy() - You are using the abstract "
-            "copy constructor for brains. You must define your own" << std::endl;
+    std::cout << "ERROR IN AbstractBrain::makeCopy() - You are using the abstract copy constructor for brains. You must define your own" << std::endl;
     exit(1);
   }
 

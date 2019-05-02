@@ -118,11 +118,10 @@ MarkovBrain::MarkovBrain(std::shared_ptr<AbstractGateListBuilder> GLB_,
 
 }
 
-MarkovBrain::MarkovBrain(
-    std::shared_ptr<AbstractGateListBuilder> GLB_,
-    std::unordered_map<std::string, std::shared_ptr<AbstractGenome>> &_genomes, int _nrInNodes,
-    int _nrOutNodes, std::shared_ptr<ParametersTable> PT_)
-    : MarkovBrain(GLB_, _nrInNodes, _nrOutNodes, PT_) {
+MarkovBrain::MarkovBrain(std::shared_ptr<AbstractGateListBuilder> GLB_,
+                         std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& _genomes,
+                         int _nrInNodes, int _nrOutNodes, std::shared_ptr<ParametersTable> PT_)
+  : MarkovBrain(GLB_, _nrInNodes, _nrOutNodes, PT_) {
 	// cout << "in MarkovBrain::MarkovBrain(std::shared_ptr<Base_GateListBuilder> GLB_,
 	// std::shared_ptr<AbstractGenome> genome, int _nrOfBrainStates)\n\tabout to -
 	// gates = GLB->buildGateList(genome, nrOfBrainStates);" << endl;
@@ -143,10 +142,8 @@ void MarkovBrain::logBrainStructure() {
 
 // Make a brain like the brain that called this function, using genomes and
 // initalizing other elements.
-std::shared_ptr<AbstractBrain> MarkovBrain::makeBrain(
-    std::unordered_map<std::string, std::shared_ptr<AbstractGenome>> &_genomes) {
-  std::shared_ptr<MarkovBrain> newBrain = std::make_shared<MarkovBrain>(
-      GLB, _genomes, nrInputValues, nrOutputValues, PT);
+std::shared_ptr<AbstractBrain> MarkovBrain::makeBrain(std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& _genomes) {
+  std::shared_ptr<MarkovBrain> newBrain = std::make_shared<MarkovBrain>(GLB, _genomes, nrInputValues, nrOutputValues, PT);
 	return newBrain;
 }
 
@@ -342,8 +339,7 @@ std::vector<int> MarkovBrain::getHiddenNodes() {
 	return temp;
 }
 
-void MarkovBrain::initializeGenomes(
-    std::unordered_map<std::string, std::shared_ptr<AbstractGenome>> &_genomes) {
+void MarkovBrain::initializeGenomes(std::unordered_map<std::string,std::shared_ptr<AbstractGenome>> &_genomes) {
 	int codonMax = (1 << Gate_Builder::bitsPerCodonPL->get()) - 1;
 	_genomes[genomeName]->fillRandom();
 
@@ -358,8 +354,7 @@ void MarkovBrain::initializeGenomes(
 	}
 }
 
-std::shared_ptr<AbstractBrain>
-MarkovBrain::makeCopy(std::shared_ptr<ParametersTable> PT_) {
+std::shared_ptr<AbstractBrain> MarkovBrain::makeCopy(std::shared_ptr<ParametersTable> PT_) {
 	if (PT_ == nullptr) {
 		PT_ = PT;
 	}
@@ -367,8 +362,7 @@ MarkovBrain::makeCopy(std::shared_ptr<ParametersTable> PT_) {
 	for (auto gate : gates) {
 		_gates.push_back(gate->makeCopy());
 	}
-	auto newBrain =
-			std::make_shared<MarkovBrain>(_gates, nrInputValues, nrOutputValues, PT_);
+	auto newBrain = std::make_shared<MarkovBrain>(_gates, nrInputValues, nrOutputValues, PT_);
 	return newBrain;
 }
 
