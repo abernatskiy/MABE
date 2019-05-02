@@ -53,12 +53,13 @@ public:
 
   virtual void update() = 0;
 
-  virtual std::string
-  description() = 0; // returns a desription of this brain in it's current state
+  virtual std::string description() = 0; // returns a desription of this brain in it's current state
+
   virtual DataMap getStats(std::string &prefix) = 0; // returns a vector of string
                                                 // pairs of any stats that can
                                                 // then be used for data
                                                 // tracking (etc.)
+
   virtual std::string getType() {
     std::cout << "ERROR! In AbstractBrain::getType()...\n This genome needs a "
             "getType function...\n  exiting.";
