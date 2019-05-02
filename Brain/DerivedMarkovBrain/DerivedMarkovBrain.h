@@ -3,16 +3,16 @@
 #include "../AbstractBrain.h"
 #include "../MarkovBrain/MarkovBrain.h"
 
-class DEMarkovBrain : public AbstractBrain {
+class DerivedMarkovBrain : public AbstractBrain {
 private:
 	MarkovBrain mb;
 
 	std::vector<std::shared_ptr<AbstractGate>> getCopiesOfAllGates() const;
 
 public:
-	DEMarkovBrain(int ins, int outs, std::shared_ptr<ParametersTable> PT);
+	DerivedMarkovBrain(int ins, int outs, std::shared_ptr<ParametersTable> PT);
 
-	DEMarkovBrain(const DEMarkovBrain& original); // it's really private tbqh
+	DerivedMarkovBrain(const DerivedMarkovBrain& original); // it's really private tbqh
 
 	void logNote(std::string note) override { mb.logNote(note); };
 
@@ -25,6 +25,6 @@ public:
 	void initializeGenomes(std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& genomes) override;
 };
 
-inline std::shared_ptr<AbstractBrain> DEMarkovBrain_brainFactory(int ins, int outs, std::shared_ptr<ParametersTable> PT) {
-	return std::make_shared<DEMarkovBrain>(ins, outs, PT);
+inline std::shared_ptr<AbstractBrain> DerivedMarkovBrain_brainFactory(int ins, int outs, std::shared_ptr<ParametersTable> PT) {
+	return std::make_shared<DerivedMarkovBrain>(ins, outs, PT);
 }

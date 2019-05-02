@@ -23,7 +23,7 @@
   - Human
   - Wire
   + BiLog
-  + DEMarkov
+  - DerivedMarkov
 	
 % Optimizer
   * Simple
