@@ -3,6 +3,7 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <sys/stat.h>
 
 inline double pointEntropy(double p) {
 	if(p == 0. || p == 1.)

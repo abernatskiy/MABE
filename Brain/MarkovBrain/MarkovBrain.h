@@ -16,7 +16,6 @@
 #include <set>
 #include <vector>
 #include <iomanip>
-#include <sys/stat.h>
 
 #include "GateListBuilder/GateListBuilder.h"
 #include "../../Genome/AbstractGenome.h"
