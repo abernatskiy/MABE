@@ -17,6 +17,7 @@ private:
 	// Major constants
 	int nrNodes;
 	int nrHiddenNodes;
+	int gateMinIns, gateMaxIns, gateMinOuts, gateMaxOuts;
 
 	// Major state vars
 	std::vector<std::shared_ptr<AbstractGate>> gates;
@@ -24,7 +25,8 @@ private:
 	std::vector<double> nextNodes;
 
 	// Private methods
-	void randomizeGates();
+	std::shared_ptr<AbstractGate> getRandomGate(int gateID);
+	void randomize();
 	void beginLogging();
 
 	// Infrastructure
@@ -38,6 +40,9 @@ private:
 	static std::shared_ptr<ParameterLink<bool>> recordIOMapPL;
 	static std::shared_ptr<ParameterLink<std::string>> IOMapFileNamePL;
 
+	static std::shared_ptr<ParameterLink<int>> initialGateCountPL;
+//	static std::shared_ptr<ParameterLink<std::string>> initialGateCountPL;
+
 public:
 	// Public methods
 	DEMarkovBrain() = delete;
@@ -45,14 +50,18 @@ public:
 	DEMarkovBrain(int ins, int outs, std::shared_ptr<ParametersTable> PT_) : // complete constructor that actually generates a working random brain
 		DEMarkovBrain(ins, hiddenNodesPL->get(PT_), outs, PT_) {
 
-		randomizeGates();
+		randomize();
 		beginLogging();
 	};
 	~DEMarkovBrain() = default;
 
 	void update() override;
 	std::shared_ptr<AbstractBrain> makeCopy(std::shared_ptr<ParametersTable> PT_) override;
-	std::shared_ptr<AbstractBrain> makeBrain(std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& _genomes) override { return makeCopy(PT); };
+	std::shared_ptr<AbstractBrain> makeBrain(std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& _genomes) override; // returns a random brain like the one from which it's called
+	std::shared_ptr<AbstractBrain> makeBrainFrom(std::shared_ptr<AbstractBrain> brain,
+	                                             std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& _genomes) override { return makeBrainFromMany({brain}, _genomes); };
+	std::shared_ptr<AbstractBrain> makeBrainFromMany(std::vector<std::shared_ptr<AbstractBrain>> _brains,
+	                                                 std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& _genomes) override; // brains' procreation
 	void mutate() override;
 	void resetBrain() override;
 	void resetOutputs() override;

@@ -2,15 +2,32 @@
 #include <iomanip>
 #include <png++/png.hpp>
 
+#include "../MarkovBrain/Gate/DeterministicGate.h"
+
 #include "DEMarkovBrain.h"
 
 using namespace std;
+
+/********** Auxiliary funcs **********/
+
+tuple<int,int,int,int> parseGateLimitsStr(string thestring) {
+	string sinmin, sinmax, soutmin, soutmax;
+	stringstream s(thestring);
+	getline(s, sinmin, '-');
+	getline(s, sinmax, ',');
+	getline(s, soutmin, '-');
+	getline(s, soutmax);
+	return make_tuple(stoi(sinmin), stoi(sinmax), stoi(soutmin), stoi(soutmax));
+}
+
+/********** Static variables definition **********/
 
 shared_ptr<ParameterLink<int>> DEMarkovBrain::hiddenNodesPL = Parameters::register_parameter("BRAIN_DEMARKOV-hiddenNodes", 8, "number of hidden nodes");
 shared_ptr<ParameterLink<bool>> DEMarkovBrain::recordIOMapPL = Parameters::register_parameter("BRAIN_DEMARKOV_ADVANCED-recordIOMap", false,
                                                                                               "if true, all input, output and hidden nodes will be recorded on every brain update");
 shared_ptr<ParameterLink<string>> DEMarkovBrain::IOMapFileNamePL = Parameters::register_parameter("BRAIN_DEMARKOV_ADVANCED-recordIOMap_fileName", (string) "markov_IO_map.csv",
                                                                                                   "Name of file where IO mappings are saved");
+shared_ptr<ParameterLink<int>> DEMarkovBrain::initialGateCountPL = Parameters::register_parameter("BRAIN_DEMARKOV-initialGateCount", 30, "number of gates to add to the newly generated individuals");
 
 /********** Public definitions **********/
 
@@ -28,6 +45,10 @@ DEMarkovBrain::DEMarkovBrain(int _nrInNodes, int _nrHidNodes, int _nrOutNodes, s
 	popFileColumns.clear();
 	popFileColumns.push_back("markovBrainGates");
 	popFileColumns.push_back("markovBrainDeterministicGates");
+
+	// gates params
+	tie(gateMinIns, gateMaxIns, gateMinOuts, gateMaxOuts) =
+		parseGateLimitsStr(DeterministicGate::IO_RangesPL->get(PT_));
 }
 
 void DEMarkovBrain::update() {
@@ -75,11 +96,22 @@ shared_ptr<AbstractBrain> DEMarkovBrain::makeCopy(shared_ptr<ParametersTable> PT
 		exit(EXIT_FAILURE);
 	}
 
-	auto newBrain = make_shared<DEMarkovBrain>(nrInputValues, nrHiddenNodes, nrOutputValues, PT_);
+	auto newBrain = make_shared<DEMarkovBrain>(nrInputValues, nrHiddenNodes, nrOutputValues, PT);
 	for(auto gate : gates)
 		newBrain->gates.push_back(gate->makeCopy());
-
 	return newBrain;
+}
+
+shared_ptr<AbstractBrain> DEMarkovBrain::makeBrain(unordered_map<string,shared_ptr<AbstractGenome>>& _genomes) {
+	auto newBrain = make_shared<DEMarkovBrain>(nrInputValues, nrHiddenNodes, nrOutputValues, PT);
+	newBrain->randomize();
+	return newBrain;
+}
+
+shared_ptr<AbstractBrain> DEMarkovBrain::makeBrainFromMany(vector<shared_ptr<AbstractBrain>> _brains,
+                                                           unordered_map<string,shared_ptr<AbstractGenome>>& _genomes) {
+	auto newBrain = makeCopy(PT);
+	return newBrain; // note that mutate() WILL be called upon it right away
 }
 
 void DEMarkovBrain::mutate() {
@@ -180,8 +212,33 @@ string DEMarkovBrain::description() {
 
 /********** Private definitions **********/
 
-void DEMarkovBrain::randomizeGates() {
-	// YOUR WORK HERE IS NOT DONE
+void DEMarkovBrain::randomize() {
+	gates.clear();
+	for(unsigned g=0; g<initialGateCountPL->get(PT); g++) {
+		auto newGate = getRandomGate(g);
+		gates.push_back(newGate);
+	}
+}
+
+shared_ptr<AbstractGate> DEMarkovBrain::getRandomGate(int gateID) {
+	const int nins = Random::getInt(gateMinIns, gateMaxIns);
+	const int nouts = Random::getInt(gateMinOuts, gateMaxOuts);
+	pair<vector<int>,vector<int>> conns;
+	for(unsigned i=0; i<nins; i++)
+		conns.first.push_back(Random::getInt(0, nrNodes-1));
+	for(unsigned j=0; j<nouts; j++)
+		conns.second.push_back(Random::getInt(nrInputValues, nrNodes-1));
+
+	const int tableRows = 1<<nins;
+	vector<vector<int>> table;
+	for(unsigned k=0; k<tableRows; k++) {
+		vector<int> row;
+		for(unsigned j=0; j<nouts; j++)
+			row.push_back(Random::getInt(0, 1));
+		table.push_back(row);
+	}
+
+	return make_shared<DeterministicGate>(conns, table, gateID, PT);
 }
 
 void DEMarkovBrain::beginLogging() {
