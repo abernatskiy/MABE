@@ -14,7 +14,6 @@
 
 using namespace std;
 
-
 class DeterministicGate: public AbstractGate {
 public:
 	static shared_ptr<ParameterLink<string>> IO_RangesPL;
@@ -25,7 +24,7 @@ public:
 		AbstractGate(_PT) {
 		table = {};
 	}
-	DeterministicGate(pair<vector<int>, vector<int>> addresses, vector<vector<int>> _table, int _ID, shared_ptr<ParametersTable> _PT = nullptr);
+	DeterministicGate(pair<vector<int>,vector<int>> addresses, vector<vector<int>> _table, int _ID, shared_ptr<ParametersTable> _PT = nullptr);
 	virtual ~DeterministicGate() = default;
 	virtual void update(vector<double> & states, vector<double> & nextStates) override;
 	virtual shared_ptr<AbstractGate> makeCopy(shared_ptr<ParametersTable> _PT = nullptr) override;
