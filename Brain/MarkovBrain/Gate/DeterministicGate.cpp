@@ -40,8 +40,7 @@ void DeterministicGate::update(vector<double> & nodes, vector<double> & nextNode
 	}
 }
 
-shared_ptr<AbstractGate> DeterministicGate::makeCopy(shared_ptr<ParametersTable> _PT)
-{
+shared_ptr<AbstractGate> DeterministicGate::makeCopy(shared_ptr<ParametersTable> _PT) {
 	if (_PT == nullptr) {
 		_PT = PT; 
 	}
@@ -53,3 +52,8 @@ shared_ptr<AbstractGate> DeterministicGate::makeCopy(shared_ptr<ParametersTable>
 	return newGate;
 }
 
+void DeterministicGate::mutateInternalStructure() {
+	int inPatIdx = Random::getInt(0, table.size()-1);
+	int outIdx = Random::getInt(0, table[0].size()-1);
+	table[inPatIdx][outIdx] = table[inPatIdx][outIdx] ? 0 : 1;
+}

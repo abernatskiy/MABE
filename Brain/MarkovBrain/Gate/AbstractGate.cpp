@@ -56,3 +56,11 @@ string AbstractGate::descriptionIO() {
 string AbstractGate::description() {
 	return "Gate " + to_string(ID) + " is a " + gateType() + " gate\n" + descriptionIO();
 }
+
+void AbstractGate::mutateConnections(int ista, int iend, int osta, int oend) {
+	int chosenConn = Random::getInt(0, inputs.size()+outputs.size()-1);
+	if(chosenConn < inputs.size())
+		inputs[chosenConn] = Random::getInt(ista, iend);
+	else
+		outputs[chosenConn-inputs.size()] = Random::getInt(osta, oend);
+}

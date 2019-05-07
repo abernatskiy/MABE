@@ -28,6 +28,14 @@ shared_ptr<ParameterLink<bool>> DEMarkovBrain::recordIOMapPL = Parameters::regis
 shared_ptr<ParameterLink<string>> DEMarkovBrain::IOMapFileNamePL = Parameters::register_parameter("BRAIN_DEMARKOV_ADVANCED-recordIOMap_fileName", (string) "markov_IO_map.csv",
                                                                                                   "Name of file where IO mappings are saved");
 shared_ptr<ParameterLink<int>> DEMarkovBrain::initialGateCountPL = Parameters::register_parameter("BRAIN_DEMARKOV-initialGateCount", 30, "number of gates to add to the newly generated individuals");
+shared_ptr<ParameterLink<double>> DEMarkovBrain::gateInsertionProbabilityPL = Parameters::register_parameter("BRAIN_DEMARKOV-gateInsertionProbability", 0.1,
+                                                                                                             "probability that a new random gate will be inserted into the brain upon the mutation() call");
+shared_ptr<ParameterLink<double>> DEMarkovBrain::gateDeletionProbabilityPL = Parameters::register_parameter("BRAIN_DEMARKOV-gateDeletionProbability", 0.1,
+                                                                                                            "probability that a randomly chosen gate will be deleted from the brain upon the mutation() call");
+shared_ptr<ParameterLink<double>> DEMarkovBrain::gateDuplicationProbabilityPL = Parameters::register_parameter("BRAIN_DEMARKOV-gateDuplicationProbability", 0.2,
+                                                                                                               "probability that a randomly chosen gate will be duplicated within the brain upon the mutation() call");
+shared_ptr<ParameterLink<double>> DEMarkovBrain::connectionToTableChangeRatioPL = Parameters::register_parameter("BRAIN_DEMARKOV-connectionToTableChangeRatio", 1.0,
+                                                                                                                 "if the brain experiences no insertion, deletions or duplictions, call to mutate() changes parameters of a randomly chosen gate. This parameters governs relative frequencies of such changes to connections and logic tables");
 
 /********** Public definitions **********/
 
@@ -115,7 +123,30 @@ shared_ptr<AbstractBrain> DEMarkovBrain::makeBrainFromMany(vector<shared_ptr<Abs
 }
 
 void DEMarkovBrain::mutate() {
-	// YOUR WORK HERE IS NOT DONE
+	double r = Random::getDouble(1.);
+	if(r < gateInsertionProbabilityPL->get(PT)) {
+		int gsize = gates.size();
+		gates.push_back(getRandomGate(gsize));
+	}
+	else if(r < gateInsertionProbabilityPL->get(PT) + gateDeletionProbabilityPL->get(PT)) {
+		int idx = Random::getIndex(gates.size());
+		gates.erase(gates.begin()+idx);
+	}
+	else if(r < gateInsertionProbabilityPL->get(PT) + gateDeletionProbabilityPL->get(PT) + gateDuplicationProbabilityPL->get(PT)) {
+		int idx = Random::getIndex(gates.size());
+		auto newGate = gates[idx]->makeCopy();
+		newGate->ID = gates.size();
+		gates.push_back(newGate);
+	}
+	else {
+		int idx = Random::getIndex(gates.size());
+		double spentProb = gateInsertionProbabilityPL->get(PT) + gateDeletionProbabilityPL->get(PT) + gateDuplicationProbabilityPL->get(PT);
+		double tableChangeThr = spentProb + (1.-spentProb)/(1.+connectionToTableChangeRatioPL->get(PT));
+		if(r < tableChangeThr)
+			gates[idx]->mutateInternalStructure();
+		else
+			gates[idx]->mutateConnections(0, nrNodes-1, nrInputValues, nrNodes-1);
+	}
 }
 
 void DEMarkovBrain::resetBrain() {

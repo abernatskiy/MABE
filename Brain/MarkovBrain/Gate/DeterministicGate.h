@@ -42,6 +42,5 @@ public:
 		}
 		return baseDesc;
 	};
+	void mutateInternalStructure() override;
 };
-
-

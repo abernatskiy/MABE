@@ -64,4 +64,7 @@ public:
 		connectionsLists.second = outputs;
 		return connectionsLists;
 	}
+
+	virtual void mutateConnections(int inRangeStart, int inRangeEnd, int outRangeStart, int outRangeEnd);
+	virtual void mutateInternalStructure() {}; // since generally we know nothing about the internal structure of the gate, we do nothing
 };

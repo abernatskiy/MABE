@@ -41,7 +41,10 @@ private:
 	static std::shared_ptr<ParameterLink<std::string>> IOMapFileNamePL;
 
 	static std::shared_ptr<ParameterLink<int>> initialGateCountPL;
-//	static std::shared_ptr<ParameterLink<std::string>> initialGateCountPL;
+	static std::shared_ptr<ParameterLink<double>> gateInsertionProbabilityPL;
+	static std::shared_ptr<ParameterLink<double>> gateDeletionProbabilityPL;
+	static std::shared_ptr<ParameterLink<double>> gateDuplicationProbabilityPL;
+	static std::shared_ptr<ParameterLink<double>> connectionToTableChangeRatioPL;
 
 public:
 	// Public methods
