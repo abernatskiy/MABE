@@ -124,28 +124,42 @@ shared_ptr<AbstractBrain> DEMarkovBrain::makeBrainFromMany(vector<shared_ptr<Abs
 
 void DEMarkovBrain::mutate() {
 	double r = Random::getDouble(1.);
+//	cout << "DEMarkovBrain is mutating. Rolled " << r;
 	if(r < gateInsertionProbabilityPL->get(PT)) {
+//		cout << ", chose insertion. Had " << gates.size() << " gates, ";
 		int gsize = gates.size();
 		gates.push_back(getRandomGate(gsize));
+//		cout << " now it's " << gates.size() << endl;
 	}
 	else if(r < gateInsertionProbabilityPL->get(PT) + gateDeletionProbabilityPL->get(PT)) {
+//		cout << ", chose deletion. Had " << gates.size() << " gates, ";
 		int idx = Random::getIndex(gates.size());
 		gates.erase(gates.begin()+idx);
+//		cout << ", removed " << idx << "th one, now it's " << gates.size() << endl;
 	}
 	else if(r < gateInsertionProbabilityPL->get(PT) + gateDeletionProbabilityPL->get(PT) + gateDuplicationProbabilityPL->get(PT)) {
+//		cout << ", chose duplication. Had " << gates.size() << " gates, ";
 		int idx = Random::getIndex(gates.size());
 		auto newGate = gates[idx]->makeCopy();
 		newGate->ID = gates.size();
 		gates.push_back(newGate);
+//		cout << ", duplicated " << idx << "th one, now it's " << gates.size() << endl;
 	}
 	else {
 		int idx = Random::getIndex(gates.size());
+//		cout << ", chose intra-gate mutation. Chose gate " << idx;
 		double spentProb = gateInsertionProbabilityPL->get(PT) + gateDeletionProbabilityPL->get(PT) + gateDuplicationProbabilityPL->get(PT);
 		double tableChangeThr = spentProb + (1.-spentProb)/(1.+connectionToTableChangeRatioPL->get(PT));
-		if(r < tableChangeThr)
+		if(r < tableChangeThr) {
+//			cout << " and a table mutation. Gate before the mutation:" << endl << gates[idx]->description() << endl;
 			gates[idx]->mutateInternalStructure();
-		else
+//			cout << "Gate after the mutation:" << endl << gates[idx]->description() << endl;
+		}
+		else {
+//			cout << " and a wiring mutation. Gate before the mutation:" << endl << gates[idx]->description();
 			gates[idx]->mutateConnections(0, nrNodes-1, nrInputValues, nrNodes-1);
+//			cout << "Gate after the mutation:" << endl << gates[idx]->description() << endl;
+		}
 	}
 }
 
