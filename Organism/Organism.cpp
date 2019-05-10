@@ -210,14 +210,14 @@ std::shared_ptr<Organism> Organism::makeMutatedOffspringFromMany(std::vector<std
 	for(auto& p : from)
 		parentBrains.push_back(p->brains);
 
-  return std::make_shared<Organism>(from, newGenomes, parentBrains, PT);
+//  return std::make_shared<Organism>(from, newGenomes, parentBrains, PT);
 
 	// replace the line above with the section below to make Organism
 	// compatible with worlds other than AbstractIsolatedEmbodied's daughters
 
-//	auto outptr = std::make_shared<Organism>(from, newGenomes, parentBrains, PT);
-//	outptr->translateGenomesToBrains();
-//	return outptr;
+	auto outptr = std::make_shared<Organism>(from, newGenomes, parentBrains, PT);
+	outptr->translateGenomesToBrains();
+	return outptr;
 }
 
 /*
