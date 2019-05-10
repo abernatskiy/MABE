@@ -131,7 +131,7 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 
 	// Step 2: adding the offspring of the Pareto front organisms to the population
 	// until it reaches the projected size of the population minus one
-	while(newPopulation.size() != population.size()-1) {
+	while(newPopulation.size() < population.size()-1) {
 		std::shared_ptr<Organism> parent = paretoFront[Random::getIndex(paretoFront.size())];
 		std::shared_ptr<Organism> child = parent->makeMutatedOffspringFrom(parent);
 		child->dataMap.set("minimizeValue_age", parent->dataMap.getDouble("minimizeValue_age")); // it is very important to know how farback your ancestry goes
