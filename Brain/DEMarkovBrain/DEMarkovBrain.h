@@ -77,6 +77,8 @@ public:
 	std::string getType() override { return "DEMarkov"; }
 	void* logTimeSeries(const std::string& label) override;
 	void logNote(std::string note) override { log.log("DEMarkov Brain's external note: " + note + "\n"); };
+	DataMap serialize(std::string& name) override;
+	void deserialize(std::shared_ptr<ParametersTable> PT, std::unordered_map<std::string,std::string>& orgData, std::string& name) override;
 };
 
 inline std::shared_ptr<AbstractBrain> DEMarkovBrain_brainFactory(int ins, int outs, std::shared_ptr<ParametersTable> PT) {
