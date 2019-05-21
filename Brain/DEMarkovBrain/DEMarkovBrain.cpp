@@ -306,7 +306,7 @@ void DEMarkovBrain::logBrainStructure() {
 }
 
 DataMap DEMarkovBrain::serialize(string& name) {
-	nlohmann::json brainJSON = nlohmann::json::array();
+	nlohmann::json gatesJSON = nlohmann::json::array();
 	for(const auto& gate : gates) {
 		nlohmann::json gateJSON = nlohmann::json::object();
 
@@ -332,9 +332,20 @@ DataMap DEMarkovBrain::serialize(string& name) {
 			cerr << "DEMarkovBrain::serialize caught an unsupported gate type " << gateJSON["type"] << endl;
 			exit(EXIT_FAILURE);
 		}
-
-		brainJSON.push_back(gateJSON);
+		gatesJSON.push_back(gateJSON);
 	}
+
+	nlohmann::json brainJSON = nlohmann::json::object();
+	brainJSON["gates"] = gatesJSON;
+	brainJSON["inputs"] = nlohmann::json::array();
+	for(int i=0; i<nrInputValues; i++)
+		brainJSON["inputs"].push_back(i);
+	brainJSON["outputs"] = nlohmann::json::array();
+	for(int i=nrInputValues; i<nrInputValues+nrOutputValues; i++)
+		brainJSON["outputs"].push_back(i);
+	brainJSON["hidden"] = nlohmann::json::array();
+	for(int i=nrInputValues+nrOutputValues; i<nrNodes; i++)
+		brainJSON["hidden"].push_back(i);
 
 	// storing the string at the DataMap and returning it
 	DataMap dm;
@@ -354,7 +365,9 @@ void DEMarkovBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<st
 	}
 	gatesJSONStr = gatesJSONStr.substr(1, gatesJSONStr.size()-2);
 
-	nlohmann::json gatesJSON = nlohmann::json::parse(gatesJSONStr);
+	nlohmann::json brainJSON = nlohmann::json::parse(gatesJSONStr);
+	nlohmann::json gatesJSON = brainJSON["gates"];
+
 	gates.clear();
 
 	for(const auto& gateJSON : gatesJSON) {
