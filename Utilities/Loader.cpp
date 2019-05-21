@@ -721,27 +721,27 @@ Loader::getAttributeMap(const std::string &file_name) {
 //				std::cout << org_details.substr(spos) << std::endl;
 				break;
 			}
-			else if(org_details.substr(spos, 2)=="'[") {
-				epos = org_details.find("]'", spos+2);
+			else if(org_details[spos]=='\'') {
+				epos = org_details.find('\'', spos+1);
 				if(epos==std::string::npos) {
-					std::cout << "Couldn't find a closing ]'" << std::endl;
+					std::cout << "Couldn't find a closing '" << std::endl;
 					exit(EXIT_FAILURE);
 				}
 				else
-					epos += 2;
+					epos++;
 				temp_result[attribute_names.at(k)] = org_details.substr(spos, epos-spos);
 //				std::cout << org_details.substr(spos, epos-spos) << std::endl;
 				k++;
 				epos = org_details.find(',', epos);
 			}
-			else if(org_details.substr(spos, 2)=="\"[") {
-				epos = org_details.find("]\"", spos+2);
+			else if(org_details[spos]=='"') {
+				epos = org_details.find('"', spos+1);
 				if(epos==std::string::npos) {
-					std::cout << "Couldn't find a closing ]\"" << std::endl;
+					std::cout << "Couldn't find a closing \"" << std::endl;
 					exit(EXIT_FAILURE);
 				}
 				else
-					epos += 2;
+					epos += 1;
 				temp_result[attribute_names.at(k)] = org_details.substr(spos, epos-spos);
 //				std::cout << org_details.substr(spos, epos-spos) << std::endl;
 				k++;

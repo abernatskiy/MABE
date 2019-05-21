@@ -382,12 +382,12 @@ constructAllGroupsFrom(const std::shared_ptr<AbstractWorld> &world,
         }
       }
       for (auto const &brain : templateBrains) {
-        if (org.first < 0) {
+        if (org.first < 0)
           brain.second->initializeGenomes(newGenomes);
-        }
         newBrains[brain.first] = brain.second->makeBrain(newGenomes);
 				auto name = brain.first;
-				newBrains[brain.first]->deserialize(brain.second->PT, org.second, name);
+        if(org.first >= 0)
+					newBrains[brain.first]->deserialize(brain.second->PT, org.second, name);
       }
       auto newOrg =
           std::make_shared<Organism>(std::vector<std::shared_ptr<Organism>>({progenitor}), newGenomes, newBrains, PT);
