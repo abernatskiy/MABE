@@ -664,10 +664,10 @@ std::pair<long, long> Loader::generatePopulation(const std::string &file_name) {
 
 // reads organisms or data file. return key of ID to map of attributes to values
 // attributes do NOT include ID
-std::map<long, std::map<std::string, std::string>>
+std::map<long,std::map<std::string,std::string>>
 Loader::getAttributeMap(const std::string &file_name) {
 
-  std::map<long, std::map<std::string, std::string>> result;
+  std::map<long,std::map<std::string,std::string>> result;
 
   // check if organsims or data file
   static const std::regex org_or_data(R"((.*)_(data|organisms)(_\d+)?.csv$)");
@@ -703,48 +703,68 @@ Loader::getAttributeMap(const std::string &file_name) {
     exit(1);
   }
 
-  // checking for MABE csv-ness
-  static const std::regex mabe_csv_regex(
-      R"((([-\.\d]+)(?:,|$))|("\[)|(([-\.\d]+\]")(?:,|$)))");
-  //	std::regex mabe_csv_regex(R"(("[^"]+"|[^,]+)(,|$))");  // does not work
-  //because of
-  //	https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61582
-  std::string org_details;
-  while (getline(file, org_details)) {
-    std::map<std::string, std::string> temp_result;
-    long k = 0;
-    auto in_quotes = false;
-    std::string quote_str;
-    for (std::sregex_iterator end,
-         i = std::sregex_iterator(org_details.begin(), org_details.end(),
-                                  mabe_csv_regex);
-         i != end; i++) {
-      std::smatch m = *i;
+	std::string org_details;
+  while(getline(file, org_details)) {
+    std::map<std::string,std::string> temp_result;
 
-      if (m[1].length())
-        if (in_quotes == false)
-          temp_result[attribute_names.at(k++)] = m[2].str();
-        else
-          quote_str += m[1].str();
-      else if (m[3].length()) {
-        in_quotes = true;
-        quote_str += m[3].str();
-      } else if (m[5].length()) {
-        quote_str += m[5].str();
-        temp_result[attribute_names.at(k++)] = quote_str;
-        in_quotes = false;
-        quote_str = "";
-      } else {
-        std::cout << " error : something wrong with mabe csv-ness "
-                  << std::endl;
-        exit(1);
-      }
-    }
+//		std::cout << org_details << std::endl;
+
+		// to hell with these goddamn regexps - A.B.
+
+		long k = 0;
+		std::size_t spos = 0;
+		std::size_t epos = 0;
+		while(true) {
+			epos = org_details.find(',', spos);
+			if(epos==std::string::npos) {
+				temp_result[attribute_names.at(k)] = org_details.substr(spos);
+//				std::cout << org_details.substr(spos) << std::endl;
+				break;
+			}
+			else if(org_details.substr(spos, 2)=="'[") {
+				epos = org_details.find("]'", spos+2);
+				if(epos==std::string::npos) {
+					std::cout << "Couldn't find a closing ]'" << std::endl;
+					exit(EXIT_FAILURE);
+				}
+				else
+					epos += 2;
+				temp_result[attribute_names.at(k)] = org_details.substr(spos, epos-spos);
+//				std::cout << org_details.substr(spos, epos-spos) << std::endl;
+				k++;
+				epos = org_details.find(',', epos);
+			}
+			else if(org_details.substr(spos, 2)=="\"[") {
+				epos = org_details.find("]\"", spos+2);
+				if(epos==std::string::npos) {
+					std::cout << "Couldn't find a closing ]\"" << std::endl;
+					exit(EXIT_FAILURE);
+				}
+				else
+					epos += 2;
+				temp_result[attribute_names.at(k)] = org_details.substr(spos, epos-spos);
+//				std::cout << org_details.substr(spos, epos-spos) << std::endl;
+				k++;
+				epos = org_details.find(',', epos);
+			}
+			else {
+				temp_result[attribute_names.at(k)] = org_details.substr(spos, epos-spos);
+//				std::cout << org_details.substr(spos, epos-spos) << std::endl;
+				k++;
+			}
+			spos = epos + 1;
+			epos = spos;
+		}
+
+//		for(const auto& p : temp_result)
+//			std::cout << p.first << "        " << p.second << std::endl;
+
     auto orig_ID = std::stol(temp_result.at("ID"));
     temp_result.erase("ID");
     result[orig_ID] = temp_result;
   }
   file.close();
+
   return result;
 } // end Loader::getAttributeMap
 

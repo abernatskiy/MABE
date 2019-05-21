@@ -370,13 +370,12 @@ constructAllGroupsFrom(const std::shared_ptr<AbstractWorld> &world,
     // loaded from file
     for (auto &org : orgs_to_load) {
       // make a new genome like the template genome
-      std::unordered_map<std::string, std::shared_ptr<AbstractGenome>>
-          newGenomes;
+      std::unordered_map<std::string, std::shared_ptr<AbstractGenome>> newGenomes;
       std::unordered_map<std::string, std::shared_ptr<AbstractBrain>> newBrains;
       for (auto const &genome : templateGenomes) {
-        if (org.first < 0) {
+        if (org.first < 0)
           newGenomes[genome.first] = genome.second->makeLike();
-        } else {
+        else {
           auto name = genome.first;
           genome.second->deserialize(genome.second->PT, org.second, name);
           newGenomes[genome.first] = genome.second;
@@ -387,6 +386,8 @@ constructAllGroupsFrom(const std::shared_ptr<AbstractWorld> &world,
           brain.second->initializeGenomes(newGenomes);
         }
         newBrains[brain.first] = brain.second->makeBrain(newGenomes);
+				auto name = brain.first;
+				newBrains[brain.first]->deserialize(brain.second->PT, org.second, name);
       }
       auto newOrg =
           std::make_shared<Organism>(std::vector<std::shared_ptr<Organism>>({progenitor}), newGenomes, newBrains, PT);
