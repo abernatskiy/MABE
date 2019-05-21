@@ -129,8 +129,7 @@ void DEMarkovBrain::mutate() {
 //	cout << "DEMarkovBrain is mutating. Rolled " << r;
 	if(r < gateInsertionProbabilityPL->get(PT)) {
 //		cout << ", chose insertion. Had " << gates.size() << " gates, ";
-		int gsize = gates.size();
-		gates.push_back(getRandomGate(gsize));
+		gates.push_back(getRandomGate(getLowestAvailableGateID()));
 //		cout << " now it's " << gates.size() << endl;
 	}
 	else {
@@ -147,7 +146,7 @@ void DEMarkovBrain::mutate() {
 //			cout << ", chose duplication. Had " << gates.size() << " gates, ";
 			int idx = Random::getIndex(gates.size());
 			auto newGate = gates[idx]->makeCopy();
-			newGate->ID = gates.size();
+			newGate->ID = getLowestAvailableGateID();
 			gates.push_back(newGate);
 //			cout << ", duplicated " << idx << "th one, now it's " << gates.size() << endl;
 		}
@@ -303,6 +302,22 @@ void DEMarkovBrain::beginLogging() {
 
 void DEMarkovBrain::logBrainStructure() {
 	log.log("begin brain desription\n" + description() + "end brain description\n");
+}
+
+int DEMarkovBrain::getLowestAvailableGateID() {
+	int newGateID;
+	for(newGateID=0; newGateID<=gates.size(); newGateID++) {
+		bool idIsGood = true;
+		for(const auto& g : gates) {
+			if(g->ID == newGateID) {
+				idIsGood = false;
+				break;
+			}
+		}
+		if(idIsGood)
+			break;
+	}
+	return newGateID;
 }
 
 DataMap DEMarkovBrain::serialize(string& name) {

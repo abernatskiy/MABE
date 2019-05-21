@@ -35,6 +35,7 @@ private:
 	std::vector<std::vector<double>> nodesStatesTimeSeries;
 	LogFile log;
 	void logBrainStructure();
+	int getLowestAvailableGateID();
 
 	static std::shared_ptr<ParameterLink<int>> hiddenNodesPL;
 	static std::shared_ptr<ParameterLink<bool>> recordIOMapPL;
