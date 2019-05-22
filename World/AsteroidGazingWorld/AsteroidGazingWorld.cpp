@@ -45,6 +45,8 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 		exit(EXIT_FAILURE);
 	}
 
+	sensors->writeSensorStats();
+
 	mentalImage = std::make_shared<DigitMentalImage>(currentAsteroidName,
 	                                                 datasetParser,
 	                                                 sensors,
