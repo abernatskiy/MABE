@@ -2,7 +2,7 @@
 #include <iomanip>
 #include <png++/png.hpp>
 
-#include "nlohmann/json.hpp" // https://github.com/nlohmann/json/ v3.6.1
+#include "../../Utilities/nlohmann/json.hpp" // https://github.com/nlohmann/json/ v3.6.1
 
 #include "../MarkovBrain/Gate/DeterministicGate.h"
 
@@ -352,15 +352,9 @@ DataMap DEMarkovBrain::serialize(string& name) {
 
 	nlohmann::json brainJSON = nlohmann::json::object();
 	brainJSON["gates"] = gatesJSON;
-	brainJSON["inputs"] = nlohmann::json::array();
-	for(int i=0; i<nrInputValues; i++)
-		brainJSON["inputs"].push_back(i);
-	brainJSON["outputs"] = nlohmann::json::array();
-	for(int i=nrInputValues; i<nrInputValues+nrOutputValues; i++)
-		brainJSON["outputs"].push_back(i);
-	brainJSON["hidden"] = nlohmann::json::array();
-	for(int i=nrInputValues+nrOutputValues; i<nrNodes; i++)
-		brainJSON["hidden"].push_back(i);
+	brainJSON["numInputs"] = nrInputValues;
+	brainJSON["numOutputs"] = nrOutputValues;
+	brainJSON["numHidden"] = nrHiddenNodes;
 
 	// storing the string at the DataMap and returning it
 	DataMap dm;
