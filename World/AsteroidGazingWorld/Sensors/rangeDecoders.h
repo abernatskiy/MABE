@@ -36,14 +36,14 @@ private:
 	const int frameSize;
 	const int outSize;
 	const int gradations;
-	const int numberOfControls;
-	const int maxJumpSize;
 	const int gradationSize;
+	const bool forbidRest;
+	const int numberOfControls;
 
 public:
-	ChrisCompactDecoder(unsigned frameRangeSize, unsigned outRangeSize, unsigned numGradations, unsigned gradSize) :
-		frameSize(frameRangeSize), outSize(outRangeSize), gradations(numGradations),
-		numberOfControls(3+ceilLog2(gradations)), maxJumpSize(frameSize-outSize), gradationSize(gradSize) {};
+	ChrisCompactDecoder(unsigned frameRangeSize, unsigned outRangeSize, unsigned numGradations, unsigned gradSize, bool fbdRest) :
+		frameSize(frameRangeSize), outSize(outRangeSize), gradations(numGradations), gradationSize(gradSize), forbidRest(fbdRest),
+		numberOfControls(3+ceilLog2(gradations)) {};
 
 	Range2d decode2dRangeJump(const Range2d& start, std::vector<bool>::iterator controlsStart, std::vector<bool>::iterator controlsEnd) override {
     // bitmasks for main directions
@@ -72,7 +72,7 @@ public:
 			}
 		}
 
-		unsigned ushift = 0;
+		unsigned ushift = forbidRest ? 1 : 0;
 		auto it = controlsStart+3;
 		while(it != controlsEnd) {
 			ushift <<= 1;
@@ -225,7 +225,7 @@ public:
 	};
 };
 
-inline std::shared_ptr<AbstractRangeDecoder> constructRangeDecoder(unsigned type, unsigned gradations, unsigned frameSize, unsigned outSize) {
+inline std::shared_ptr<AbstractRangeDecoder> constructRangeDecoder(unsigned type, unsigned gradations, unsigned frameSize, unsigned outSize, bool forbidRest) {
 	// Directory of decoders by type:
 	// 0 - LinearBitScale
 	// 1 - Sign-and-magnitude
@@ -234,7 +234,7 @@ inline std::shared_ptr<AbstractRangeDecoder> constructRangeDecoder(unsigned type
 	switch(type) {
 		case 0: return std::make_shared<LinearBitScaleDecoder>(frameSize, outSize, gradations);
 		case 1: return std::make_shared<SignAndMagnitudeDecoder>(frameSize, outSize, gradations);
-		case 2: return std::make_shared<ChrisCompactDecoder>(frameSize, outSize, gradations, outSize);
+		case 2: return std::make_shared<ChrisCompactDecoder>(frameSize, outSize, gradations, outSize, forbidRest);
 		default: { std::cerr << "Range decoder type " << type << " not understood" << std::endl;
 		           exit(EXIT_FAILURE);
 		         }

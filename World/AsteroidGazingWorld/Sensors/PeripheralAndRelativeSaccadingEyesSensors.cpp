@@ -23,6 +23,9 @@ std::shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::j
 std::shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::jumpGradationsPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-jumpGradations", 4,
                                  "number of gradations of the saccade length (default: 4)");
+std::shared_ptr<ParameterLink<bool>> PeripheralAndRelativeSaccadingEyesSensors::forbidRestPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-forbidRest", false,
+                                 "if this is set to one sensors will move fovea at every time step with any input, with direction and magnitude of the move determined as usual. WARNING: ignored by all sensors but Chris's at the moment (default: 0)");
 
 PeripheralAndRelativeSaccadingEyesSensors::PeripheralAndRelativeSaccadingEyesSensors(shared_ptr<string> curAstName,
                                                                                      shared_ptr<AsteroidsDatasetParser> dsParser,
@@ -34,7 +37,8 @@ PeripheralAndRelativeSaccadingEyesSensors::PeripheralAndRelativeSaccadingEyesSen
 	foveaRes(foveaResolutionPL->get(PT_)),
 	jumpType(jumpTypePL->get(PT_)),
 	jumpGradations(jumpGradationsPL->get(PT_)),
-	rangeDecoder(constructRangeDecoder(jumpType, jumpGradations, frameRes, foveaRes)),
+	forbidRest(forbidRestPL->get(PT_)),
+	rangeDecoder(constructRangeDecoder(jumpType, jumpGradations, frameRes, foveaRes, forbidRest)),
 	foveaPositionControls(rangeDecoder->numControls()),
 	numSensors(foveaRes*foveaRes + (usePeripheralFOV ? peripheralFOVRes*peripheralFOVRes : 0 )),
 	numMotors(rangeDecoder->numControls()) {

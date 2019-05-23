@@ -37,6 +37,7 @@ private:
 	const unsigned foveaRes;
 	const unsigned jumpType;
 	const unsigned jumpGradations;
+	const bool forbidRest;
 
 	const unsigned conditionControls = 0; // we're assuming that the spacecraft has pictures from one angle only for now (TODO: make tunable conditions)
 	const unsigned distanceControls = 0; // neglecting distance control for now (TODO: make tunable distances)
@@ -69,4 +70,5 @@ private:
 	static std::shared_ptr<ParameterLink<int>> foveaResolutionPL;
 	static std::shared_ptr<ParameterLink<int>> jumpTypePL;
 	static std::shared_ptr<ParameterLink<int>> jumpGradationsPL;
+	static std::shared_ptr<ParameterLink<bool>> forbidRestPL;
 };
