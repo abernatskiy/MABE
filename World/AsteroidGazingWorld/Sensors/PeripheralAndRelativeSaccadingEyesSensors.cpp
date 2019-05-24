@@ -116,7 +116,7 @@ void PeripheralAndRelativeSaccadingEyesSensors::reset(int visualize) {
 void* PeripheralAndRelativeSaccadingEyesSensors::logTimeSeries(const string& label) {
 	ofstream ctrlog(string("foveaPosition_") + label + string(".log"));
 	for(const auto& fp : foveaPositionTimeSeries)
-		ctrlog << fp.first.first << fp.second.first << fp.first.second << fp.second.second << endl;
+		ctrlog << fp.first.first << ' ' << fp.second.first << ' ' << fp.first.second << ' ' << fp.second.second << endl;
 	ctrlog.close();
 	return nullptr;
 }
