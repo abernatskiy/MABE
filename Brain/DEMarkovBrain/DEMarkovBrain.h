@@ -18,6 +18,7 @@ private:
 	int nrNodes;
 	int nrHiddenNodes;
 	int gateMinIns, gateMaxIns, gateMinOuts, gateMaxOuts;
+	int minGates;
 
 	// Major state vars
 	std::vector<std::shared_ptr<AbstractGate>> gates;
@@ -46,6 +47,7 @@ private:
 	static std::shared_ptr<ParameterLink<double>> gateDeletionProbabilityPL;
 	static std::shared_ptr<ParameterLink<double>> gateDuplicationProbabilityPL;
 	static std::shared_ptr<ParameterLink<double>> connectionToTableChangeRatioPL;
+	static std::shared_ptr<ParameterLink<int>> minGateCountPL;
 
 public:
 	// Public methods

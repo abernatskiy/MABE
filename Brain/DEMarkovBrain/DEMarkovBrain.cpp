@@ -38,6 +38,7 @@ shared_ptr<ParameterLink<double>> DEMarkovBrain::gateDuplicationProbabilityPL = 
                                                                                                                "probability that a randomly chosen gate will be duplicated within the brain upon the mutation() call");
 shared_ptr<ParameterLink<double>> DEMarkovBrain::connectionToTableChangeRatioPL = Parameters::register_parameter("BRAIN_DEMARKOV-connectionToTableChangeRatio", 1.0,
                                                                                                                  "if the brain experiences no insertion, deletions or duplictions, call to mutate() changes parameters of a randomly chosen gate. This parameters governs relative frequencies of such changes to connections and logic tables");
+shared_ptr<ParameterLink<int>> DEMarkovBrain::minGateCountPL = Parameters::register_parameter("BRAIN_DEMARKOV-minGateCount", 0, "number of gates that causes gate deletions to become impossible (mutation operator calls itself if the mutation happens to be a deletion)");
 
 /********** Public definitions **********/
 
@@ -45,6 +46,7 @@ DEMarkovBrain::DEMarkovBrain(int _nrInNodes, int _nrHidNodes, int _nrOutNodes, s
 	AbstractBrain(_nrInNodes, _nrOutNodes, PT_),
 	nrHiddenNodes(_nrHidNodes),
 	nrNodes(_nrInNodes+_nrOutNodes+_nrHidNodes),
+	minGates(minGateCountPL->get(PT_)),
 	visualize(Global::modePL->get() == "visualize"),
 	recordIOMap(recordIOMapPL->get(PT_)) {
 
@@ -133,10 +135,21 @@ void DEMarkovBrain::mutate() {
 //		cout << " now it's " << gates.size() << endl;
 	}
 	else {
-		if(gates.size()==0)
+		if(gates.size()==0) {
+			if(gateInsertionProbabilityPL->get(PT) > 0)
+				mutate();
+			else {
+				cerr << "DEMarkovBrain: mutation() that cannot insert gates called on a zero gates Markov brain, exiting" << endl;
+				exit(EXIT_FAILURE);
+			}
 			return;
+		}
 
 		if(r < gateInsertionProbabilityPL->get(PT) + gateDeletionProbabilityPL->get(PT)) {
+			if(gates.size()<=minGates) {
+				mutate();
+				return;
+			}
 //			cout << ", chose deletion. Had " << gates.size() << " gates, ";
 			int idx = Random::getIndex(gates.size());
 			gates.erase(gates.begin()+idx);
