@@ -139,9 +139,6 @@ void DigitMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> 
 				numCorrectCommands++;
 		}
 
-		if(correctCommandsStateScores.back() < numCorrectCommands)
-			correctCommandsStateScores.back() = numCorrectCommands;
-
 		if(integrateFitness)
 			stateScores.back() += cumulativeScore/currentCommandRanges.size();
 		else
@@ -151,10 +148,10 @@ void DigitMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> 
 	}
 
 	if(answerGiven || stateTime == statePeriod-1) {
-		if(answerGiven) {
+		correctCommandsStateScores.back() = numCorrectCommands;
+
+		if(answerGiven)
 			stateScores.back() = curEval;
-			correctCommandsStateScores.back() = numCorrectCommands;
-		}
 		else if(integrateFitness)
 			stateScores.back() /= statePeriod-1;
 
