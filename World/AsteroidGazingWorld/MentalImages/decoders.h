@@ -64,6 +64,20 @@ inline std::vector<unsigned> decodeMHVUInt(std::vector<double>::iterator begin, 
 	return outs;
 }
 
+inline std::vector<unsigned> decodeMH2VUInt(std::vector<double>::iterator begin, std::vector<double>::iterator end) {
+	// two veto bits per bit, distance between begin and end must be a multiple of three
+	std::vector<unsigned> outs;
+	auto curpos = begin;
+	unsigned curval = 0;
+	while(curpos!=end) {
+		if(*curpos==0. && *(curpos+1)==0. && *(curpos+2)!=0.) // curpos and curpos+1 are vetos; the field immediately following them indicates if the decision has been made
+			outs.push_back(curval);
+		curval++;
+		curpos += 3;
+	}
+	return outs;
+}
+
 // Miscellaneous decoders
 
 inline bool decodeTriggerBits(std::vector<double>::iterator begin, std::vector<double>::iterator end) {
