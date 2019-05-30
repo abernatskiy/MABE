@@ -23,7 +23,7 @@ std::shared_ptr<ParameterLink<bool>> AsteroidGazingWorld::integrateFitnessPL =
                                  "should the fitness be integrated over simulation time? (default: yes)");
 std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::numTriggerBitsPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING-numTriggerBits", 0,
-                                 "how many trigger bits should be used? the bits will be ANDed (default: none)");
+                                 "how many trigger bits should be used? Multiple bits will be ANDed. If a negative number is given, trigger pressing will be required to get any fitness (default: 0)");
 
 AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) : AbstractSlideshowWorld(PT_) {
 	// Localizing settings

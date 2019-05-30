@@ -49,7 +49,7 @@ std::tuple<double,bool> evaluateRange(const CommandRangeType& guessesRange, cons
 DigitMentalImage::DigitMentalImage(std::shared_ptr<std::string> curAstNamePtr,
                                    std::shared_ptr<AsteroidsDatasetParser> dsParserPtr,
                                    std::shared_ptr<AbstractSensors> sPtr,
-                                   unsigned nTriggerBits,
+                                   int nTriggerBits,
                                    bool intFitness) :
 	currentAsteroidNamePtr(curAstNamePtr),
 	datasetParserPtr(dsParserPtr),
@@ -57,7 +57,8 @@ DigitMentalImage::DigitMentalImage(std::shared_ptr<std::string> curAstNamePtr,
 	cl(Global::outputPrefixPL->get() + "commands.log"),
 	mVisualize(Global::modePL->get() == "visualize"),
 	sensorsPtr(sPtr),
-	numTriggerBits(nTriggerBits),
+	numTriggerBits(nTriggerBits<0 ? static_cast<unsigned>(-1*nTriggerBits) : static_cast<unsigned>(nTriggerBits)),
+	requireTriggering(nTriggerBits<0),
 	integrateFitness(intFitness),
 	answerGiven(false),
 	answerReceived(false) {
@@ -147,7 +148,7 @@ void DigitMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> 
 		curEval = cumulativeScore/currentCommandRanges.size();
 	}
 
-	if(answerGiven || stateTime == statePeriod-1) {
+	if( answerGiven || ( (!requireTriggering) && stateTime == statePeriod-1) ) {
 		correctCommandsStateScores.back() = numCorrectCommands;
 
 		if(answerGiven)
@@ -166,6 +167,10 @@ void DigitMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> 
 			std::cout << std::endl;
 			std::cout << "Final score: " << stateScores.back() << " final hits: " << correctCommandsStateScores.back() << std::endl << std::endl;
 		}
+	}
+	else if(requireTriggering) {
+		correctCommandsStateScores.back() = 0;
+		stateScores.back() = 0.;
 	}
 }
 

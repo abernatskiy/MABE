@@ -40,6 +40,7 @@ private:
 	std::shared_ptr<AbstractSensors> sensorsPtr;
 
 	unsigned numTriggerBits;
+	bool requireTriggering;
 	bool integrateFitness;
 
 	bool answerGiven;
@@ -49,7 +50,7 @@ public:
 	DigitMentalImage(std::shared_ptr<std::string> curAstName,
 	                 std::shared_ptr<AsteroidsDatasetParser> dsParser,
 	                 std::shared_ptr<AbstractSensors> sPtr,
-	                 unsigned numTriggerBits,
+	                 int numTriggerBits,
 	                 bool integrateFitness);
 
 	void reset(int visualize) override;
