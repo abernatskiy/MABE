@@ -34,10 +34,24 @@ inline unsigned decodeSPUInt(std::vector<double>::iterator begin, std::vector<do
 	return retval;
 }
 
-// Decoders based on "multiple-hot" encoding with veto bits (Chapman, Hintze and co)
-// These decoders require an even number of elements between the provided iterators
+// Decoders based on "multiple-hot" encoding, sometimes with veto bits (Chapman, Hintze and co)
+
+inline std::vector<unsigned> decodeMHUInt(std::vector<double>::iterator begin, std::vector<double>::iterator end) {
+	// no veto bits, any positive distance between begin and end is acceptable
+	std::vector<unsigned> outs;
+	auto curpos = begin;
+	unsigned curval = 0;
+	while(curpos!=end) {
+		if(*curpos!=0.)
+			outs.push_back(curval);
+		curval++;
+		curpos += 1;
+	}
+	return outs;
+}
 
 inline std::vector<unsigned> decodeMHVUInt(std::vector<double>::iterator begin, std::vector<double>::iterator end) {
+	// one veto bit per bit, distance between begin and end must be even
 	std::vector<unsigned> outs;
 	auto curpos = begin;
 	unsigned curval = 0;
