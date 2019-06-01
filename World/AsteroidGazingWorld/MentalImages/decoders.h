@@ -83,9 +83,15 @@ inline std::vector<unsigned> decodeMH2VUInt(std::vector<double>::iterator begin,
 inline bool decodeTriggerBits(std::vector<double>::iterator begin, std::vector<double>::iterator end) {
 	if(begin==end)
 		return false;
-	for(auto it=begin; it!=end; it++)
+	for(auto it=begin; it!=end; it++) {
 		if(*it==0)
 			return false;
+	}
+//	std::cout << "Trigger pressed! Trigger bits were";
+//	for(auto it=begin; it!=end; it++)
+//		std::cout << " " << *it;
+//	std::cout << std::endl;
+
 	return true;
 }
 

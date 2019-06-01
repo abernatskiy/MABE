@@ -91,6 +91,9 @@ void DigitMentalImage::resetAfterWorldStateChange(int visualize) { // called aft
 }
 
 void DigitMentalImage::updateWithInputs(std::vector<double> inputs) {
+	if(answerGiven)
+		return;
+
 	if(justReset)
 		justReset = false;
 
