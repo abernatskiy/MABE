@@ -55,12 +55,15 @@ private:
 	AsteroidSnapshotsLibrary asteroidSnapshots;
 	std::map<AsteroidViewParameters,std::uint8_t> peripheralFOVThresholds;
 	Range2d foveaPosition;
+	std::vector<bool> controls;
 	std::vector<bool> savedPercept;
 	std::vector<Range2d> foveaPositionTimeSeries;
+	std::vector<std::string> sensorStateDescriptionTimeSeries;
 
 	// Private methods
 	void resetFoveaPosition();
 	void analyzeDataset();
+	std::string getSensorStateDescription();
 
 	// Parameter links
 	static std::shared_ptr<ParameterLink<int>> frameResolutionPL;

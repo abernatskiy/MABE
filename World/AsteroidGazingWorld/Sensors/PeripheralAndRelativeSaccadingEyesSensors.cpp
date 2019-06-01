@@ -1,4 +1,5 @@
 #include "PeripheralAndRelativeSaccadingEyesSensors.h"
+#include "../../../Utilities/nlohmann/json.hpp"
 
 using namespace std;
 
@@ -43,7 +44,7 @@ PeripheralAndRelativeSaccadingEyesSensors::PeripheralAndRelativeSaccadingEyesSen
 	numSensors(foveaRes*foveaRes + (usePeripheralFOV ? peripheralFOVRes*peripheralFOVRes : 0 )),
 	numMotors(rangeDecoder->numControls()) {
 
-	// Caching asteroid snapshots
+	// Caching asteroid snapshots, determining optimal peripheral FOV threshold for each
 	set<string> asteroidNames = datasetParser->getAsteroidsNames();
 	for(const string& an : asteroidNames) {
 		map<string,set<unsigned>> parameterValuesSets = datasetParser->getAllParameterValues(an);
@@ -68,12 +69,14 @@ PeripheralAndRelativeSaccadingEyesSensors::PeripheralAndRelativeSaccadingEyesSen
 			peripheralFOVThresholds.emplace(make_tuple(an), baseThreshold);
 	}
 
+	// Preparing the state
 	resetFoveaPosition();
+	controls.assign(numMotors, false);
+
 	analyzeDataset();
 }
 
 void PeripheralAndRelativeSaccadingEyesSensors::update(int visualize) {
-	std::vector<bool> controls(numMotors);
 	for(unsigned i=0; i<numMotors; i++)
 		controls[i] = brain->readOutput(i) > 0.5;
 
@@ -103,6 +106,7 @@ void PeripheralAndRelativeSaccadingEyesSensors::update(int visualize) {
 		brain->setInput(k, savedPercept[k]);
 
 	foveaPositionTimeSeries.push_back(foveaPosition);
+	sensorStateDescriptionTimeSeries.push_back(getSensorStateDescription());
 
 	AbstractSensors::update(visualize); // increment the clock
 }
@@ -110,13 +114,15 @@ void PeripheralAndRelativeSaccadingEyesSensors::update(int visualize) {
 void PeripheralAndRelativeSaccadingEyesSensors::reset(int visualize) {
 	AbstractSensors::reset(visualize);
 	resetFoveaPosition();
+	controls.assign(numMotors, false);
 	foveaPositionTimeSeries.clear();
+	sensorStateDescriptionTimeSeries.clear();
 }
 
 void* PeripheralAndRelativeSaccadingEyesSensors::logTimeSeries(const string& label) {
-	ofstream ctrlog(string("foveaPosition_") + label + string(".log"));
-	for(const auto& fp : foveaPositionTimeSeries)
-		ctrlog << fp.first.first << ' ' << fp.second.first << ' ' << fp.first.second << ' ' << fp.second.second << endl;
+	ofstream ctrlog(string("sensorState_") + label + string(".log"));
+	for(const auto& ssd : sensorStateDescriptionTimeSeries)
+		ctrlog << ssd << endl;
 	ctrlog.close();
 	return nullptr;
 }
@@ -140,4 +146,35 @@ void PeripheralAndRelativeSaccadingEyesSensors::resetFoveaPosition() {
 	foveaPosition.first.second = foveaRes;
 	foveaPosition.second.first = 0;
 	foveaPosition.second.second = foveaRes;
+}
+
+string PeripheralAndRelativeSaccadingEyesSensors::getSensorStateDescription() {
+	nlohmann::json stateJSON = nlohmann::json::object();
+	stateJSON["type"] = "PeripheralAndRelativeSaccadingEyesSensors";
+	stateJSON["controls"] = nlohmann::json::array();
+	for(const auto& ctrl : controls)
+		stateJSON["controls"].push_back(static_cast<unsigned>(ctrl));
+	stateJSON["foveaPosition"] = nlohmann::json::array();
+	stateJSON["foveaPosition"].push_back({foveaPosition.first.first, foveaPosition.first.second});
+	stateJSON["foveaPosition"].push_back({foveaPosition.second.first, foveaPosition.second.second});
+	unsigned idx = 0;
+	if(usePeripheralFOV) {
+		stateJSON["peripheralPercept"] = nlohmann::json::array();
+		for(unsigned i=0; i<peripheralFOVRes; i++) {
+			stateJSON["peripheralPercept"].push_back(nlohmann::json::array());
+			for(unsigned j=0; j<peripheralFOVRes; j++) {
+				stateJSON["peripheralPercept"].back().push_back(static_cast<unsigned>(savedPercept[idx]));
+				idx++;
+			}
+		}
+	}
+	stateJSON["fovealPercept"] = nlohmann::json::array();
+	for(unsigned i=0; i<foveaRes; i++) {
+		stateJSON["fovealPercept"].push_back(nlohmann::json::array());
+		for(unsigned j=0; j<foveaRes; j++) {
+			stateJSON["fovealPercept"].back().push_back(static_cast<unsigned>(savedPercept[idx]));
+			idx++;
+		}
+	}
+	return stateJSON.dump();
 }
