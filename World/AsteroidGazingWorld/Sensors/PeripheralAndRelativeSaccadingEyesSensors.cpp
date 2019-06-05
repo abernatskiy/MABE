@@ -94,7 +94,12 @@ void PeripheralAndRelativeSaccadingEyesSensors::update(int visualize) {
 //		peripheralView.printBinary();
 	}
 
-	foveaPosition = rangeDecoder->decode2dRangeJump(foveaPosition, controls.begin(), controls.end());
+	foveaPositionOnGrid = rangeDecoder->decode2dRangeJump(foveaPositionOnGrid, controls.begin(), controls.end());
+	foveaPosition.first.first = (foveaPositionOnGrid.first.first*astSnap.width)/frameRes;
+	foveaPosition.first.second = (foveaPositionOnGrid.first.second*astSnap.width)/frameRes;
+	foveaPosition.second.first = (foveaPositionOnGrid.second.first*astSnap.height)/frameRes;
+	foveaPosition.second.second = (foveaPositionOnGrid.second.second*astSnap.height)/frameRes;
+
 	const AsteroidSnapshot& fovealView = astSnap.cachingResampleArea(foveaPosition.first.first, foveaPosition.second.first,
 	                                                                foveaPosition.first.second, foveaPosition.second.second,
 	                                                                foveaRes, foveaRes, baseThreshold);
@@ -142,10 +147,14 @@ void PeripheralAndRelativeSaccadingEyesSensors::analyzeDataset() {
 }
 
 void PeripheralAndRelativeSaccadingEyesSensors::resetFoveaPosition() {
+	foveaPositionOnGrid.first.first = 0;
+	foveaPositionOnGrid.first.second = foveaRes;
+	foveaPositionOnGrid.second.first = 0;
+	foveaPositionOnGrid.second.second = foveaRes;
 	foveaPosition.first.first = 0;
-	foveaPosition.first.second = foveaRes;
+	foveaPosition.first.second = foveaRes; // this...
 	foveaPosition.second.first = 0;
-	foveaPosition.second.second = foveaRes;
+	foveaPosition.second.second = foveaRes; // ...and this should really be scaled to the original resolution, but since it is not available here and the value isn't used I'm putting in the surrogate
 }
 
 string PeripheralAndRelativeSaccadingEyesSensors::getSensorStateDescription() {

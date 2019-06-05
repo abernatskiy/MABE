@@ -55,6 +55,7 @@ private:
 	AsteroidSnapshotsLibrary asteroidSnapshots;
 	std::map<AsteroidViewParameters,std::uint8_t> peripheralFOVThresholds;
 	Range2d foveaPosition;
+	Range2d foveaPositionOnGrid;
 	std::vector<bool> controls;
 	std::vector<bool> savedPercept;
 	std::vector<Range2d> foveaPositionTimeSeries;
