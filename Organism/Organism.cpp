@@ -16,6 +16,7 @@
 #include "../Genome/AbstractGenome.h"
 #include "../Utilities/Random.h"
 #include "../Utilities/Utilities.h"
+#include "../Utilities/nlohmann/json.hpp"
 
 /* Organism class (the one we expect to be used most of the time
  * has a genome, a brain, tools for lineage and ancestor tracking (for snapshot
@@ -331,4 +332,30 @@ void Organism::translateGenomesToBrains() {
   }
 
 	delayGeneticTranslation = false;
+}
+
+std::string Organism::getJSONRecord() {
+	nlohmann::json orgJSON = nlohmann::json::object();
+
+	orgJSON["id"] = ID;
+
+	orgJSON["parent_ids"] = nlohmann::json::array();
+	for(const auto& parent : parents)
+		orgJSON["parent_ids"].push_back(parent->ID);
+
+	orgJSON["brains"] = nlohmann::json::object();
+	for(const auto& brpair : brains) {
+		std::string name = "42";
+		DataMap serializedBrain = brpair.second->serialize(name);
+		orgJSON["brains"][brpair.first] = serializedBrain.getString("42_json");
+	}
+
+	orgJSON["genomes"] = nlohmann::json::object();
+	for(const auto& gnpair : genomes) {
+		std::string name = "42";
+		DataMap serializedGenome = gnpair.second->serialize(name);
+		orgJSON["genomes"][gnpair.first] = serializedGenome.getString("42_sites");
+	}
+
+	return orgJSON.dump();
 }

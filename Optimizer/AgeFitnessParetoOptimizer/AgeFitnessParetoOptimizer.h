@@ -11,6 +11,7 @@ public:
 	static std::shared_ptr<ParameterLink<std::string>> optimizeFormulasPL;
 	static std::shared_ptr<ParameterLink<std::string>> optimizeFormulaNamesPL;
 	static std::shared_ptr<ParameterLink<std::string>> maxFileFormulaPL;
+	static std::shared_ptr<ParameterLink<bool>> logLineagesPL;
 
 	std::vector<std::vector<double>> scores;
 	std::vector<std::string> scoreNames;
@@ -27,8 +28,10 @@ public:
 
 private:
 	bool firstGenIsNow;
+	bool logLineages;
 	std::shared_ptr<Organism> templateOrganism;
 	std::shared_ptr<Organism> makeNewOrganism();
 	unsigned getNewLineageID();
-	void logParetoFront(const std::vector<std::shared_ptr<Organism>>& paretoFront);
+	void logParetoFrontSize(const std::vector<std::shared_ptr<Organism>>& paretoFront);
+	void logParetoFrontLineages(const std::vector<std::shared_ptr<Organism>>& paretoFront);
 };

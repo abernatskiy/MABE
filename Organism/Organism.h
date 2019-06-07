@@ -115,5 +115,7 @@ public:
   makeCopy(std::shared_ptr<ParametersTable> PT_ = nullptr);
 
 	void translateGenomesToBrains();
+
+	std::string getJSONRecord();
 };
 

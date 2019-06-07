@@ -20,6 +20,11 @@ Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-maxFileFormula",
 	"an MTree that is used to decide which individual is described in the generation's line of max.csv."
 	"\nUnlike the formulas provided in optimizeFormulas, this one is maximized, owning to the name of the max.csv file");
 
+std::shared_ptr<ParameterLink<bool>> AgeFitnessParetoOptimizer::logLineagesPL =
+Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-logLineages",
+	false,
+	"should the computation log the champions for each lineage and their ancestries, default: false");
+
 /***** Auxiliary functions *****/
 
 bool firstOrganismIsDominatedBySecond(std::shared_ptr<Organism> first, std::shared_ptr<Organism> second, const std::vector<std::string>& minimizeableAttributes) {
@@ -57,7 +62,7 @@ bool firstOrganismIsDominatedBySecond(std::shared_ptr<Organism> first, std::shar
 /***** AgeFitnessParetoOptimizer class definitions *****/
 
 AgeFitnessParetoOptimizer::AgeFitnessParetoOptimizer(std::shared_ptr<ParametersTable> PT_)
-    : AbstractOptimizer(PT_), firstGenIsNow(true) {
+    : AbstractOptimizer(PT_), firstGenIsNow(true), logLineages(logLineagesPL->get(PT_)) {
 	// MTree formulas support inherited with minimal modifications from LexicaseOptimizer
 	std::vector<std::string> optimizeFormulasStrings;
 	convertCSVListToVector(optimizeFormulasPL->get(PT), optimizeFormulasStrings);
@@ -168,7 +173,9 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 		}
 	}
 
-	logParetoFront(paretoFront);
+	logParetoFrontSize(paretoFront);
+	if(logLineages)
+		logParetoFrontLineages(paretoFront);
 
 	std::cout << "pareto_size=" << paretoFront.size();
 	std::cout << " max_age=" << maxAge << "@" << oldestOrganism;
@@ -257,7 +264,7 @@ unsigned AgeFitnessParetoOptimizer::getNewLineageID() {
 	return retID;
 }
 
-void AgeFitnessParetoOptimizer::logParetoFront(const std::vector<std::shared_ptr<Organism>>& paretoFront) {
+void AgeFitnessParetoOptimizer::logParetoFrontSize(const std::vector<std::shared_ptr<Organism>>& paretoFront) {
 	std::string logpath = Global::outputPrefixPL->get() + "paretoFront.log";
 	std::ofstream pflog;
 
@@ -271,4 +278,21 @@ void AgeFitnessParetoOptimizer::logParetoFront(const std::vector<std::shared_ptr
 	pflog.open(logpath, std::ios::app);
 	pflog << paretoFront.size() << std::endl;
 	pflog.close();
+}
+
+void AgeFitnessParetoOptimizer::logParetoFrontLineages(const std::vector<std::shared_ptr<Organism>>& paretoFront) {
+	for(const auto& org : paretoFront) {
+		unsigned lineageID = org->dataMap.getInt("lineageID");
+		for(const auto& scoreName : scoreNames) {
+			if(scoreName != "minimizeValue_age") {
+				std::ostringstream sstr;
+				sstr << "lineage" << lineageID << "_" << scoreName << ".log";
+				std::string logpath = Global::outputPrefixPL->get() + sstr.str();
+				std::ofstream lalog;
+				lalog.open(logpath, std::ios::app);
+				lalog << org->getJSONRecord() << std::endl;
+				lalog.close();
+			}
+		}
+	}
 }
