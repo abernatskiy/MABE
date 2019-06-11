@@ -357,5 +357,7 @@ std::string Organism::getJSONRecord() {
 		orgJSON["genomes"][gnpair.first] = serializedGenome.getString("42_sites");
 	}
 
+	orgJSON["data_map"] = dataMap.toJSON();
+
 	return orgJSON.dump();
 }

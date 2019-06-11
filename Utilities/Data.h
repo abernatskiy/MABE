@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "Utilities.h"
+#include "nlohmann/json.hpp"
 
 class FileManager {
 public:
@@ -1036,4 +1037,23 @@ public:
     }
     return copyDataMap;
   }
+
+	inline nlohmann::json toJSON() {
+		nlohmann::json out = nlohmann::json::object();
+		for (auto key : getKeys()) {
+			dataMapType dmt = findKeyInData(key);
+			switch(dmt) {
+				case BOOL: out[key] = nlohmann::json(getBoolVector(key)); break;
+				case BOOLSOLO: out[key] = getBool(key); break;
+				case STRING: out[key] = nlohmann::json(getStringVector(key)); break;
+				case STRINGSOLO: out[key] = getString(key); break;
+				case INT: out[key] = nlohmann::json(getIntVector(key)); break;
+				case INTSOLO: out[key] = getInt(key); break;
+				case DOUBLE: out[key] = nlohmann::json(getDoubleVector(key)); break;
+				case DOUBLESOLO: out[key] = getDouble(key); break;
+				default: std::cerr << "Unknown data type " << dmt << " encountered while converting DataMap to JSON, exiting" << std::endl; exit(EXIT_FAILURE);
+			}
+		}
+		return out;
+	};
 };
