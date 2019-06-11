@@ -347,7 +347,9 @@ nlohmann::json Organism::getJSONRecord() {
 	for(const auto& brpair : brains) {
 		std::string name = "42";
 		DataMap serializedBrain = brpair.second->serialize(name);
-		orgJSON["brains"][brpair.first] = serializedBrain.getString("42_json");
+		std::string brainString = serializedBrain.getString("42_json");
+		// orgJSON["brains"][brpair.first] = brainString; // uncomment this and comment the rest of the case if your brain serialization isn't JSON-based
+		orgJSON["brains"][brpair.first] = nlohmann::json::parse(brainString.substr(1, brainString.size()-2));
 	}
 
 	orgJSON["genomes"] = nlohmann::json::object();
