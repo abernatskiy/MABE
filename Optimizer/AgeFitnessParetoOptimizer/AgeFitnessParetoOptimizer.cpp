@@ -1,4 +1,5 @@
 #include <limits>
+#include "../../Utilities/nlohmann/json.hpp"
 
 #include "AgeFitnessParetoOptimizer.h"
 
@@ -281,18 +282,20 @@ void AgeFitnessParetoOptimizer::logParetoFrontSize(const std::vector<std::shared
 }
 
 void AgeFitnessParetoOptimizer::logParetoFrontLineages(const std::vector<std::shared_ptr<Organism>>& paretoFront) {
+	std::map<int,nlohmann::json> paretoFrontJSONs;
 	for(const auto& org : paretoFront) {
-		unsigned lineageID = org->dataMap.getInt("lineageID");
-		for(const auto& scoreName : scoreNames) {
-			if(scoreName != "minimizeValue_age") {
-				std::ostringstream sstr;
-				sstr << "lineage" << lineageID << "_" << scoreName << ".log";
-				std::string logpath = Global::outputPrefixPL->get() + sstr.str();
-				std::ofstream lalog;
-				lalog.open(logpath, std::ios::app);
-				lalog << org->getJSONRecord() << std::endl;
-				lalog.close();
-			}
-		}
+		int lineageID = org->dataMap.getInt("lineageID");
+		if(paretoFrontJSONs.find(lineageID)==paretoFrontJSONs.end())
+			paretoFrontJSONs[lineageID] = nlohmann::json::array();
+		paretoFrontJSONs[lineageID].push_back(org->getJSONRecord());
+	}
+	for(const auto& pfpair : paretoFrontJSONs) {
+		std::string logpath = Global::outputPrefixPL->get() + "lineage" + std::to_string(pfpair.first) + ".log";
+		std::ofstream lalog;
+		lalog.open(logpath, std::ios::app);
+		nlohmann::json genDescJSON = nlohmann::json::object();
+		genDescJSON["time"] = Global::update;
+		genDescJSON["individuals"] = pfpair.second;
+		lalog << genDescJSON.dump() << std::endl;
 	}
 }

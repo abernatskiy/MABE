@@ -19,6 +19,7 @@
 
 #include "../Utilities/Data.h"
 #include "../Utilities/Parameters.h"
+#include "../Utilities/nlohmann/json.hpp"
 
 class Organism {
 private:
@@ -116,6 +117,6 @@ public:
 
 	void translateGenomesToBrains();
 
-	std::string getJSONRecord();
+	nlohmann::json getJSONRecord();
 };
 

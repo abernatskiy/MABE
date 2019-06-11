@@ -334,7 +334,7 @@ void Organism::translateGenomesToBrains() {
 	delayGeneticTranslation = false;
 }
 
-std::string Organism::getJSONRecord() {
+nlohmann::json Organism::getJSONRecord() {
 	nlohmann::json orgJSON = nlohmann::json::object();
 
 	orgJSON["id"] = ID;
@@ -359,5 +359,5 @@ std::string Organism::getJSONRecord() {
 
 	orgJSON["data_map"] = dataMap.toJSON();
 
-	return orgJSON.dump();
+	return orgJSON;
 }
