@@ -409,7 +409,7 @@ void* MarkovBrain::logTimeSeries(const std::string& label) {
 					eegImage[y][x] = p;
 				}
 
-	eegImage.write(std::string("markovBrainStates_") + label);
+	eegImage.write(std::string("markovBrainStates_") + label + ".png");
 
 	log.log(std::string("States for ") + label + std::string(" are written into an image\n"));
 

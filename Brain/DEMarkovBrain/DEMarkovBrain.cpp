@@ -249,7 +249,7 @@ void* DEMarkovBrain::logTimeSeries(const string& label) {
 					eegImage[y][x] = p;
 				}
 
-	eegImage.write(string("markovBrainStates_") + label);
+	eegImage.write(string("markovBrainStates_") + label + ".png");
 
 	log.log(string("States for ") + label + string(" are written into an image\n"));
 
