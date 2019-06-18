@@ -430,3 +430,10 @@ bool convertVectorOfStringsToVector(const std::vector<std::string> &list, std::v
   }
   return errors_detected;
 }
+
+inline double entropy1d(double probabilityOfOne) {
+	if(probabilityOfOne == 0. || probabilityOfOne == 1.)
+		return 0;
+	else
+		return -1.*probabilityOfOne*log2(probabilityOfOne) - (1.-probabilityOfOne)*log2(1.-probabilityOfOne);
+}

@@ -53,6 +53,7 @@ DigitMentalImage::DigitMentalImage(std::shared_ptr<std::string> curAstNamePtr,
                                    bool intFitness) :
 	currentAsteroidNamePtr(curAstNamePtr),
 	datasetParserPtr(dsParserPtr),
+	totalBitsStateScore(0),
 	justReset(true),
 	cl(Global::outputPrefixPL->get() + "commands.log"),
 	mVisualize(Global::modePL->get() == "visualize"),
@@ -71,6 +72,8 @@ void DigitMentalImage::reset(int visualize) { // called in the beginning of each
 	stateScores.clear();
 	correctCommandsStateScores.clear();
 	sensorActivityStateScores.clear();
+	activeBitsStateScores.clear();
+	totalBitsStateScore = 0;
 	justReset = true;
 	currentCommandRanges.clear();
 	answerGiven = false;
@@ -160,6 +163,8 @@ void DigitMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> 
 			stateScores.back() /= statePeriod-1;
 
 		sensorActivityStateScores.push_back(static_cast<double>(sensorsPtr->numSaccades())/static_cast<double>(statePeriod));
+		activeBitsStateScores.push_back(sensorsPtr->numActiveStatesInRecording());
+		totalBitsStateScore += sensorsPtr->numStatesInRecording();
 
 		answerReceived = true;
 
@@ -199,6 +204,8 @@ void DigitMentalImage::recordSampleScores(std::shared_ptr<Organism> org, std::sh
 	sampleScoresMap->append("score", score);
 	sampleScoresMap->append("numCorrectCommands", static_cast<double>(ncc));
 	sampleScoresMap->append("sensorActivity", totSensoryActivity/static_cast<double>(astsTotal));
+	sampleScoresMap->append("fullPerceptEntropy", entropy1d(static_cast<double>(std::accumulate(activeBitsStateScores.begin(), activeBitsStateScores.end(), 0) /
+	                                                                            static_cast<double>(totalBitsStateScore))));
 }
 
 void DigitMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) {
@@ -206,11 +213,13 @@ void DigitMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shar
 	double numCorrectCommands = sampleScoresMap->getAverage("numCorrectCommands");
 	double sensorActivity = sampleScoresMap->getAverage("sensorActivity");
 	unsigned tieredSensorActivity = static_cast<unsigned>(sensorActivity*10);
-	org->dataMap.append("score", score );
+	double fullPerceptEntropy = sampleScoresMap->getAverage("fullPerceptEntropy");
+	org->dataMap.append("score", score);
 	org->dataMap.append("guidingFunction", -score);
 	org->dataMap.append("numCorrectCommands", numCorrectCommands);
 	org->dataMap.append("sensorActivity", sensorActivity);
 	org->dataMap.append("tieredSensorActivity", static_cast<double>(tieredSensorActivity));
+	org->dataMap.append("fullPerceptEntropy", fullPerceptEntropy);
 }
 
 int DigitMentalImage::numInputs() {

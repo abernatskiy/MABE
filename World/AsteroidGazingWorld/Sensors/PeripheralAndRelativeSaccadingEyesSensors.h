@@ -26,6 +26,8 @@ public:
 	void* logTimeSeries(const std::string& label) override;
 
 	unsigned numSaccades() override;
+	unsigned numActiveStatesInRecording() override;
+	unsigned numStatesInRecording() override { return numSensors*perceptTimeSeries.size(); };
 
 private:
 	std::shared_ptr<std::string> currentAsteroidName;
@@ -59,6 +61,7 @@ private:
 	std::vector<bool> controls;
 	std::vector<bool> savedPercept;
 	std::vector<Range2d> foveaPositionTimeSeries;
+	std::vector<std::vector<bool>> perceptTimeSeries;
 	std::vector<std::string> sensorStateDescriptionTimeSeries;
 
 	// Private methods

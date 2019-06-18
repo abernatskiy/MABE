@@ -23,6 +23,8 @@ private:
 	std::vector<double> stateScores;
 	std::vector<unsigned> correctCommandsStateScores;
 	std::vector<double> sensorActivityStateScores;
+	std::vector<unsigned> activeBitsStateScores;
+	long unsigned totalBitsStateScore;
 
 	const unsigned mnistNumDigits = 10;
 	const unsigned mnistNumBits = 2*mnistNumDigits;

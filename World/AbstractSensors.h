@@ -36,4 +36,6 @@ public:
 		ssf << std::setw(4) << getSensorStats() << std::endl;
 		ssf.close();
 	};
+	virtual unsigned numActiveStatesInRecording() { return 0; };
+	virtual unsigned numStatesInRecording() { return 1; };
 };

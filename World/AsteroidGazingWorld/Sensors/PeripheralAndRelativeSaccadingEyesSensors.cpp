@@ -111,6 +111,7 @@ void PeripheralAndRelativeSaccadingEyesSensors::update(int visualize) {
 		brain->setInput(k, savedPercept[k]);
 
 	foveaPositionTimeSeries.push_back(foveaPosition);
+	perceptTimeSeries.push_back(savedPercept);
 	sensorStateDescriptionTimeSeries.push_back(getSensorStateDescription());
 
 	AbstractSensors::update(visualize); // increment the clock
@@ -121,6 +122,7 @@ void PeripheralAndRelativeSaccadingEyesSensors::reset(int visualize) {
 	resetFoveaPosition();
 	controls.assign(numMotors, false);
 	foveaPositionTimeSeries.clear();
+	perceptTimeSeries.clear();
 	sensorStateDescriptionTimeSeries.clear();
 }
 
@@ -137,6 +139,13 @@ unsigned PeripheralAndRelativeSaccadingEyesSensors::numSaccades() {
 	for(const auto& fp : foveaPositionTimeSeries)
 		differentPositions.insert(fp);
 	return differentPositions.size();
+}
+
+unsigned PeripheralAndRelativeSaccadingEyesSensors::numActiveStatesInRecording() {
+	unsigned activeStates = 0;
+	for(const auto& percept : perceptTimeSeries)
+		activeStates += percept.size() - count(percept.begin(), percept.end(), 0);
+	return activeStates;
 }
 
 /********** Private PeripheralAndRelativeSaccadingEyesSensors definitions **********/
