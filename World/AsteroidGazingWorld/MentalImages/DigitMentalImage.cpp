@@ -215,8 +215,10 @@ void DigitMentalImage::recordSampleScores(std::shared_ptr<Organism> org, std::sh
 	sampleScoresMap->append("score", score);
 	sampleScoresMap->append("numCorrectCommands", static_cast<double>(ncc));
 	sampleScoresMap->append("sensorActivity", totSensoryActivity/static_cast<double>(astsTotal));
-	sampleScoresMap->append("fullPerceptEntropy", entropy1d(static_cast<double>( std::accumulate(activeBitsStateScores.begin(), activeBitsStateScores.end(), 0) ) /
-	                                                        static_cast<double>( totalBitsStateScore )));
+
+	double probOfOneInPercept = totalBitsStateScore==0 ? 0. : static_cast<double>( std::accumulate(activeBitsStateScores.begin(), activeBitsStateScores.end(), 0) ) /
+                                                            static_cast<double>( totalBitsStateScore );
+	sampleScoresMap->append("fullPerceptEntropy", entropy1d(probOfOneInPercept));
 	for(const auto& shift : shiftLevels)
 		sampleScoresMap->append(std::string("sensoryMotorEntropy_shift") + std::to_string(shift),
 		                        std::accumulate(sensoryMotorEntropyStateScores[shift].begin(), sensoryMotorEntropyStateScores[shift].end(), 0.));
