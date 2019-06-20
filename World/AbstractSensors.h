@@ -38,4 +38,5 @@ public:
 	};
 	virtual unsigned numActiveStatesInRecording() { return 0; };
 	virtual unsigned numStatesInRecording() { return 1; };
+	virtual double sensoryMotorEntropy(unsigned shift) { return 0; };
 };

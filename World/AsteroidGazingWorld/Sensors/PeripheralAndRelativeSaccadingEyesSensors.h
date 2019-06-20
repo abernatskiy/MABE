@@ -28,6 +28,7 @@ public:
 	unsigned numSaccades() override;
 	unsigned numActiveStatesInRecording() override;
 	unsigned numStatesInRecording() override { return numSensors*perceptTimeSeries.size(); };
+	double sensoryMotorEntropy(unsigned shift) override;
 
 private:
 	std::shared_ptr<std::string> currentAsteroidName;
@@ -62,6 +63,7 @@ private:
 	std::vector<bool> savedPercept;
 	std::vector<Range2d> foveaPositionTimeSeries;
 	std::vector<std::vector<bool>> perceptTimeSeries;
+	std::vector<std::vector<bool>> controlsTimeSeries;
 	std::vector<std::string> sensorStateDescriptionTimeSeries;
 
 	// Private methods

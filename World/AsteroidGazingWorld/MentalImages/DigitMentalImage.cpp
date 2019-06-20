@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
+#include <string>
 
 /***** Utility funcs *****/
 
@@ -64,6 +65,9 @@ DigitMentalImage::DigitMentalImage(std::shared_ptr<std::string> curAstNamePtr,
 	answerGiven(false),
 	answerReceived(false) {
 
+	for(const auto& shift : shiftLevels)
+		sensoryMotorEntropyStateScores[shift] = {};
+
 	if(mVisualize)
 		cl.open();
 }
@@ -74,6 +78,8 @@ void DigitMentalImage::reset(int visualize) { // called in the beginning of each
 	sensorActivityStateScores.clear();
 	activeBitsStateScores.clear();
 	totalBitsStateScore = 0;
+	for(const auto& shift : shiftLevels)
+		sensoryMotorEntropyStateScores[shift].clear();
 	justReset = true;
 	currentCommandRanges.clear();
 	answerGiven = false;
@@ -112,8 +118,11 @@ void DigitMentalImage::updateWithInputs(std::vector<double> inputs) {
 }
 
 void DigitMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> org, int stateTime, int statePeriod) {
+
 	if(answerReceived)
 		return;
+
+//	std::cout << "stateTime = " << stateTime << " statePeriod = " << statePeriod << std::endl;
 
 	if(stateTime == 0) {
 		readOriginalCommands();
@@ -165,6 +174,8 @@ void DigitMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> 
 		sensorActivityStateScores.push_back(static_cast<double>(sensorsPtr->numSaccades())/static_cast<double>(statePeriod));
 		activeBitsStateScores.push_back(sensorsPtr->numActiveStatesInRecording());
 		totalBitsStateScore += sensorsPtr->numStatesInRecording();
+		for(const auto& shift : shiftLevels)
+			sensoryMotorEntropyStateScores[shift].push_back(sensorsPtr->sensoryMotorEntropy(shift));
 
 		answerReceived = true;
 
@@ -204,8 +215,11 @@ void DigitMentalImage::recordSampleScores(std::shared_ptr<Organism> org, std::sh
 	sampleScoresMap->append("score", score);
 	sampleScoresMap->append("numCorrectCommands", static_cast<double>(ncc));
 	sampleScoresMap->append("sensorActivity", totSensoryActivity/static_cast<double>(astsTotal));
-	sampleScoresMap->append("fullPerceptEntropy", entropy1d(static_cast<double>(std::accumulate(activeBitsStateScores.begin(), activeBitsStateScores.end(), 0) /
-	                                                                            static_cast<double>(totalBitsStateScore))));
+	sampleScoresMap->append("fullPerceptEntropy", entropy1d(static_cast<double>( std::accumulate(activeBitsStateScores.begin(), activeBitsStateScores.end(), 0) ) /
+	                                                        static_cast<double>( totalBitsStateScore )));
+	for(const auto& shift : shiftLevels)
+		sampleScoresMap->append(std::string("sensoryMotorEntropy_shift") + std::to_string(shift),
+		                        std::accumulate(sensoryMotorEntropyStateScores[shift].begin(), sensoryMotorEntropyStateScores[shift].end(), 0.));
 }
 
 void DigitMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) {
@@ -220,6 +234,10 @@ void DigitMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shar
 	org->dataMap.append("sensorActivity", sensorActivity);
 	org->dataMap.append("tieredSensorActivity", static_cast<double>(tieredSensorActivity));
 	org->dataMap.append("fullPerceptEntropy", fullPerceptEntropy);
+	for(const auto& shift : shiftLevels) {
+		const std::string key = std::string("sensoryMotorEntropy_shift") + std::to_string(shift);
+		org->dataMap.append(key, sampleScoresMap->getAverage(key));
+	}
 }
 
 int DigitMentalImage::numInputs() {
