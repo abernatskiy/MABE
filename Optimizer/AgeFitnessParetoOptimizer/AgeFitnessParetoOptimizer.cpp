@@ -182,7 +182,7 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 
 	// Intermission: printing a summary of the incoming population
 	// Done here to have additional data such as Pareto order etc
-/*
+
 	// Compact messages : a line per generation
 	std::map<std::string,double> minValues;
 	std::map<std::string,int> minValueCarriers;
@@ -230,7 +230,7 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 	for(auto li=lineages.begin(); li!=lineages.end(); li++)
 		std::cout << (*li) << (li==lineages.end()-1 ? "" : ",") ;
 	std::cout << std::flush;
-*/
+/*
 	// Detailed messages : full population & Pareto front snapshot
 	std::cout << std::endl << "Incoming population:" << std::endl;
 
@@ -259,7 +259,7 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 		}
 		std::cout << std::endl;
 	}
-
+*/
 	// Step 3: incrementing age of everyone involved
 	for(auto newOrgPtr : newPopulation)
 		newOrgPtr->dataMap.set("minimizeValue_age", newOrgPtr->dataMap.getDouble("minimizeValue_age")+1.);
