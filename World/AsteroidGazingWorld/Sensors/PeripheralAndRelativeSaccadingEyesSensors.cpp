@@ -158,10 +158,6 @@ double PeripheralAndRelativeSaccadingEyesSensors::sensoryMotorEntropy(unsigned s
 	}
 	if(perceptTimeSeries.size() <= shift)
 		return 0.;
-// {
-//		cerr << "Shift of " << shift << " has been applied to sensorymotor time series of length " << perceptTimeSeries.size() << ". Cannot compute shared entropy" << endl;
-//		exit(EXIT_FAILURE);
-//	}
 
 	std::vector<long unsigned> perceptDigits;
 	for(auto it=perceptTimeSeries.begin(); it!=perceptTimeSeries.end()-shift; it++)
@@ -169,29 +165,61 @@ double PeripheralAndRelativeSaccadingEyesSensors::sensoryMotorEntropy(unsigned s
 	std::vector<long unsigned> oculoMotorDigits;
 	for(auto it=controlsTimeSeries.begin()+shift; it!=controlsTimeSeries.end(); it++)
 		oculoMotorDigits.push_back(positionalBinaryToDecimal(*it));
+//	const long unsigned jointDistributionSupportSize = pow2(perceptTimeSeries[0].size()+controlsTimeSeries[0].size());
+//	const long unsigned perceptDistributionSupportSize = pow2(perceptTimeSeries[0].size());
+//	const long unsigned motorDistributionSupportSize = pow2(controlsTimeSeries[0].size());
 
+/*
+	cout << "percept digits:";
+	for(const auto& pd : perceptDigits)
+		cout << " " << pd;
+	cout << endl << "motor digits:";
+	for(const auto& cd : oculoMotorDigits)
+		cout << " " << cd;
+	cout << endl;
+*/
 	const unsigned nts = perceptDigits.size();
+
 	map<pair<long unsigned, long unsigned>, double> joint;
 	map<long unsigned, double> ppercept;
 	map<long unsigned, double> pmotor;
 	for(unsigned i=0; i<nts; i++) {
-		incrementMapFieldRobustly(make_pair(perceptDigits[i], oculoMotorDigits[i]), joint);
+		incrementMapFieldRobustly(pair<long unsigned, long unsigned>(perceptDigits[i], oculoMotorDigits[i]), joint);
 		incrementMapFieldRobustly(perceptDigits[i], ppercept);
 		incrementMapFieldRobustly(oculoMotorDigits[i], pmotor);
 	}
-	for(auto jp : joint)
+	long unsigned ps, ms;
+/*
+	cout << "joint histogram:";
+	for(const auto& jp : joint) {
+		tie(ps, ms) = jp.first;
+		cout << " (" << ps << "," << ms << "): " << jp.second;
+	}
+	cout << endl;
+	cout << "percept histogram:";
+	for(const auto& pp : ppercept)
+		cout << " " << pp.first << ":" << pp.second;
+	cout << endl;
+	cout << "motor histogram:";
+	for(const auto& mp : pmotor)
+		cout << " " << mp.first << ":" << mp.second;
+	cout << endl;
+*/
+	for(auto& jp : joint)
 		jp.second /= static_cast<double>(nts);
-	for(auto pp : ppercept)
+	for(auto& pp : ppercept)
 		pp.second /= static_cast<double>(nts);
-	for(auto mp : pmotor)
+	for(auto& mp : pmotor)
 		mp.second /= static_cast<double>(nts);
 
 	double sharedEntropy = 0.;
-	long unsigned ps, ms;
 	for(const auto& jp : joint) {
 		tie(ps, ms) = jp.first;
-		sharedEntropy += jp.second*log2(jp.second/(ppercept.at(ps), pmotor.at(ms)));
+//		cout << "j:" << jp.second << " p:" << ppercept.at(ps) << " m:" << pmotor.at(ms) << endl << flush;
+		sharedEntropy += jp.second*log2(jp.second/(ppercept.at(ps)*pmotor.at(ms)));
 	}
+
+//	cout << endl << flush;
 
 	return sharedEntropy;
 }
