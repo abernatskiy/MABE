@@ -136,6 +136,9 @@ public:
 	std::vector<std::shared_ptr<AbstractBrain>> getAllSingleGateKnockouts();
 
 	void* logTimeSeries(const std::string& label) override;
+
+	DataMap serialize(std::string& name) override;
+	void deserialize(shared_ptr<ParametersTable> PT, std::unordered_map<std::string,std::string>& orgData, std::string& name) override;
 };
 
 inline std::shared_ptr<AbstractBrain> MarkovBrain_brainFactory(int ins, int outs, std::shared_ptr<ParametersTable> PT) {

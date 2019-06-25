@@ -13,6 +13,7 @@
 #include <png++/png.hpp>
 
 #include "MarkovBrain.h"
+#include "../../Utilities/nlohmann/json.hpp"
 
 std::shared_ptr<ParameterLink<bool>> MarkovBrain::recordIOMapPL=
     Parameters::register_parameter(
@@ -414,4 +415,88 @@ void* MarkovBrain::logTimeSeries(const std::string& label) {
 	log.log(std::string("States for ") + label + std::string(" are written into an image\n"));
 
 	return nullptr;
+}
+
+DataMap MarkovBrain::serialize(string& name) {
+	nlohmann::json gatesJSON = nlohmann::json::array();
+	for(const auto& gate : gates) {
+		nlohmann::json gateJSON = nlohmann::json::object();
+
+		gateJSON["id"] = gate->ID;
+		gateJSON["type"] = gate->gateType();
+		gateJSON["inputs"] = nlohmann::json::array();
+		for(const auto& in : gate->getConnectionsLists().first)
+			gateJSON["inputs"].push_back(in);
+		gateJSON["outputs"] = nlohmann::json::array();
+		for(const auto& out : gate->getConnectionsLists().second)
+			gateJSON["outputs"].push_back(out);
+
+		if(gateJSON["type"] == "Deterministic") {
+			gateJSON["table"] = nlohmann::json::array();
+			vector<vector<int>> gtable = dynamic_pointer_cast<DeterministicGate>(gate)->table;
+			for(const auto& row : gtable) {
+				gateJSON["table"].push_back(nlohmann::json::array());
+				for(const auto& columnVal : row)
+					gateJSON["table"].back().push_back(columnVal);
+			}
+		}
+		else {
+			cerr << "DEMarkovBrain::serialize caught an unsupported gate type " << gateJSON["type"] << endl;
+			exit(EXIT_FAILURE);
+		}
+		gatesJSON.push_back(gateJSON);
+	}
+
+	nlohmann::json brainJSON = nlohmann::json::object();
+	brainJSON["gates"] = gatesJSON;
+	brainJSON["numInputs"] = nrInputValues;
+	brainJSON["numOutputs"] = nrOutputValues;
+	brainJSON["numHidden"] = hiddenNodes;
+
+	// storing the string at the DataMap and returning it
+	DataMap dm;
+	dm.set(name + "_json", string("'") + brainJSON.dump() + "'");
+	return dm;
+}
+
+void MarkovBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<string,string>& orgData, string& name) {
+	// the stuff that can be loaded from config files is already loaded during construction,
+	// so all that's left is to initialize gates
+
+	string gatesJSONStr = orgData[string("BRAIN_") + name + "_json"];
+	if(gatesJSONStr.front()!='\'' || gatesJSONStr.back()!='\'') {
+		cout << "First or last character of the DEMarkovBrain JSON string field in the log is not a single quote" << endl;
+		cout << "The string: " << gatesJSONStr << endl;
+		exit(EXIT_FAILURE);
+	}
+	gatesJSONStr = gatesJSONStr.substr(1, gatesJSONStr.size()-2);
+
+	nlohmann::json brainJSON = nlohmann::json::parse(gatesJSONStr);
+	nlohmann::json gatesJSON = brainJSON["gates"];
+
+	gates.clear();
+
+	for(const auto& gateJSON : gatesJSON) {
+		if(gateJSON["type"] != "Deterministic") {
+			cerr << "DEMarkovBrain::deserialize: Unsupported gate type " << gateJSON["type"] << endl;
+			exit(EXIT_FAILURE);
+		}
+
+		int id = gateJSON["id"];
+
+		pair<vector<int>,vector<int>> addresses;
+		for(const auto& in : gateJSON["inputs"])
+			addresses.first.push_back(in);
+		for(const auto& out : gateJSON["outputs"])
+			addresses.second.push_back(out);
+
+		vector<vector<int>> table;
+		for(const auto& row : gateJSON["table"]) {
+			table.push_back({});
+			for(const auto& val : row)
+				table.back().push_back(val);
+		}
+
+		gates.push_back(make_shared<DeterministicGate>(addresses, table, id));
+	}
 }
