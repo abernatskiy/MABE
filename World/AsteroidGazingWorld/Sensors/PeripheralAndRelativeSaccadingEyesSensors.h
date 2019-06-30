@@ -30,6 +30,10 @@ public:
 	unsigned numStatesInRecording() override { return numSensors*perceptTimeSeries.size(); };
 	double sensoryMotorEntropy(unsigned shift) override;
 
+	Range2d generateDefaultInitialState() { return std::make_pair(std::make_pair(0, foveaRes), std::make_pair(0, foveaRes)); };
+	Range2d generateRandomInitialState();
+	std::shared_ptr<Range2d> getPointerToInitialState() { return initialFoveaPositionPtr; };
+
 private:
 	std::shared_ptr<std::string> currentAsteroidName;
 	std::shared_ptr<AsteroidsDatasetParser> datasetParser;
@@ -57,6 +61,7 @@ private:
 	// Actual state
 	AsteroidSnapshotsLibrary asteroidSnapshots;
 	std::map<AsteroidViewParameters,std::uint8_t> peripheralFOVThresholds;
+	std::shared_ptr<Range2d> initialFoveaPositionPtr;
 	Range2d foveaPosition;
 	Range2d foveaPositionOnGrid;
 	std::vector<bool> controls;

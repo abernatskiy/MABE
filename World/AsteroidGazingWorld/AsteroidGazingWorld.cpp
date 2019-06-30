@@ -5,8 +5,6 @@
 //#include "MentalImages/SpikesOnCubeFullMentalImage.h"
 //#include "MentalImages/IdentityMentalImage.h"
 
-#include "Sensors/AbsoluteFocusingSaccadingEyesSensors.h"
-#include "Sensors/PeripheralAndRelativeSaccadingEyesSensors.h"
 #include "Schedules/AsteroidGazingSchedules.h"
 
 std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::brainUpdatesPerAsteroidPL =
@@ -25,6 +23,9 @@ std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::numTriggerBitsPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING-numTriggerBits", 0,
                                  "how many trigger bits should be used? Multiple bits will be ANDed. If a negative number is given, trigger pressing will be required to get any fitness (default: 0)");
 
+int AsteroidGazingWorld::initialConditionsInitialized = 0;
+std::map<std::string,std::vector<Range2d>> AsteroidGazingWorld::commonRelativeSensorsInitialConditions;
+
 AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) : AbstractSlideshowWorld(PT_) {
 	// Localizing settings
 	brainUpdatesPerAsteroid = brainUpdatesPerAsteroidPL->get(PT_);
@@ -33,13 +34,26 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 
 	// Drawing the rest of the owl
 	currentAsteroidName = std::make_shared<std::string>("");
-	stateSchedule = std::make_shared<ExhaustiveAsteroidGazingSchedule>(currentAsteroidName, datasetParser);
 
 	std::string sensorType = sensorTypePL->get(PT_);
-	if(sensorType=="absolute")
+	if(sensorType=="absolute") {
 		sensors = std::make_shared<AbsoluteFocusingSaccadingEyesSensors>(currentAsteroidName, datasetParser, PT_);
-	else if(sensorType=="relative")
-		sensors = std::make_shared<PeripheralAndRelativeSaccadingEyesSensors>(currentAsteroidName, datasetParser, PT_);
+		stateSchedule = std::make_shared<ExhaustiveAsteroidGazingSchedule>(currentAsteroidName, datasetParser);
+	}
+	else if(sensorType=="relative") {
+		auto rawSensorsPointer = std::make_shared<PeripheralAndRelativeSaccadingEyesSensors>(currentAsteroidName, datasetParser, PT_);
+		if(!initialConditionsInitialized) {
+			for(const auto& astName : datasetParser->getAsteroidsNames())
+				commonRelativeSensorsInitialConditions[astName] = { rawSensorsPointer->generateDefaultInitialState() };
+			initialConditionsInitialized = 1;
+		}
+		stateSchedule = std::make_shared<ExhaustiveAsteroidGazingScheduleWithRelativeSensorInitialStates>(
+		                  currentAsteroidName,
+		                  datasetParser,
+		                  rawSensorsPointer->getPointerToInitialState(),
+		                  commonRelativeSensorsInitialConditions);
+		sensors = rawSensorsPointer; // downcast
+	}
 	else {
 		std::cerr << "AsteroidGazingWorld: Unsupported sensor type " << sensorType << std::endl;
 		exit(EXIT_FAILURE);

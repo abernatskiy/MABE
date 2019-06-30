@@ -8,6 +8,7 @@
 
 #include "../../AbstractStateSchedule.h"
 #include "../Utilities/AsteroidsDatasetParser.h"
+#include "../Sensors/PeripheralAndRelativeSaccadingEyesSensors.h" // for the Range2D type
 
 class AbstractAsteroidGazingSchedule : public AbstractStateSchedule {
 
@@ -36,15 +37,20 @@ private:
 
 public:
 	ExhaustiveAsteroidGazingSchedule(std::shared_ptr<std::string> curAsteroidName, std::shared_ptr<AsteroidsDatasetParser> dsParser) :
-		AbstractAsteroidGazingSchedule(curAsteroidName, dsParser), terminalState(false) { reset(0); };
+		AbstractAsteroidGazingSchedule(curAsteroidName, dsParser),
+		currentAsteroidIndex(0),
+		terminalState(false) {
 
-	void reset(int visualize) override {
+		*currentAsteroidName = asteroidNames[currentAsteroidIndex];
+	};
+
+	virtual void reset(int visualize) override {
 		currentAsteroidIndex=0;
 		*currentAsteroidName = asteroidNames[currentAsteroidIndex];
 		terminalState = false;
 	};
 
-	void advance(int visualize) override {
+	virtual void advance(int visualize) override {
 		if(currentAsteroidIndex<(numAsteroids-1))
 			currentAsteroidIndex++;
 		else
@@ -55,4 +61,37 @@ public:
 	bool stateIsFinal() override { return terminalState; };
 
 	const std::string& currentStateDescription() override { return asteroidNames.at(currentAsteroidIndex); };
+};
+
+class ExhaustiveAsteroidGazingScheduleWithRelativeSensorInitialStates : public ExhaustiveAsteroidGazingSchedule {
+
+private:
+  std::shared_ptr<Range2d> sensorInitialState;
+	std::map<std::string,std::vector<Range2d>> relativeSensorsInitialStates;
+	unsigned currentInitialConditionIdx;
+
+public:
+	ExhaustiveAsteroidGazingScheduleWithRelativeSensorInitialStates(std::shared_ptr<std::string> curAsteroidName,
+	                                                                std::shared_ptr<AsteroidsDatasetParser> dsParser,
+                                                                  std::shared_ptr<Range2d> senInitialState,
+	                                                                std::map<std::string,std::vector<Range2d>> relSensorsInitialStates) :
+		ExhaustiveAsteroidGazingSchedule(curAsteroidName, dsParser),
+    sensorInitialState(senInitialState),
+		relativeSensorsInitialStates(relSensorsInitialStates),
+		currentInitialConditionIdx(0) {};
+
+	void reset(int visualize) override {
+		ExhaustiveAsteroidGazingSchedule::reset(visualize);
+		currentInitialConditionIdx = 0;
+    *sensorInitialState = relativeSensorsInitialStates[*currentAsteroidName][currentInitialConditionIdx];
+	};
+
+	void advance(int visualize) override {
+    currentInitialConditionIdx++;
+    if(currentInitialConditionIdx == relativeSensorsInitialStates[*currentAsteroidName].size()) {
+      ExhaustiveAsteroidGazingSchedule::advance(visualize);
+      currentInitialConditionIdx = 0;
+    }
+    *sensorInitialState = relativeSensorsInitialStates[*currentAsteroidName][currentInitialConditionIdx];
+  };
 };

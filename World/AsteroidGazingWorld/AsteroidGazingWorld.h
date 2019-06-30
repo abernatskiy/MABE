@@ -2,6 +2,8 @@
 
 #include "../AbstractSlideshowWorld.h"
 #include "Utilities/AsteroidsDatasetParser.h"
+#include "Sensors/AbsoluteFocusingSaccadingEyesSensors.h"
+#include "Sensors/PeripheralAndRelativeSaccadingEyesSensors.h"
 
 class AsteroidGazingWorld : public AbstractSlideshowWorld {
 
@@ -16,12 +18,16 @@ private:
 	static std::shared_ptr<ParameterLink<std::string>> sensorTypePL;
 	static std::shared_ptr<ParameterLink<bool>> integrateFitnessPL;
 	static std::shared_ptr<ParameterLink<int>> numTriggerBitsPL;
+
 	std::shared_ptr<AsteroidsDatasetParser> datasetParser;
 
 	bool resetAgentBetweenStates() override { return true; };
 	int brainUpdatesPerWorldState() override { return brainUpdatesPerAsteroid; };
 
 	std::shared_ptr<std::string> currentAsteroidName;
+
+	static int initialConditionsInitialized;
+	static std::map<std::string,std::vector<Range2d>> commonRelativeSensorsInitialConditions;
 
 public:
 	AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_);

@@ -224,6 +224,11 @@ double PeripheralAndRelativeSaccadingEyesSensors::sensoryMotorEntropy(unsigned s
 	return sharedEntropy;
 }
 
+Range2d PeripheralAndRelativeSaccadingEyesSensors::generateRandomInitialState() {
+
+	return std::make_pair(std::make_pair(0, foveaRes), std::make_pair(0, foveaRes)); // TODO: replace this placeholder
+}
+
 /********** Private PeripheralAndRelativeSaccadingEyesSensors definitions **********/
 
 void PeripheralAndRelativeSaccadingEyesSensors::analyzeDataset() {
