@@ -43,7 +43,8 @@ PeripheralAndRelativeSaccadingEyesSensors::PeripheralAndRelativeSaccadingEyesSen
 	rangeDecoder(constructRangeDecoder(jumpType, jumpGradations, frameRes, foveaRes, forbidRest)),
 	foveaPositionControls(rangeDecoder->numControls()),
 	numSensors(foveaRes*foveaRes + (usePeripheralFOV ? peripheralFOVRes*peripheralFOVRes : 0 )),
-	numMotors(rangeDecoder->numControls()) {
+	numMotors(rangeDecoder->numControls()),
+	initialFoveaPositionPtr(make_shared<Range2d>(Range2d(Range1d(0, 0), Range1d(0, 0)))) {
 
 	// Caching asteroid snapshots, determining optimal peripheral FOV threshold for each
 	set<string> asteroidNames = datasetParser->getAsteroidsNames();
@@ -120,6 +121,8 @@ void PeripheralAndRelativeSaccadingEyesSensors::update(int visualize) {
 }
 
 void PeripheralAndRelativeSaccadingEyesSensors::reset(int visualize) {
+	cout << "Reset is called on sensors" << endl << endl;
+
 	AbstractSensors::reset(visualize);
 	resetFoveaPosition();
 	controls.assign(numMotors, false);
@@ -159,10 +162,10 @@ double PeripheralAndRelativeSaccadingEyesSensors::sensoryMotorEntropy(unsigned s
 	if(perceptTimeSeries.size() <= shift)
 		return 0.;
 
-	std::vector<long unsigned> perceptDigits;
+	vector<long unsigned> perceptDigits;
 	for(auto it=perceptTimeSeries.begin(); it!=perceptTimeSeries.end()-shift; it++)
 		perceptDigits.push_back(positionalBinaryToDecimal(*it));
-	std::vector<long unsigned> oculoMotorDigits;
+	vector<long unsigned> oculoMotorDigits;
 	for(auto it=controlsTimeSeries.begin()+shift; it!=controlsTimeSeries.end(); it++)
 		oculoMotorDigits.push_back(positionalBinaryToDecimal(*it));
 //	const long unsigned jointDistributionSupportSize = pow2(perceptTimeSeries[0].size()+controlsTimeSeries[0].size());
@@ -226,7 +229,7 @@ double PeripheralAndRelativeSaccadingEyesSensors::sensoryMotorEntropy(unsigned s
 
 Range2d PeripheralAndRelativeSaccadingEyesSensors::generateRandomInitialState() {
 
-	return std::make_pair(std::make_pair(0, foveaRes), std::make_pair(0, foveaRes)); // TODO: replace this placeholder
+	return make_pair(make_pair(0, foveaRes), make_pair(0, foveaRes)); // TODO: replace this placeholder
 }
 
 /********** Private PeripheralAndRelativeSaccadingEyesSensors definitions **********/
@@ -237,6 +240,7 @@ void PeripheralAndRelativeSaccadingEyesSensors::analyzeDataset() {
 }
 
 void PeripheralAndRelativeSaccadingEyesSensors::resetFoveaPosition() {
+	cout << "resetFoveaPosition called, initial range is " << range2dToStr(*initialFoveaPositionPtr) << endl;
 	foveaPositionOnGrid.first.first = 0;
 	foveaPositionOnGrid.first.second = foveaRes;
 	foveaPositionOnGrid.second.first = 0;
