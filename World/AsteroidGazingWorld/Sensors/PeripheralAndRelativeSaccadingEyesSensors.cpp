@@ -46,6 +46,12 @@ PeripheralAndRelativeSaccadingEyesSensors::PeripheralAndRelativeSaccadingEyesSen
 	numMotors(rangeDecoder->numControls()),
 	initialFoveaPositionPtr(make_shared<Range2d>(Range2d(Range1d(0, 0), Range1d(0, 0)))) {
 
+	// Some argument validation
+	if(foveaRes>frameRes) {
+		cerr << "Fovea size (" << foveaRes << ") exceeds frame size, exiting" << endl;
+		exit(EXIT_FAILURE);
+	}
+
 	// Caching asteroid snapshots, determining optimal peripheral FOV threshold for each
 	set<string> asteroidNames = datasetParser->getAsteroidsNames();
 	for(const string& an : asteroidNames) {
@@ -103,8 +109,8 @@ void PeripheralAndRelativeSaccadingEyesSensors::update(int visualize) {
 	foveaPosition.second.second = (foveaPositionOnGrid.second.second*astSnap.height)/frameRes;
 
 	const AsteroidSnapshot& fovealView = astSnap.cachingResampleArea(foveaPosition.first.first, foveaPosition.second.first,
-	                                                                foveaPosition.first.second, foveaPosition.second.second,
-	                                                                foveaRes, foveaRes, baseThreshold);
+	                                                                 foveaPosition.first.second, foveaPosition.second.second,
+	                                                                 foveaRes, foveaRes, baseThreshold);
 	for(unsigned i=0; i<foveaRes; i++)
 		for(unsigned j=0; j<foveaRes; j++)
 			savedPercept.push_back(fovealView.getBinary(i, j));
@@ -121,8 +127,7 @@ void PeripheralAndRelativeSaccadingEyesSensors::update(int visualize) {
 }
 
 void PeripheralAndRelativeSaccadingEyesSensors::reset(int visualize) {
-	cout << "Reset is called on sensors" << endl << endl;
-
+//	cout << "Reset is called on sensors" << endl << endl;
 	AbstractSensors::reset(visualize);
 	resetFoveaPosition();
 	controls.assign(numMotors, false);
@@ -229,7 +234,9 @@ double PeripheralAndRelativeSaccadingEyesSensors::sensoryMotorEntropy(unsigned s
 
 Range2d PeripheralAndRelativeSaccadingEyesSensors::generateRandomInitialState() {
 
-	return make_pair(make_pair(0, foveaRes), make_pair(0, foveaRes)); // TODO: replace this placeholder
+	const int xshift = Random::getInt(frameRes-foveaRes);
+	const int yshift = Random::getInt(frameRes-foveaRes);
+	return Range2d(Range1d(xshift, xshift+foveaRes), make_pair(yshift, yshift+foveaRes));
 }
 
 /********** Private PeripheralAndRelativeSaccadingEyesSensors definitions **********/
@@ -240,15 +247,9 @@ void PeripheralAndRelativeSaccadingEyesSensors::analyzeDataset() {
 }
 
 void PeripheralAndRelativeSaccadingEyesSensors::resetFoveaPosition() {
-	cout << "resetFoveaPosition called, initial range is " << range2dToStr(*initialFoveaPositionPtr) << endl;
-	foveaPositionOnGrid.first.first = 0;
-	foveaPositionOnGrid.first.second = foveaRes;
-	foveaPositionOnGrid.second.first = 0;
-	foveaPositionOnGrid.second.second = foveaRes;
-	foveaPosition.first.first = 0;
-	foveaPosition.first.second = foveaRes; // this...
-	foveaPosition.second.first = 0;
-	foveaPosition.second.second = foveaRes; // ...and this should really be scaled to the original resolution, but since it is not available here and the value isn't used I'm putting in the surrogate
+//	cout << "resetFoveaPosition called, initial range is " << range2dToStr(*initialFoveaPositionPtr) << ", asteroid name is " << *currentAsteroidName << endl;
+	foveaPositionOnGrid = *initialFoveaPositionPtr;
+	foveaPosition = foveaPositionOnGrid; // this should really be scaled to the original resolution, but since it is not available here and the value isn't used I'm putting in the surrogate
 }
 
 string PeripheralAndRelativeSaccadingEyesSensors::getSensorStateDescription() {

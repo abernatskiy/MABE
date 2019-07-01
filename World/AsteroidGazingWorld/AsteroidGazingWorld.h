@@ -18,6 +18,7 @@ private:
 	static std::shared_ptr<ParameterLink<std::string>> sensorTypePL;
 	static std::shared_ptr<ParameterLink<bool>> integrateFitnessPL;
 	static std::shared_ptr<ParameterLink<int>> numTriggerBitsPL;
+	static std::shared_ptr<ParameterLink<int>> numRandomInitialConditionsPL;
 
 	std::shared_ptr<AsteroidsDatasetParser> datasetParser;
 

@@ -30,7 +30,7 @@ public:
 	unsigned numStatesInRecording() override { return numSensors*perceptTimeSeries.size(); };
 	double sensoryMotorEntropy(unsigned shift) override;
 
-	Range2d generateDefaultInitialState() { return std::make_pair(std::make_pair(0, foveaRes), std::make_pair(0, foveaRes)); };
+	Range2d generateDefaultInitialState() { return Range2d(Range1d(0, foveaRes), Range1d(0, foveaRes)); };
 	Range2d generateRandomInitialState();
 	std::shared_ptr<Range2d> getPointerToInitialState() { return initialFoveaPositionPtr; };
 
