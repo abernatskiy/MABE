@@ -31,7 +31,7 @@ public:
 
 class ExhaustiveAsteroidGazingSchedule : public AbstractAsteroidGazingSchedule {
 
-private:
+protected:
 	unsigned currentAsteroidIndex;
 	bool terminalState;
 
@@ -60,7 +60,7 @@ public:
 
 	bool stateIsFinal() override { return terminalState; };
 
-	const std::string& currentStateDescription() override { return asteroidNames.at(currentAsteroidIndex); };
+	virtual const std::string& currentStateDescription() override { return asteroidNames.at(currentAsteroidIndex); };
 };
 
 class ExhaustiveAsteroidGazingScheduleWithRelativeSensorInitialStates : public ExhaustiveAsteroidGazingSchedule {
@@ -69,6 +69,7 @@ private:
   std::shared_ptr<Range2d> sensorInitialState;
 	std::map<std::string,std::vector<Range2d>> relativeSensorsInitialStates;
 	unsigned currentInitialConditionIdx;
+	std::string currentStateDescriptionStr;
 
 public:
 	ExhaustiveAsteroidGazingScheduleWithRelativeSensorInitialStates(std::shared_ptr<std::string> curAsteroidName,
@@ -94,4 +95,9 @@ public:
     }
     *sensorInitialState = relativeSensorsInitialStates[*currentAsteroidName][currentInitialConditionIdx];
   };
+
+	const std::string& currentStateDescription() override {
+		currentStateDescriptionStr = asteroidNames.at(currentAsteroidIndex) + "_ifp" + std::to_string(currentInitialConditionIdx);
+		return currentStateDescriptionStr;
+	};
 };
