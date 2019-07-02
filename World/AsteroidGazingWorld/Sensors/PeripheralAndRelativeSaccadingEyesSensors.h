@@ -28,7 +28,7 @@ public:
 	unsigned numSaccades() override;
 	unsigned numActiveStatesInRecording() override;
 	unsigned numStatesInRecording() override { return numSensors*perceptTimeSeries.size(); };
-	double sensoryMotorEntropy(unsigned shift) override;
+	double sensoryMotorEntropy(int shift) override;
 
 	Range2d generateDefaultInitialState() { return Range2d(Range1d(0, foveaRes), Range1d(0, foveaRes)); };
 	Range2d generateRandomInitialState();

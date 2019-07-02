@@ -1,6 +1,7 @@
 #include "PeripheralAndRelativeSaccadingEyesSensors.h"
 #include "../../../Utilities/nlohmann/json.hpp"
 #include "misc.h"
+#include <cstdlib>
 
 using namespace std;
 
@@ -159,7 +160,7 @@ unsigned PeripheralAndRelativeSaccadingEyesSensors::numActiveStatesInRecording()
 	return activeStates;
 }
 
-double PeripheralAndRelativeSaccadingEyesSensors::sensoryMotorEntropy(unsigned shift) {
+double PeripheralAndRelativeSaccadingEyesSensors::sensoryMotorEntropy(int shift) {
 	if(perceptTimeSeries.size() != controlsTimeSeries.size()) {
 		cerr << "Percept and controls time series are of different lengths, cannot compute shared entropy" << endl;
 		exit(EXIT_FAILURE);
@@ -168,14 +169,24 @@ double PeripheralAndRelativeSaccadingEyesSensors::sensoryMotorEntropy(unsigned s
 		return 0.;
 
 	vector<long unsigned> perceptDigits;
-	for(auto it=perceptTimeSeries.begin(); it!=perceptTimeSeries.end()-shift; it++)
-		perceptDigits.push_back(positionalBinaryToDecimal(*it));
+	if(shift>=0) {
+		for(auto it=perceptTimeSeries.begin(); it!=perceptTimeSeries.end()-shift; it++)
+			perceptDigits.push_back(positionalBinaryToDecimal(*it));
+	}
+	else {
+		for(auto it=perceptTimeSeries.begin()+abs(shift); it!=perceptTimeSeries.end(); it++)
+			perceptDigits.push_back(positionalBinaryToDecimal(*it));
+	}
+
 	vector<long unsigned> oculoMotorDigits;
-	for(auto it=controlsTimeSeries.begin()+shift; it!=controlsTimeSeries.end(); it++)
-		oculoMotorDigits.push_back(positionalBinaryToDecimal(*it));
-//	const long unsigned jointDistributionSupportSize = pow2(perceptTimeSeries[0].size()+controlsTimeSeries[0].size());
-//	const long unsigned perceptDistributionSupportSize = pow2(perceptTimeSeries[0].size());
-//	const long unsigned motorDistributionSupportSize = pow2(controlsTimeSeries[0].size());
+	if(shift>=0) {
+		for(auto it=controlsTimeSeries.begin()+shift; it!=controlsTimeSeries.end(); it++)
+			oculoMotorDigits.push_back(positionalBinaryToDecimal(*it));
+	}
+	else {
+		for(auto it=controlsTimeSeries.begin(); it!=controlsTimeSeries.end()-abs(shift); it++)
+			oculoMotorDigits.push_back(positionalBinaryToDecimal(*it));
+	}
 
 /*
 	cout << "percept digits:";
@@ -186,6 +197,7 @@ double PeripheralAndRelativeSaccadingEyesSensors::sensoryMotorEntropy(unsigned s
 		cout << " " << cd;
 	cout << endl;
 */
+
 	const unsigned nts = perceptDigits.size();
 
 	map<pair<long unsigned, long unsigned>, double> joint;
@@ -197,6 +209,7 @@ double PeripheralAndRelativeSaccadingEyesSensors::sensoryMotorEntropy(unsigned s
 		incrementMapFieldRobustly(oculoMotorDigits[i], pmotor);
 	}
 	long unsigned ps, ms;
+
 /*
 	cout << "joint histogram:";
 	for(const auto& jp : joint) {
@@ -213,6 +226,7 @@ double PeripheralAndRelativeSaccadingEyesSensors::sensoryMotorEntropy(unsigned s
 		cout << " " << mp.first << ":" << mp.second;
 	cout << endl;
 */
+
 	for(auto& jp : joint)
 		jp.second /= static_cast<double>(nts);
 	for(auto& pp : ppercept)

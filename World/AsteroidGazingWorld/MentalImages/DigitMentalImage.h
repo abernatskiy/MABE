@@ -25,8 +25,8 @@ private:
 	std::vector<double> sensorActivityStateScores;
 	std::vector<unsigned> activeBitsStateScores;
 	long unsigned totalBitsStateScore;
-	const std::vector<unsigned> shiftLevels = {0,1,2,3,4,5};
-	std::map<unsigned,std::vector<double>> sensoryMotorEntropyStateScores;
+	const std::vector<int> shiftLevels = {-2,-1,0,1,2,3,4,5};
+	std::map<int,std::vector<double>> sensoryMotorEntropyStateScores;
 
 	const unsigned mnistNumDigits = 10;
 	const unsigned mnistNumBits = 2*mnistNumDigits;
