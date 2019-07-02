@@ -165,7 +165,7 @@ double PeripheralAndRelativeSaccadingEyesSensors::sensoryMotorEntropy(int shift)
 		cerr << "Percept and controls time series are of different lengths, cannot compute shared entropy" << endl;
 		exit(EXIT_FAILURE);
 	}
-	if(perceptTimeSeries.size() <= shift)
+	if(perceptTimeSeries.size() <= abs(shift))
 		return 0.;
 
 	vector<long unsigned> perceptDigits;
