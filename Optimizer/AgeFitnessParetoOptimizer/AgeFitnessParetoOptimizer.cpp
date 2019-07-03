@@ -32,6 +32,11 @@ Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-lineageAdditionPeriod
 	"how frequently new lineages should be added (p>1 - a lineage added once every floor(p) gens,\n"
 	"0<p<1 - floor(1/p) lineages added every generation, p<0 - no lineages added except to the initial population), default: 1.0");
 
+std::shared_ptr<ParameterLink<bool>> AgeFitnessParetoOptimizer::useTournamentSelectionPL =
+Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-useTournamentSelection",
+	false,
+	"use rank selection based on Pareto rank instead of selecting the top Pareto front and its offspring, default: false");
+
 /***** Auxiliary functions *****/
 
 bool firstOrganismIsDominatedBySecond(std::shared_ptr<Organism> first, std::shared_ptr<Organism> second, const std::vector<std::string>& minimizeableAttributes) {
@@ -69,7 +74,7 @@ bool firstOrganismIsDominatedBySecond(std::shared_ptr<Organism> first, std::shar
 /***** AgeFitnessParetoOptimizer class definitions *****/
 
 AgeFitnessParetoOptimizer::AgeFitnessParetoOptimizer(std::shared_ptr<ParametersTable> PT_)
-    : AbstractOptimizer(PT_), firstGenIsNow(true), searchIsStuck(false), logLineages(logLineagesPL->get(PT_)) {
+    : AbstractOptimizer(PT_), firstGenIsNow(true), searchIsStuck(false), logLineages(logLineagesPL->get(PT_)), useTournamentSelection(useTournamentSelectionPL->get(PT_)) {
 	// MTree formulas support inherited with minimal modifications from LexicaseOptimizer
 	std::vector<std::string> optimizeFormulasStrings;
 	convertCSVListToVector(optimizeFormulasPL->get(PT), optimizeFormulasStrings);
@@ -143,20 +148,13 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 	}
 
 	// Finding and isolating the Pareto front
-	paretoOrder.resize(population.size());
-	std::fill(paretoOrder.begin(), paretoOrder.end(), 1);
-	for(unsigned i=0; i<population.size(); i++) {
-		for(auto other : population) {
-			if(firstOrganismIsDominatedBySecond(population[i], other, scoreNames)) {
-				paretoOrder[i] = 0;
-				break;
-			}
-		}
-	}
+	paretoRanks.resize(population.size());
+	std::fill(paretoRanks.begin(), paretoRanks.end(), 0);
+	updateParetoRanks(population, 0);
 
 	paretoFront.clear();
 	for(unsigned i=0; i<population.size(); i++)
-		if(paretoOrder[i] != 0)
+		if(paretoRanks[i] == 0)
 			paretoFront.push_back(population[i]);
 
 	// Computing how many new lineages we should add and checking if the new population will fit into the size of the old one
@@ -183,6 +181,85 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 	// Intermission: printing a summary of the incoming population
 	// Done here to have additional data such as Pareto order etc
 
+	writeCompactParetoMessageToStdout();
+	//writeDetailedParetoMessageToStdout(population);
+	logParetoFrontSize(paretoFront);
+	if(logLineages)
+		logParetoFrontLineages(paretoFront);
+
+	// Step 3: incrementing age of everyone involved
+	for(auto newOrgPtr : newPopulation)
+		newOrgPtr->dataMap.set("minimizeValue_age", newOrgPtr->dataMap.getDouble("minimizeValue_age")+1.);
+	// Step 4: adding new bloodlines with age of zero
+	for(unsigned i=0; i<lineagesToAddNow; i++) {
+		if(newPopulation.size()==population.size())
+			break;
+		auto newOrg = makeNewOrganism();
+		newOrg->dataMap.set("minimizeValue_age", 0.);
+		newOrg->dataMap.set("lineageID", (int) getNewLineageID());
+		newPopulation.push_back(newOrg);
+	}
+
+	if(newPopulation.size()!=population.size()) {
+		std::cerr << "AFPO population sizes alighnment error: old size " << population.size() << ", new size: " << newPopulation.size() << std::endl;
+		exit(EXIT_FAILURE);
+	}
+}
+
+void AgeFitnessParetoOptimizer::cleanup(std::vector<std::shared_ptr<Organism>>& population) {
+	for(unsigned i=0; i<paretoRanks.size(); i++)
+		if(paretoRanks[i]!=0)
+			population[i]->kill();
+	population.swap(newPopulation);
+	newPopulation.clear();
+}
+
+/************* Private methods *************/
+
+bool AgeFitnessParetoOptimizer::updateParetoRanks(std::vector<std::shared_ptr<Organism>>& population, unsigned currentLevel) {
+	std::vector<unsigned> currentRanksIndexes;
+	for(unsigned i=0; i<population.size(); i++)
+		if(paretoRanks[i]==currentLevel)
+			currentRanksIndexes.push_back(i);
+
+	bool wholeRankIsNondominated = true;
+	for(unsigned i : currentRanksIndexes)
+		for(unsigned j : currentRanksIndexes) {
+			if(firstOrganismIsDominatedBySecond(population[i], population[j], scoreNames)) {
+				paretoRanks[i]++;
+				wholeRankIsNondominated = false;
+				break;
+			}
+		}
+
+	return wholeRankIsNondominated;
+}
+
+std::shared_ptr<Organism> AgeFitnessParetoOptimizer::makeNewOrganism() {
+	std::unordered_map<std::string,std::shared_ptr<AbstractGenome>> genomes;
+	for(const auto& gentuple : templateOrganism->genomes) {
+		genomes[gentuple.first] = gentuple.second->makeCopy(gentuple.second->PT);
+		genomes[gentuple.first]->fillRandom();
+	}
+
+	for(const auto& braintuple : templateOrganism->brains)
+		braintuple.second->initializeGenomes(genomes);
+
+	std::unordered_map<std::string,std::shared_ptr<AbstractBrain>> brains;
+	for(const auto& braintuple : templateOrganism->brains)
+		brains[braintuple.first] = braintuple.second->makeBrain(genomes);
+
+	return std::make_shared<Organism>(genomes, brains, templateOrganism->PT);
+}
+
+unsigned AgeFitnessParetoOptimizer::getNewLineageID() {
+	static unsigned curLineageID = 0;
+	unsigned retID = curLineageID;
+	curLineageID++;
+	return retID;
+}
+
+void AgeFitnessParetoOptimizer::writeCompactParetoMessageToStdout() {
 	// Compact messages : a line per generation
 	std::map<std::string,double> minValues;
 	std::map<std::string,int> minValueCarriers;
@@ -209,10 +286,6 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 		}
 	}
 
-	logParetoFrontSize(paretoFront);
-	if(logLineages)
-		logParetoFrontLineages(paretoFront);
-
 	std::cout << "pareto_size=" << paretoFront.size();
 	std::cout << " max_age=" << maxAge << "@" << oldestOrganism;
 	for(const auto& mvtuple : minValues)
@@ -230,7 +303,9 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 	for(auto li=lineages.begin(); li!=lineages.end(); li++)
 		std::cout << (*li) << (li==lineages.end()-1 ? "" : ",") ;
 	std::cout << std::flush;
-/*
+}
+
+void AgeFitnessParetoOptimizer::writeDetailedParetoMessageToStdout(std::vector<std::shared_ptr<Organism>>& population) {
 	// Detailed messages : full population & Pareto front snapshot
 	std::cout << std::endl << "Incoming population:" << std::endl;
 
@@ -240,7 +315,7 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 		for(auto objname : scoreNames) {
 			std::cout << objname << population[i]->dataMap.getDouble(objname) << " ";
 		}
-		std::cout << "ParetoOrder" << paretoOrder[i];
+		std::cout << "ParetoRank" << paretoRanks[i];
 		std::cout << " genomeSizes";
 		for(auto gentuple : population[i]->genomes)
 			std::cout << " " << gentuple.second->countSites();
@@ -259,56 +334,6 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 		}
 		std::cout << std::endl;
 	}
-*/
-	// Step 3: incrementing age of everyone involved
-	for(auto newOrgPtr : newPopulation)
-		newOrgPtr->dataMap.set("minimizeValue_age", newOrgPtr->dataMap.getDouble("minimizeValue_age")+1.);
-	// Step 4: adding new bloodlines with age of zero
-	for(unsigned i=0; i<lineagesToAddNow; i++) {
-		if(newPopulation.size()==population.size())
-			break;
-		auto newOrg = makeNewOrganism();
-		newOrg->dataMap.set("minimizeValue_age", 0.);
-		newOrg->dataMap.set("lineageID", (int) getNewLineageID());
-		newPopulation.push_back(newOrg);
-	}
-
-	if(newPopulation.size()!=population.size()) {
-		std::cerr << "AFPO population sizes alighnment error: old size " << population.size() << ", new size: " << newPopulation.size() << std::endl;
-		exit(EXIT_FAILURE);
-	}
-}
-
-void AgeFitnessParetoOptimizer::cleanup(std::vector<std::shared_ptr<Organism>>& population) {
-	for(unsigned i=0; i<paretoOrder.size(); i++)
-		if(paretoOrder[i]==0)
-			population[i]->kill();
-	population.swap(newPopulation);
-	newPopulation.clear();
-}
-
-std::shared_ptr<Organism> AgeFitnessParetoOptimizer::makeNewOrganism() {
-	std::unordered_map<std::string,std::shared_ptr<AbstractGenome>> genomes;
-	for(const auto& gentuple : templateOrganism->genomes) {
-		genomes[gentuple.first] = gentuple.second->makeCopy(gentuple.second->PT);
-		genomes[gentuple.first]->fillRandom();
-	}
-
-	for(const auto& braintuple : templateOrganism->brains)
-		braintuple.second->initializeGenomes(genomes);
-
-	std::unordered_map<std::string,std::shared_ptr<AbstractBrain>> brains;
-	for(const auto& braintuple : templateOrganism->brains)
-		brains[braintuple.first] = braintuple.second->makeBrain(genomes);
-
-	return std::make_shared<Organism>(genomes, brains, templateOrganism->PT);
-}
-
-unsigned AgeFitnessParetoOptimizer::getNewLineageID() {
-	static unsigned curLineageID = 0;
-	unsigned retID = curLineageID;
-	curLineageID++;
-	return retID;
 }
 
 void AgeFitnessParetoOptimizer::logParetoFrontSize(const std::vector<std::shared_ptr<Organism>>& paretoFront) {
