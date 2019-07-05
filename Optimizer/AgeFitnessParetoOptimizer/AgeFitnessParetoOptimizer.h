@@ -14,6 +14,7 @@ public:
 	static std::shared_ptr<ParameterLink<bool>> logLineagesPL;
 	static std::shared_ptr<ParameterLink<double>> lineageAdditionPeriodPL;
 	static std::shared_ptr<ParameterLink<bool>> useTournamentSelectionPL;
+	static std::shared_ptr<ParameterLink<int>> tournamentSizePL;
 
 	std::vector<std::vector<double>> scores;
 	std::vector<std::string> scoreNames;
@@ -36,7 +37,9 @@ private:
 	unsigned lineagesPerAddition;
 	bool disableLineageAddition;
 	bool useTournamentSelection;
+	unsigned tournamentSize;
 	std::shared_ptr<Organism> templateOrganism;
+	std::set<unsigned> survivorIds;
 
 	bool updateParetoRanks(std::vector<std::shared_ptr<Organism>>& population, unsigned currentLevel);
 	std::shared_ptr<Organism> makeNewOrganism();

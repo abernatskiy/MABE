@@ -37,6 +37,11 @@ Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-useTournamentSelectio
 	false,
 	"use rank selection based on Pareto rank instead of selecting the top Pareto front and its offspring, default: false");
 
+std::shared_ptr<ParameterLink<int>> AgeFitnessParetoOptimizer::tournamentSizePL =
+Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-tournamentSize",
+	2,
+	"size of the tournament if tournament selection is used, default: 2");
+
 /***** Auxiliary functions *****/
 
 bool firstOrganismIsDominatedBySecond(std::shared_ptr<Organism> first, std::shared_ptr<Organism> second, const std::vector<std::string>& minimizeableAttributes) {
@@ -73,8 +78,14 @@ bool firstOrganismIsDominatedBySecond(std::shared_ptr<Organism> first, std::shar
 
 /***** AgeFitnessParetoOptimizer class definitions *****/
 
-AgeFitnessParetoOptimizer::AgeFitnessParetoOptimizer(std::shared_ptr<ParametersTable> PT_)
-    : AbstractOptimizer(PT_), firstGenIsNow(true), searchIsStuck(false), logLineages(logLineagesPL->get(PT_)), useTournamentSelection(useTournamentSelectionPL->get(PT_)) {
+AgeFitnessParetoOptimizer::AgeFitnessParetoOptimizer(std::shared_ptr<ParametersTable> PT_) :
+	AbstractOptimizer(PT_),
+	firstGenIsNow(true),
+	searchIsStuck(false),
+	logLineages(logLineagesPL->get(PT_)),
+	useTournamentSelection(useTournamentSelectionPL->get(PT_)),
+	tournamentSize(tournamentSizePL->get(PT_)) {
+
 	// MTree formulas support inherited with minimal modifications from LexicaseOptimizer
 	std::vector<std::string> optimizeFormulasStrings;
 	convertCSVListToVector(optimizeFormulasPL->get(PT), optimizeFormulasStrings);
@@ -147,50 +158,101 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 		}
 	}
 
-	// Finding and isolating the Pareto front
+	// Computing Pareto ranks
 	paretoRanks.resize(population.size());
 	std::fill(paretoRanks.begin(), paretoRanks.end(), 0);
-	updateParetoRanks(population, 0);
+	if(useTournamentSelection) {
+		unsigned currentRank = 0;
+		while(!updateParetoRanks(population, currentRank))
+			currentRank++;
+	}
+	else
+		updateParetoRanks(population, 0);
 
 	paretoFront.clear();
 	for(unsigned i=0; i<population.size(); i++)
 		if(paretoRanks[i] == 0)
 			paretoFront.push_back(population[i]);
 
-	// Computing how many new lineages we should add and checking if the new population will fit into the size of the old one
+	// Computing how many new lineages we should add
 	unsigned lineagesToAddNow = (Global::update % lineageAdditionPeriod == 0) ? lineagesPerAddition : 0;
+
+	// Checking if the new population will fit into the size of the old one
 	if(paretoFront.size()+lineagesToAddNow >= population.size())
 		std::cout << "WARNING: Pareto front is large enough so that there is not enough space for variation and/or new lineages" << std::endl;
 	if(paretoFront.size() == population.size())
 		searchIsStuck = true;
 
-	// Building a new population in four steps
-	// Step 1: copying the Pareto front to it - all of it is the elite
-	newPopulation.insert(newPopulation.end(), paretoFront.begin(), paretoFront.end());
+	survivorIds.clear();
 
-	// Step 2: adding the offspring of the Pareto front organisms to the population
-	// until it reaches the projected size of the population minus one
-	while(newPopulation.size() < population.size()-lineagesToAddNow) {
-		std::shared_ptr<Organism> parent = paretoFront[Random::getIndex(paretoFront.size())];
-		std::shared_ptr<Organism> child = parent->makeMutatedOffspringFrom(parent);
-		child->dataMap.set("minimizeValue_age", parent->dataMap.getDouble("minimizeValue_age")); // it is very important to know how farback your ancestry goes
-		child->dataMap.set("lineageID", parent->dataMap.getInt("lineageID")); // turns out knowing your surname also helps
-		newPopulation.push_back(child);
+	if(useTournamentSelection) { // for tournament selection, the population is formed in trials
+
+		while(newPopulation.size() < population.size()-lineagesToAddNow) {
+			// finding the champion
+			unsigned championIdx = Random::getIndex(population.size());
+			std::vector<unsigned> participants = { championIdx };
+			for(unsigned i=0; i<tournamentSize-1; i++) {
+				unsigned challengerIdx = championIdx;
+				while( std::find(participants.begin(), participants.end(), challengerIdx)!=participants.end() )
+					challengerIdx = Random::getIndex(population.size());
+				participants.push_back(challengerIdx);
+
+				if(paretoRanks[championIdx]>=paretoRanks[challengerIdx])
+					championIdx = challengerIdx;
+			}
+
+			// then copying it and its offspring into the next population
+			std::shared_ptr<Organism> champion = population[championIdx];
+			newPopulation.push_back(champion);
+			survivorIds.insert(champion->ID);
+//			std::cout << "added orgs " << champion->ID;
+			for(unsigned i=0; i<tournamentSize-1; i++) {
+				std::shared_ptr<Organism> child = champion->makeMutatedOffspringFrom(champion);
+				child->dataMap.set("minimizeValue_age", champion->dataMap.getDouble("minimizeValue_age")); // it is very important to know how farback your ancestry goes
+				child->dataMap.set("lineageID", champion->dataMap.getInt("lineageID")); // turns out knowing your surname also helps
+				newPopulation.push_back(child);
+//				std::cout << "," << child->ID;
+			}
+//			std::cout << " to the new population" << std::endl;
+		}
+
+		// If the space available in the new population does not divide evenly into tournament-sized chunks,
+		// then the procedure above generates more individuals than can fit into the new population.
+		// The line below resizes the new population to the right size and destroys the surplus.
+		newPopulation.resize(population.size()-lineagesToAddNow);
+	}
+	else { // in elite selection, a new population is built in four steps
+
+		// Copying the Pareto front to it - all of it is the elite
+		newPopulation.insert(newPopulation.end(), paretoFront.begin(), paretoFront.end());
+		for(unsigned i=0; i<paretoRanks.size(); i++)
+			if(paretoRanks[i]==0)
+				survivorIds.insert(population[i]->ID);
+
+		// Adding the offspring of the Pareto front organisms to the population
+		// until it reaches the projected size of the population minus one
+		while(newPopulation.size() < population.size()-lineagesToAddNow) {
+			std::shared_ptr<Organism> parent = paretoFront[Random::getIndex(paretoFront.size())];
+			std::shared_ptr<Organism> child = parent->makeMutatedOffspringFrom(parent);
+			child->dataMap.set("minimizeValue_age", parent->dataMap.getDouble("minimizeValue_age")); // it is very important to know how farback your ancestry goes
+			child->dataMap.set("lineageID", parent->dataMap.getInt("lineageID")); // turns out knowing your surname also helps
+			newPopulation.push_back(child);
+		}
 	}
 
-	// Intermission: printing a summary of the incoming population
-	// Done here to have additional data such as Pareto order etc
-
+	// Printing a summary of what we just done
 	writeCompactParetoMessageToStdout();
-	//writeDetailedParetoMessageToStdout(population);
+	// writeDetailedParetoMessageToStdout(population);
+
 	logParetoFrontSize(paretoFront);
 	if(logLineages)
 		logParetoFrontLineages(paretoFront);
 
-	// Step 3: incrementing age of everyone involved
+	// Incrementing age of everyone involved
 	for(auto newOrgPtr : newPopulation)
 		newOrgPtr->dataMap.set("minimizeValue_age", newOrgPtr->dataMap.getDouble("minimizeValue_age")+1.);
-	// Step 4: adding new bloodlines with age of zero
+
+	// Adding new bloodlines with age of zero
 	for(unsigned i=0; i<lineagesToAddNow; i++) {
 		if(newPopulation.size()==population.size())
 			break;
@@ -207,9 +269,14 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 }
 
 void AgeFitnessParetoOptimizer::cleanup(std::vector<std::shared_ptr<Organism>>& population) {
-	for(unsigned i=0; i<paretoRanks.size(); i++)
-		if(paretoRanks[i]!=0)
+//	for(auto sid : survivorIds)
+//		std::cout << sid << ", ";
+//	std::cout << "survivors were" << std::endl;
+	for(unsigned i=0; i<population.size(); i++)
+		if(survivorIds.find(population[i]->ID)==survivorIds.end() && population[i]->alive) {
+//			std::cout << "killing organism " << population[i]->ID << std::endl;
 			population[i]->kill();
+		}
 	population.swap(newPopulation);
 	newPopulation.clear();
 }

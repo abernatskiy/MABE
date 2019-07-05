@@ -38,12 +38,15 @@ AbstractIsolatedEmbodiedWorld::AbstractIsolatedEmbodiedWorld(std::shared_ptr<Par
 void AbstractIsolatedEmbodiedWorld::evaluateOnce(std::shared_ptr<Organism> org, int visualize) {
 
 	if(visualize) std::cout << "Evaluating organism " << org->ID << " at " << org << std::endl;
+//	std::cout << "Evaluating organism " << org->ID << " at " << org << std::endl;
 
 //	org->translateGenomesToBrains();
 
 	resetWorld(visualize);
 
   brain = org->brains[brainName];
+
+//	std::cout << "Organism is " << (org->alive ? "alive" : "dead") << ", brain pointer is " << brain << std::endl;
 
 	sensors->reset(visualize);
 	brain->resetBrain();
