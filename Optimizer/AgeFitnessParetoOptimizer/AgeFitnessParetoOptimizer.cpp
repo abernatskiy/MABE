@@ -249,8 +249,13 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 		logParetoFrontLineages(paretoFront);
 
 	// Incrementing age of everyone involved
-	for(auto newOrgPtr : newPopulation)
-		newOrgPtr->dataMap.set("minimizeValue_age", newOrgPtr->dataMap.getDouble("minimizeValue_age")+1.);
+	std::set<unsigned> visitedIDs;
+	for(auto newOrgPtr : newPopulation) {
+		if(visitedIDs.find(newOrgPtr->ID)==visitedIDs.end()) {
+			newOrgPtr->dataMap.set("minimizeValue_age", newOrgPtr->dataMap.getDouble("minimizeValue_age")+1.);
+			visitedIDs.insert(newOrgPtr->ID);
+		}
+	}
 
 	// Adding new bloodlines with age of zero
 	for(unsigned i=0; i<lineagesToAddNow; i++) {
