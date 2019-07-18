@@ -37,6 +37,7 @@ private:
 	LogFile log;
 	void logBrainStructure();
 	int getLowestAvailableGateID();
+	std::string originationStory;
 
 	static std::shared_ptr<ParameterLink<int>> hiddenNodesPL;
 	static std::shared_ptr<ParameterLink<bool>> recordIOMapPL;

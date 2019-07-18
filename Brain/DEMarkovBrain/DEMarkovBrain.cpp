@@ -48,7 +48,8 @@ DEMarkovBrain::DEMarkovBrain(int _nrInNodes, int _nrHidNodes, int _nrOutNodes, s
 	nrNodes(_nrInNodes+_nrOutNodes+_nrHidNodes),
 	minGates(minGateCountPL->get(PT_)),
 	visualize(Global::modePL->get() == "visualize"),
-	recordIOMap(recordIOMapPL->get(PT_)) {
+	recordIOMap(recordIOMapPL->get(PT_)),
+	originationStory("primordial") {
 
 	nodes.resize(nrNodes, 0);
 	nextNodes.resize(nrNodes, 0);
@@ -133,6 +134,7 @@ void DEMarkovBrain::mutate() {
 //		cout << ", chose insertion. Had " << gates.size() << " gates, ";
 		gates.push_back(getRandomGate(getLowestAvailableGateID()));
 //		cout << " now it's " << gates.size() << endl;
+		originationStory = "mutation_insertion";
 	}
 	else {
 		if(gates.size()==0) {
@@ -154,6 +156,7 @@ void DEMarkovBrain::mutate() {
 			int idx = Random::getIndex(gates.size());
 			gates.erase(gates.begin()+idx);
 //			cout << ", removed " << idx << "th one, now it's " << gates.size() << endl;
+			originationStory = "mutation_deletion";
 		}
 		else if(r < gateInsertionProbabilityPL->get(PT) + gateDeletionProbabilityPL->get(PT) + gateDuplicationProbabilityPL->get(PT)) {
 //			cout << ", chose duplication. Had " << gates.size() << " gates, ";
@@ -162,6 +165,7 @@ void DEMarkovBrain::mutate() {
 			newGate->ID = getLowestAvailableGateID();
 			gates.push_back(newGate);
 //			cout << ", duplicated " << idx << "th one, now it's " << gates.size() << endl;
+			originationStory = "mutation_duplication";
 		}
 		else {
 			int idx = Random::getIndex(gates.size());
@@ -172,11 +176,13 @@ void DEMarkovBrain::mutate() {
 //				cout << " and a table mutation. Gate before the mutation:" << endl << gates[idx]->description() << endl;
 				gates[idx]->mutateInternalStructure();
 //				cout << "Gate after the mutation:" << endl << gates[idx]->description() << endl;
+				originationStory = "mutation_table";
 			}
 			else {
 //				cout << " and a wiring mutation. Gate before the mutation:" << endl << gates[idx]->description();
 				gates[idx]->mutateConnections(0, nrNodes-1, nrInputValues, nrNodes-1);
 //				cout << "Gate after the mutation:" << endl << gates[idx]->description() << endl;
+				originationStory = "mutation_rewiring";
 			}
 		}
 	}
@@ -219,6 +225,7 @@ DataMap DEMarkovBrain::getStats(string& prefix) {
 		}
 	}
 	dataMap.set(prefix + "markovBrainDeterministicGates", gatecounts["DeterministicGates"]);
+	dataMap.set(prefix + "originationStory", originationStory);
 	return dataMap;
 }
 
@@ -368,6 +375,7 @@ DataMap DEMarkovBrain::serialize(string& name) {
 	brainJSON["numInputs"] = nrInputValues;
 	brainJSON["numOutputs"] = nrOutputValues;
 	brainJSON["numHidden"] = nrHiddenNodes;
+	brainJSON["originationStory"] = originationStory;
 
 	// storing the string at the DataMap and returning it
 	DataMap dm;
@@ -378,6 +386,7 @@ DataMap DEMarkovBrain::serialize(string& name) {
 void DEMarkovBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<string,string>& orgData, string& name) {
 	// the stuff that can be loaded from config files is already loaded during construction,
 	// so all that's left is to initialize gates
+	// AND restore the saved origination story
 
 	string gatesJSONStr = orgData[string("BRAIN_") + name + "_json"];
 	if(gatesJSONStr.front()!='\'' || gatesJSONStr.back()!='\'') {
@@ -388,8 +397,10 @@ void DEMarkovBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<st
 	gatesJSONStr = gatesJSONStr.substr(1, gatesJSONStr.size()-2);
 
 	nlohmann::json brainJSON = nlohmann::json::parse(gatesJSONStr);
-	nlohmann::json gatesJSON = brainJSON["gates"];
 
+	originationStory = brainJSON["originationStory"];
+
+	nlohmann::json gatesJSON = brainJSON["gates"];
 	gates.clear();
 
 	for(const auto& gateJSON : gatesJSON) {
