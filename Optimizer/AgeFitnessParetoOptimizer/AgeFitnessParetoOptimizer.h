@@ -12,6 +12,7 @@ public:
 	static std::shared_ptr<ParameterLink<std::string>> optimizeFormulaNamesPL;
 	static std::shared_ptr<ParameterLink<std::string>> maxFileFormulaPL;
 	static std::shared_ptr<ParameterLink<bool>> logLineagesPL;
+	static std::shared_ptr<ParameterLink<bool>> logMutationStatsPL;
 	static std::shared_ptr<ParameterLink<double>> lineageAdditionPeriodPL;
 	static std::shared_ptr<ParameterLink<bool>> useTournamentSelectionPL;
 	static std::shared_ptr<ParameterLink<int>> tournamentSizePL;
@@ -33,6 +34,7 @@ private:
 	bool firstGenIsNow;
 	bool searchIsStuck;
 	bool logLineages;
+	bool logMutationStats;
 	unsigned lineageAdditionPeriod;
 	unsigned lineagesPerAddition;
 	bool disableLineageAddition;
@@ -40,6 +42,8 @@ private:
 	unsigned tournamentSize;
 	std::shared_ptr<Organism> templateOrganism;
 	std::set<unsigned> survivorIds;
+	std::map<std::string,std::map<std::string,std::vector<double>>> mutationStatistics; // first index is mutation type, second is
+	                                                                                    // evaluation name (including deltas)
 
 	bool updateParetoRanks(std::vector<std::shared_ptr<Organism>>& population, unsigned currentLevel);
 	std::shared_ptr<Organism> makeNewOrganism();
@@ -48,4 +52,5 @@ private:
 	void writeDetailedParetoMessageToStdout(std::vector<std::shared_ptr<Organism>>& population);
 	void logParetoFrontSize(const std::vector<std::shared_ptr<Organism>>& paretoFront);
 	void logParetoFrontLineages(const std::vector<std::shared_ptr<Organism>>& paretoFront);
+	void logMutationStatistics();
 };

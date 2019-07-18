@@ -26,6 +26,11 @@ Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-logLineages",
 	false,
 	"should the computation log the champions for each lineage and their ancestries, default: false");
 
+std::shared_ptr<ParameterLink<bool>> AgeFitnessParetoOptimizer::logMutationStatsPL =
+Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-logMutationStats",
+	false,
+	"set to true to log the statistics of mutations, default: false");
+
 std::shared_ptr<ParameterLink<double>> AgeFitnessParetoOptimizer::lineageAdditionPeriodPL =
 Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-lineageAdditionPeriod",
 	1.0,
@@ -83,6 +88,7 @@ AgeFitnessParetoOptimizer::AgeFitnessParetoOptimizer(std::shared_ptr<ParametersT
 	firstGenIsNow(true),
 	searchIsStuck(false),
 	logLineages(logLineagesPL->get(PT_)),
+	logMutationStats(logMutationStatsPL->get(PT_)),
 	useTournamentSelection(useTournamentSelectionPL->get(PT_)),
 	tournamentSize(tournamentSizePL->get(PT_)) {
 
@@ -126,6 +132,17 @@ AgeFitnessParetoOptimizer::AgeFitnessParetoOptimizer(std::shared_ptr<ParametersT
 		lineageAdditionPeriod = 1;
 		lineagesPerAddition = static_cast<unsigned>(floor(1./dLineageAdditionPeriod));
 	}
+
+	// initializing the mutation statistic storage
+	for(std::string mutName : {"mutation_insertion", "mutation_deletion", "mutation_duplication", "mutation_table", "mutation_rewiring"}) {
+		mutationStatistics[mutName] = {};
+		for(const std::string& scName : scoreNames) {
+			if(scName == "minimizeValue_age")
+				continue;
+			mutationStatistics[mutName][scName] = {};
+			mutationStatistics[mutName][std::string("delta_") + scName] = {};
+		}
+	}
 }
 
 void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>& population) {
@@ -155,6 +172,23 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 		for(unsigned p=0; p<optimizeFormulasMTs.size(); p++) {
 			double mtreeeval = optimizeFormulasMTs[p]->eval(population[i]->dataMap, PT)[0];
 			population[i]->dataMap.set(scoreNames[p], mtreeeval);
+		}
+	}
+
+	// Gathering mutation statistics
+	if(logMutationStats) {
+		for(const auto& indiv : population) {
+			std::string origStory = indiv->dataMap.getString("originationStory");
+			if(origStory != "primordial") {
+				for(const auto& scname : scoreNames) {
+					if(scname == "minimizeValue_age")
+						continue;
+					double pastScore = indiv->dataMap.getDouble(std::string("parents_") + scname);
+					double curScore = indiv->dataMap.getDouble(scname);
+					mutationStatistics[origStory][scname].push_back(curScore);
+					mutationStatistics[origStory][std::string("delta_") + scname].push_back(curScore-pastScore);
+				}
+			}
 		}
 	}
 
@@ -210,6 +244,8 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 				std::shared_ptr<Organism> child = champion->makeMutatedOffspringFrom(champion);
 				child->dataMap.set("minimizeValue_age", champion->dataMap.getDouble("minimizeValue_age")); // it is very important to know how farback your ancestry goes
 				child->dataMap.set("lineageID", champion->dataMap.getInt("lineageID")); // turns out knowing your surname also helps
+				for(const auto& sn : scoreNames)
+					child->dataMap.set(std::string("parents_") + sn, champion->dataMap.getDouble(sn));
 				newPopulation.push_back(child);
 //				std::cout << "," << child->ID;
 			}
@@ -236,6 +272,8 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 			std::shared_ptr<Organism> child = parent->makeMutatedOffspringFrom(parent);
 			child->dataMap.set("minimizeValue_age", parent->dataMap.getDouble("minimizeValue_age")); // it is very important to know how farback your ancestry goes
 			child->dataMap.set("lineageID", parent->dataMap.getInt("lineageID")); // turns out knowing your surname also helps
+			for(const auto& sn : scoreNames)
+				child->dataMap.set(std::string("parents_") + sn, parent->dataMap.getDouble(sn));
 			newPopulation.push_back(child);
 		}
 	}
@@ -243,6 +281,8 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 	// Printing a summary of what we just done
 	writeCompactParetoMessageToStdout();
 	// writeDetailedParetoMessageToStdout(population);
+	if(logMutationStats && Global::update == Global::updatesPL->get(PT))
+		logMutationStatistics();
 
 	logParetoFrontSize(paretoFront);
 	if(logLineages)
@@ -440,5 +480,35 @@ void AgeFitnessParetoOptimizer::logParetoFrontLineages(const std::vector<std::sh
 		genDescJSON["time"] = Global::update;
 		genDescJSON["individuals"] = pfpair.second;
 		lalog << genDescJSON.dump() << std::endl;
+	}
+}
+
+void AgeFitnessParetoOptimizer::logMutationStatistics() {
+	std::ofstream mutlog;
+	for(auto& mutTypePair : mutationStatistics) {
+//		mutlog.open(Global::outputPrefixPL->get(PT) + mutTypePair.first + "_gen" + std::to_string(Global::update) + ".log", std::ios::out);
+		mutlog.open(Global::outputPrefixPL->get(PT) + mutTypePair.first + ".log", std::ios::out);
+		long unsigned numRecords = mutTypePair.second[scoreNames[0]].size();
+
+		mutlog << "#";
+		for(const auto& scname : scoreNames) {
+			if(scname == "minimizeValue_age")
+				continue;
+			mutlog << " " << scname << " " << (std::string("delta_") + scname);
+		}
+		mutlog << std::endl;
+
+		for(long unsigned i=0; i<numRecords; i++) {
+			bool firstLine = 0;
+			for(const auto& scname : scoreNames) {
+				if(scname == "minimizeValue_age")
+					continue;
+				mutlog << (firstLine++ ? " " : "") << mutTypePair.second[scname][i]
+				       << " " << mutTypePair.second[std::string("delta_") + scname][i];
+			}
+			mutlog << std::endl;
+		}
+
+		mutlog.close();
 	}
 }
