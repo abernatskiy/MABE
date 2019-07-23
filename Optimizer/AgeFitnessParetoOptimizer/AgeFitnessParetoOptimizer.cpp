@@ -21,10 +21,10 @@ Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-maxFileFormula",
 	"an MTree that is used to decide which individual is described in the generation's line of max.csv."
 	"\nUnlike the formulas provided in optimizeFormulas, this one is maximized, owning to the name of the max.csv file");
 
-std::shared_ptr<ParameterLink<bool>> AgeFitnessParetoOptimizer::logLineagesPL =
+std::shared_ptr<ParameterLink<int>> AgeFitnessParetoOptimizer::logLineagesPL =
 Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-logLineages",
-	false,
-	"should the computation log the champions for each lineage and their ancestries, default: false");
+	0,
+	"logging level for lineages history: 0 - don't log (default), 1 - log Pareto optimal indivs only, 2 - log everyone");
 
 std::shared_ptr<ParameterLink<bool>> AgeFitnessParetoOptimizer::logMutationStatsPL =
 Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-logMutationStats",
@@ -87,7 +87,7 @@ AgeFitnessParetoOptimizer::AgeFitnessParetoOptimizer(std::shared_ptr<ParametersT
 	AbstractOptimizer(PT_),
 	firstGenIsNow(true),
 	searchIsStuck(false),
-	logLineages(logLineagesPL->get(PT_)),
+	logLineagesLvl(logLineagesPL->get(PT_)),
 	logMutationStats(logMutationStatsPL->get(PT_)),
 	useTournamentSelection(useTournamentSelectionPL->get(PT_)),
 	tournamentSize(tournamentSizePL->get(PT_)) {
@@ -285,8 +285,8 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 		logMutationStatistics();
 
 	logParetoFrontSize(paretoFront);
-	if(logLineages)
-		logParetoFrontLineages(paretoFront);
+	if(logLineagesLvl)
+		logLineages(population);
 
 	// Incrementing age of everyone involved
 	std::set<unsigned> visitedIDs;
@@ -464,21 +464,32 @@ void AgeFitnessParetoOptimizer::logParetoFrontSize(const std::vector<std::shared
 	pflog.close();
 }
 
-void AgeFitnessParetoOptimizer::logParetoFrontLineages(const std::vector<std::shared_ptr<Organism>>& paretoFront) {
-	std::map<int,nlohmann::json> paretoFrontJSONs;
-	for(const auto& org : paretoFront) {
-		int lineageID = org->dataMap.getInt("lineageID");
-		if(paretoFrontJSONs.find(lineageID)==paretoFrontJSONs.end())
-			paretoFrontJSONs[lineageID] = nlohmann::json::array();
-		paretoFrontJSONs[lineageID].push_back(org->getJSONRecord());
+void AgeFitnessParetoOptimizer::logLineages(const std::vector<std::shared_ptr<Organism>>& population) {
+	if(population.size()!=paretoRanks.size()) {
+		std::cerr << "Population size " << population.size() << " is not equal to the Pareto ranks array size " << paretoRanks.size() << ", exiting" << std::endl;
+		exit(EXIT_FAILURE);
 	}
-	for(const auto& pfpair : paretoFrontJSONs) {
-		std::string logpath = Global::outputPrefixPL->get() + "lineage" + std::to_string(pfpair.first) + ".log";
-		std::ofstream lalog;
-		lalog.open(logpath, std::ios::app);
+
+	std::map<int,std::map<unsigned,nlohmann::json>> lineageJSONs;
+	for(unsigned i=0; i<population.size(); i++) {
+		if(paretoRanks[i]==0 || logLineagesLvl>1) {
+			int lineageID = population.at(i)->dataMap.getInt("lineageID");
+			if(lineageJSONs.find(lineageID) == lineageJSONs.end())
+				lineageJSONs[lineageID] = std::map<unsigned,nlohmann::json>();
+			if(lineageJSONs[lineageID].find(paretoRanks[i]) == lineageJSONs[lineageID].end())
+				lineageJSONs[lineageID][paretoRanks[i]] = nlohmann::json::array();
+			lineageJSONs[lineageID][paretoRanks[i]].push_back(population.at(i)->getJSONRecord());
+		}
+	}
+
+	for(const auto& lapair : lineageJSONs) {
 		nlohmann::json genDescJSON = nlohmann::json::object();
 		genDescJSON["time"] = Global::update;
-		genDescJSON["individuals"] = pfpair.second;
+		for(const auto& prpair : lapair.second)
+			genDescJSON[std::string("paretoRank") + std::to_string(prpair.first)] = prpair.second;
+		std::string logpath = Global::outputPrefixPL->get() + "lineage" + std::to_string(lapair.first) + ".log";
+		std::ofstream lalog;
+		lalog.open(logpath, std::ios::app);
 		lalog << genDescJSON.dump() << std::endl;
 	}
 }
