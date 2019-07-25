@@ -103,3 +103,25 @@ inline std::string bitRangeToStr(std::vector<double>::iterator startAt, unsigned
 		s << ( *it==0. ? 0 : 1 );
 	return s.str();
 }
+
+inline std::string bitRangeToHexStr(std::vector<double>::iterator startAt, unsigned numBits) {
+	if(numBits==0)
+		return std::string("");
+	unsigned numChars = 1 + ((numBits-1) / 4);
+	auto curIter = startAt;
+	std::string outStr;
+	outStr.resize(numChars);
+	const char digits[16] = {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
+	for(unsigned i=0; i<numChars; i++) {
+		std::uint8_t curval = 0;
+		for(unsigned i=0; i<4; i++) {
+			curval <<= 1;
+			curval |= ((*curIter)==0. ? 0 : 1);
+			curIter++;
+			if(curIter==startAt+numBits)
+				break;
+		}
+		outStr[i] = digits[curval];
+	}
+	return outStr;
+}

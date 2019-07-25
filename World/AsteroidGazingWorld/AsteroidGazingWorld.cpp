@@ -1,6 +1,7 @@
 #include "AsteroidGazingWorld.h"
 
-#include "MentalImages/DigitMentalImage.h"
+#include "MentalImages/CompressedMentalImage.h"
+//#include "MentalImages/DigitMentalImage.h"
 //#include "MentalImages/SpikesOnCubeMentalImage.h"
 //#include "MentalImages/SpikesOnCubeFullMentalImage.h"
 //#include "MentalImages/IdentityMentalImage.h"
@@ -85,11 +86,13 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 	}
 
 	sensors->writeSensorStats();
-
+/*
 	mentalImage = std::make_shared<DigitMentalImage>(currentAsteroidName,
 	                                                 datasetParser,
 	                                                 sensors,
 	                                                 numTriggerBitsPL->get(PT_),
 	                                                 integrateFitnessPL->get(PT_));
+*/
+	mentalImage = std::make_shared<CompressedMentalImage>(currentAsteroidName, datasetParser, sensors, 20);
 	makeMotors();
 };
