@@ -27,7 +27,8 @@ private:
 
 	void postEvaluationOuterWorldUpdate(std::shared_ptr<Organism> org, unsigned long timeStep, int visualize) override {
 		mentalImage->recordRunningScoresWithinState(org, timeStep%brainUpdatesPerWorldState(), brainUpdatesPerWorldState());
-		if(timeStep>0 && (timeStep+1)%brainUpdatesPerWorldState() == 0) {
+//		if((timeStep>0 || brainUpdatesPerWorldState()==1) && (timeStep+1)%brainUpdatesPerWorldState() == 0) {
+		if((timeStep+1)%brainUpdatesPerWorldState() == 0) {
 			if(resetAgentBetweenStates()) {
 //				std::cout << "Resetting everything" << std::endl << std::flush;
 				if(visualize) {
