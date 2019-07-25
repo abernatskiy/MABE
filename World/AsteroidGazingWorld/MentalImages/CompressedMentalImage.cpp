@@ -53,15 +53,11 @@ void CompressedMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organ
 	if(stateTime == 0)
 		readLabel();
 
-	std::cout << "stateTime = " << stateTime << " statePeriod = " << statePeriod;
-	std::cout << " label = " << curLabelString << " state = " << curStateString;
-	std::cout << std::endl;
+//	std::cout << "stateTime = " << stateTime << " statePeriod = " << statePeriod;
+//	std::cout << " label = " << curLabelString << " state = " << curStateString;
+//	std::cout << std::endl;
 
 	// Debug "throws"
-//	if(statePeriod!=1) {
-//		std::cerr << "State period other than one are not supported at the moment" << std::endl;
-//		exit(EXIT_FAILURE);
-//	}
 	if(curStateString.empty()) {
 		std::cerr << "Mental image evaluator got an empty state string, exiting" << std::endl;
 		exit(EXIT_FAILURE);
@@ -106,7 +102,7 @@ void CompressedMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 }
 
 void CompressedMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) {
-	std::cout << "Writing evals for org " << org->ID << std::endl;
+//	std::cout << "Writing evals for org " << org->ID << std::endl;
 	org->dataMap.append("lostStates", sampleScoresMap->getAverage("lostStates"));
 	org->dataMap.append("lostLabels", sampleScoresMap->getAverage("lostLabels"));
 	double sensorActivity = sampleScoresMap->getAverage("sensorActivity");
