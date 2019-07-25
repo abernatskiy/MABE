@@ -65,14 +65,25 @@ void CompressedMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organ
 
 //	if( answerGiven || ( (!requireTriggering) && stateTime == statePeriod-1) ) {
 	if(stateTime == statePeriod-1) {
+/*		std::cout << "state sets before adding " << curStateString << " with label " << curLabelString << std::endl;
+		for(const auto& ss : stateStrings)
+			std::cout << " " << ss;
+		std::cout << std::endl;
+		for(const auto& lss : labeledStateStrings)
+			std::cout << " " << lss;
+		std::cout << std::endl;
+*/
 		unsigned curNumStates = stateStrings.size();
 		unsigned curNumLabeledStates = labeledStateStrings.size();
 		stateStrings.insert(curStateString);
 		labeledStateStrings.insert(curStateString + curLabelString);
 		if(stateStrings.size()==curNumStates) {
 			lostStates++;
-			if(labeledStateStrings.size()!=curNumLabeledStates)
+//			std::cout << "Incremented lost states, now it is " << lostStates << std::endl;
+			if(labeledStateStrings.size()!=curNumLabeledStates) {
 				lostLabels++;
+//				std::cout << "Incremented lost labels, now it is " << lostLabels << std::endl;
+			}
 		}
 
 		sensorActivityStateScores.push_back(static_cast<double>(sensorsPtr->numSaccades())/static_cast<double>(statePeriod));
