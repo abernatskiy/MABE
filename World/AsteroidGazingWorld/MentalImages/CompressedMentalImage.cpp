@@ -54,6 +54,44 @@ double computeSharedEntropy(const std::map<std::pair<std::string,std::string>,un
 	return patternLabelInfo;
 }
 
+std::map<std::string,double> computeLabelConditionalEntropy(const std::map<std::pair<std::string,std::string>,unsigned>& jointCounts,
+                                                            const std::map<std::string,unsigned>& labelCounts) {
+	std::map<std::string,double> lcEntropy;
+//	std::cout << "Class conditional pattern distributions (histograms):" << std::endl;
+	for(const auto& lcpair : labelCounts) {
+		std::map<std::string,unsigned> condPatternCounts;
+		for(const auto& jcpair : jointCounts)
+			if(jcpair.first.first==lcpair.first)
+				incrementMapField(condPatternCounts, jcpair.first.second, jcpair.second);
+
+//		std::cout << "For label " << lcpair.first << ": ";
+//		printMap(condPatternCounts);
+
+		lcEntropy[lcpair.first] = 0.;
+		for(const auto& cpcpair : condPatternCounts) {
+			double patProbGivenLabel = static_cast<double>(cpcpair.second)/static_cast<double>(lcpair.second);
+			lcEntropy[lcpair.first] -= patProbGivenLabel*log10(patProbGivenLabel);
+		}
+	}
+//	std::cout << std::endl;
+	return lcEntropy;
+}
+
+double computeAverageLabelConditionalEntropy(const std::map<std::pair<std::string,std::string>,unsigned>& jointCounts,
+                                          const std::map<std::string,unsigned>& labelCounts,
+                                          unsigned numSamples) {
+	std::map<std::string,double> labelConditionalEntropy = computeLabelConditionalEntropy(jointCounts, labelCounts);
+
+//	std::cout << "Computed label conditional entropies:" << std::endl;
+//	printMap(labelConditionalEntropy);
+//	std::cout << std::endl;
+
+	double fullLabelConditional = 0.;
+	for(const auto& lcpair : labelCounts)
+		fullLabelConditional += static_cast<double>(lcpair.second)*labelConditionalEntropy[lcpair.first]/static_cast<double>(numSamples);
+	return fullLabelConditional;
+}
+
 std::map<std::string,std::string> makeNaiveClassifier(const std::map<std::pair<std::string,std::string>,unsigned>& jointCounts,
                                                       const std::map<std::string,unsigned>& patternCounts) {
 	std::map<std::string,std::string> decipherer;
@@ -221,6 +259,7 @@ void CompressedMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 	sampleScoresMap->append("lostLabels", static_cast<double>(lostLabels));
 
 	sampleScoresMap->append("patternLabelInformation", computeSharedEntropy(jointCounts, patternCounts, labelCounts, numSamples));
+	sampleScoresMap->append("averageLabelConditionalEntropy", computeAverageLabelConditionalEntropy(jointCounts, labelCounts, numSamples));
 	if(mVisualize) {
 		std::map<std::string,std::string> currentDecipherer = makeNaiveClassifier(jointCounts, patternCounts);
 
@@ -252,6 +291,7 @@ void CompressedMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std:
 	org->dataMap.append("lostLabels", sampleScoresMap->getAverage("lostLabels"));
 
 	org->dataMap.append("patternLabelInformation", sampleScoresMap->getAverage("patternLabelInformation"));
+	org->dataMap.append("averageLabelConditionalEntropy", sampleScoresMap->getAverage("averageLabelConditionalEntropy"));
 
 	double sensorActivity = sampleScoresMap->getAverage("sensorActivity");
 	unsigned tieredSensorActivity = static_cast<unsigned>(sensorActivity*10);
