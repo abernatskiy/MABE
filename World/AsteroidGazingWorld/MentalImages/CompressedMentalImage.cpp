@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <cmath>
 
+/***** Auxiliary functions *****/
+
 template<class T>
 void incrementMapField(std::map<T,unsigned>& mymap, const T& key, int theIncrement = 1) {
 	if(mymap.find(key)==mymap.end())
@@ -27,6 +29,79 @@ void printMap(const std::map<std::pair<std::string,std::string>,NumType>& mymap)
 	for(const auto& mpair : mymap)
 		std::cout << (st++==0?"(":" (") << mpair.first.first << "," << mpair.first.second << "):" << mpair.second;
 	std::cout << std::endl;
+}
+
+double computeSharedEntropy(const std::map<std::pair<std::string,std::string>,unsigned>& jointCounts,
+                            const std::map<std::string,unsigned>& patternCounts,
+                            const std::map<std::string,unsigned>& labelCounts,
+                            unsigned numSamples) {
+	std::map<std::string,double> labelDistribution;
+	for(const auto& lpair : labelCounts)
+		labelDistribution[lpair.first] = static_cast<double>(lpair.second)/static_cast<double>(numSamples);
+//	printMap(labelDistribution); std::cout << std::endl;
+	std::map<std::string,double> patternDistribution;
+	for(const auto& ppair : patternCounts)
+		patternDistribution[ppair.first] = static_cast<double>(ppair.second)/static_cast<double>(numSamples);
+//	printMap(patternDistribution); std::cout << std::endl;
+//	printMap(jointCounts); std::cout << std::endl;
+	double patternLabelInfo = 0.;
+	for(const auto& labpatpair : jointCounts) {
+		std::string label, pattern;
+		std::tie(label, pattern) = labpatpair.first;
+		double jp = static_cast<double>(labpatpair.second)/static_cast<double>(numSamples);
+		patternLabelInfo += jp*log10(jp/(labelDistribution[label]*patternDistribution[pattern]));
+	}
+	return patternLabelInfo;
+}
+
+std::map<std::string,std::string> makeNaiveClassifier(const std::map<std::pair<std::string,std::string>,unsigned>& jointCounts,
+                                                      const std::map<std::string,unsigned>& patternCounts) {
+	std::map<std::string,std::string> decipherer;
+	long unsigned tieBreaker = 0;
+	for(const auto& ppair : patternCounts) {
+		std::string pattern = ppair.first;
+		std::map<std::string,unsigned> condLabelCounts;
+		for(const auto& jppair : jointCounts)
+			if(jppair.first.second == pattern)
+				incrementMapField(condLabelCounts, jppair.first.first, jppair.second);
+
+//		std::cout << pattern << ":" << std::endl;
+//		printMap(condLabelCounts);
+//		std::cout << std::endl;
+
+		unsigned maxCount = 0;
+		std::string bestLabel;
+		for(const auto& clcpair : condLabelCounts) {
+			if(clcpair.second>maxCount) {
+				maxCount = clcpair.second;
+				bestLabel = clcpair.first;
+			}
+			else if(tieBreaker%2==0 && clcpair.second==maxCount) { // I alternate the direction of tie breaking to minimize biases while preserving determinism
+				bestLabel = clcpair.first;
+				tieBreaker++;
+			}
+		}
+		decipherer[pattern] = bestLabel;
+
+	}
+	return decipherer;
+}
+
+void saveClassifier(const std::map<std::string,std::string>& patternsToLabels,
+                    std::string filename) {
+	std::ofstream classifierFile(filename, std::ofstream::out);
+	for(const auto& plpair : patternsToLabels)
+		classifierFile << plpair.first << " " << plpair.second << std::endl;
+	classifierFile.close();
+}
+
+std::map<std::string,std::string> loadClassifier(std::string filename) {
+	std::map<std::string,std::string> theClassifier;
+	std::string pattern, label;
+	std::ifstream classifierFile(filename);
+	while(classifierFile >> pattern >> label)
+		theClassifier[pattern] = label;
+	return theClassifier;
 }
 
 /***** Public CompressedMentalImage class definitions *****/
@@ -145,63 +220,27 @@ void CompressedMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 	sampleScoresMap->append("lostStates", static_cast<double>(lostStates));
 	sampleScoresMap->append("lostLabels", static_cast<double>(lostLabels));
 
-	std::map<std::string,double> labelDistribution;
-	for(const auto& lpair : labelCounts)
-		labelDistribution[lpair.first] = static_cast<double>(lpair.second)/static_cast<double>(numSamples);
-//	printMap(labelDistribution); std::cout << std::endl;
-	std::map<std::string,double> patternDistribution;
-	for(const auto& ppair : patternCounts)
-		patternDistribution[ppair.first] = static_cast<double>(ppair.second)/static_cast<double>(numSamples);
-//	printMap(patternDistribution); std::cout << std::endl;
-//	printMap(jointCounts); std::cout << std::endl;
-	double patternLabelInfo = 0.;
-	for(const auto& labpatpair : jointCounts) {
-		std::string label, pattern;
-		std::tie(label, pattern) = labpatpair.first;
-		double jp = static_cast<double>(labpatpair.second)/static_cast<double>(numSamples);
-		patternLabelInfo += jp*log10(jp/(labelDistribution[label]*patternDistribution[pattern]));
-	}
-	sampleScoresMap->append("patternLabelInformation", patternLabelInfo);
+	sampleScoresMap->append("patternLabelInformation", computeSharedEntropy(jointCounts, patternCounts, labelCounts, numSamples));
 	if(mVisualize) {
-		std::map<std::string,std::string> decipherer;
-		long unsigned tieBreaker = 0;
-		for(const auto& ppair : patternCounts) {
-			std::string pattern = ppair.first;
-			std::map<std::string,unsigned> condLabelCounts;
-			for(const auto& jppair : jointCounts)
-				if(jppair.first.second == pattern)
-					incrementMapField(condLabelCounts, jppair.first.first, jppair.second);
+		std::map<std::string,std::string> currentDecipherer = makeNaiveClassifier(jointCounts, patternCounts);
 
-//			std::cout << pattern << ":" << std::endl;
-//			printMap(condLabelCounts);
-//			std::cout << std::endl;
-
-			unsigned maxCount = 0;
-			std::string bestLabel;
-			for(const auto& clcpair : condLabelCounts) {
-				if(clcpair.second>maxCount) {
-					maxCount = clcpair.second;
-					bestLabel = clcpair.first;
-				}
-				else if(tieBreaker%2==0 && clcpair.second==maxCount) { // I alternate the direction of tie breaking to minimize biases while preserving determinism
-					bestLabel = clcpair.first;
-					tieBreaker++;
-				}
-			}
-			decipherer[pattern] = bestLabel;
-		}
+//		saveClassifier(currentDecipherer, "decipherer.log");
+//		std::map<std::string,std::string> decipherer = loadClassifier("decipherer.log");
+		std::map<std::string,std::string> decipherer = currentDecipherer;
 
 		long unsigned successfulTrials = 0;
 		long unsigned totalTrials = 0;
+		long unsigned unknownPattern = 0;
 		for(const auto& jppair : jointCounts) {
 			std::string label, pattern;
 			std::tie(label, pattern) = jppair.first;
-			if(decipherer[pattern]==label)
+			if(decipherer.find(pattern)==decipherer.end())
+				unknownPattern += jppair.second;
+			else if(decipherer[pattern]==label)
 				successfulTrials += jppair.second;
 			totalTrials += jppair.second;
 		}
-
-		std::cout << successfulTrials << " trials successful out of " << totalTrials << std::endl;
+		std::cout << "Out of " << totalTrials << " trials " << successfulTrials << " were successful and " << unknownPattern << " yielded unknown patterns" << std::endl;
 	}
 
 	sampleScoresMap->append("sensorActivity", totSensoryActivity);
