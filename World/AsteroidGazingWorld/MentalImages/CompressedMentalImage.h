@@ -3,6 +3,8 @@
 #include <set>
 #include <vector>
 #include <string>
+#include <map>
+#include <utility>
 
 #include "../../AbstractMentalImage.h"
 #include "../Utilities/AsteroidsDatasetParser.h"
@@ -18,10 +20,19 @@ private:
 	std::string curStateString;
 	std::string curLabelString;
 
+	// Parts for state counting
 	std::set<std::string> stateStrings;
 	std::set<std::string> labeledStateStrings;
 	long unsigned lostStates;
 	long unsigned lostLabels;
+
+	// Parts for information-theoretic machinery
+	std::map<std::string,unsigned> labelCounts;
+	std::map<std::string,unsigned> patternCounts;
+	std::map<std::pair<std::string,std::string>,unsigned> jointCounts;
+	unsigned numSamples;
+
+	// Auxiliary parts
 	std::vector<double> sensorActivityStateScores;
 
 	const bool mVisualize;

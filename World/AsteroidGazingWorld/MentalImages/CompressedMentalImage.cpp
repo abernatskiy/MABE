@@ -3,6 +3,31 @@
 
 #include <fstream>
 #include <cstdlib>
+#include <cmath>
+
+template<class T>
+void incrementMapField(std::map<T,unsigned>& mymap, const T& key, int theIncrement = 1) {
+	if(mymap.find(key)==mymap.end())
+		mymap[key] = theIncrement;
+	else
+		mymap[key] += theIncrement;
+}
+
+template<class NumType>
+void printMap(const std::map<std::string,NumType>& mymap) {
+	unsigned st = 0;
+	for(const auto& mpair : mymap)
+		std::cout << (st++==0?"":" ") << mpair.first << ":" << mpair.second;
+	std::cout << std::endl;
+}
+
+template<class NumType>
+void printMap(const std::map<std::pair<std::string,std::string>,NumType>& mymap) {
+	unsigned st = 0;
+	for(const auto& mpair : mymap)
+		std::cout << (st++==0?"(":" (") << mpair.first.first << "," << mpair.first.second << "):" << mpair.second;
+	std::cout << std::endl;
+}
 
 /***** Public CompressedMentalImage class definitions *****/
 
@@ -26,6 +51,12 @@ void CompressedMentalImage::reset(int visualize) { // called in the beginning of
 	labeledStateStrings.clear();
 	lostStates = 0;
 	lostLabels = 0;
+
+	labelCounts.clear();
+	patternCounts.clear();
+	jointCounts.clear();
+	numSamples = 0;
+
 	sensorActivityStateScores.clear();
 //	answerGiven = false;
 //	answerReceived = false;
@@ -86,6 +117,11 @@ void CompressedMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organ
 			}
 		}
 
+		incrementMapField(labelCounts, curLabelString);
+		incrementMapField(patternCounts, curStateString);
+		incrementMapField(jointCounts, std::make_pair(curLabelString, curStateString));
+		numSamples++;
+
 		sensorActivityStateScores.push_back(static_cast<double>(sensorsPtr->numSaccades())/static_cast<double>(statePeriod));
 //		answerReceived = true;
 	}
@@ -108,14 +144,76 @@ void CompressedMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 	totSensoryActivity /= static_cast<double>(sensorActivityStateScores.size());
 	sampleScoresMap->append("lostStates", static_cast<double>(lostStates));
 	sampleScoresMap->append("lostLabels", static_cast<double>(lostLabels));
+
+	std::map<std::string,double> labelDistribution;
+	for(const auto& lpair : labelCounts)
+		labelDistribution[lpair.first] = static_cast<double>(lpair.second)/static_cast<double>(numSamples);
+//	printMap(labelDistribution); std::cout << std::endl;
+	std::map<std::string,double> patternDistribution;
+	for(const auto& ppair : patternCounts)
+		patternDistribution[ppair.first] = static_cast<double>(ppair.second)/static_cast<double>(numSamples);
+//	printMap(patternDistribution); std::cout << std::endl;
+//	printMap(jointCounts); std::cout << std::endl;
+	double patternLabelInfo = 0.;
+	for(const auto& labpatpair : jointCounts) {
+		std::string label, pattern;
+		std::tie(label, pattern) = labpatpair.first;
+		double jp = static_cast<double>(labpatpair.second)/static_cast<double>(numSamples);
+		patternLabelInfo += jp*log10(jp/(labelDistribution[label]*patternDistribution[pattern]));
+	}
+	sampleScoresMap->append("patternLabelInformation", patternLabelInfo);
+	if(mVisualize) {
+		std::map<std::string,std::string> decipherer;
+		long unsigned tieBreaker = 0;
+		for(const auto& ppair : patternCounts) {
+			std::string pattern = ppair.first;
+			std::map<std::string,unsigned> condLabelCounts;
+			for(const auto& jppair : jointCounts)
+				if(jppair.first.second == pattern)
+					incrementMapField(condLabelCounts, jppair.first.first, jppair.second);
+
+//			std::cout << pattern << ":" << std::endl;
+//			printMap(condLabelCounts);
+//			std::cout << std::endl;
+
+			unsigned maxCount = 0;
+			std::string bestLabel;
+			for(const auto& clcpair : condLabelCounts) {
+				if(clcpair.second>maxCount) {
+					maxCount = clcpair.second;
+					bestLabel = clcpair.first;
+				}
+				else if(tieBreaker%2==0 && clcpair.second==maxCount) { // I alternate the direction of tie breaking to minimize biases while preserving determinism
+					bestLabel = clcpair.first;
+					tieBreaker++;
+				}
+			}
+			decipherer[pattern] = bestLabel;
+		}
+
+		long unsigned successfulTrials = 0;
+		long unsigned totalTrials = 0;
+		for(const auto& jppair : jointCounts) {
+			std::string label, pattern;
+			std::tie(label, pattern) = jppair.first;
+			if(decipherer[pattern]==label)
+				successfulTrials += jppair.second;
+			totalTrials += jppair.second;
+		}
+
+		std::cout << successfulTrials << " trials successful out of " << totalTrials << std::endl;
+	}
+
 	sampleScoresMap->append("sensorActivity", totSensoryActivity);
-//	std::cout << "Averaged evals for org " << org->ID << std::endl;
 }
 
 void CompressedMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) {
 //	std::cout << "Writing evals for org " << org->ID << std::endl;
 	org->dataMap.append("lostStates", sampleScoresMap->getAverage("lostStates"));
 	org->dataMap.append("lostLabels", sampleScoresMap->getAverage("lostLabels"));
+
+	org->dataMap.append("patternLabelInformation", sampleScoresMap->getAverage("patternLabelInformation"));
+
 	double sensorActivity = sampleScoresMap->getAverage("sensorActivity");
 	unsigned tieredSensorActivity = static_cast<unsigned>(sensorActivity*10);
 	org->dataMap.append("sensorActivity", sensorActivity);
