@@ -278,8 +278,8 @@ void CompressedMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 		std::map<std::string,std::string> currentDecipherer = makeNaiveClassifier(jointCounts, patternCounts);
 
 //		saveClassifier(currentDecipherer, "decipherer.log");
-		std::map<std::string,std::string> decipherer = loadClassifier("decipherer.log");
-//		std::map<std::string,std::string> decipherer = currentDecipherer;
+//		std::map<std::string,std::string> decipherer = loadClassifier("decipherer.log");
+		std::map<std::string,std::string> decipherer = currentDecipherer;
 
 		long unsigned successfulTrials = 0;
 		long unsigned totalTrials = 0;
@@ -287,12 +287,12 @@ void CompressedMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 		for(const auto& jppair : jointCounts) {
 			std::string label, pattern;
 			std::tie(label, pattern) = jppair.first;
-//			if(decipherer.find(pattern)==decipherer.end())
-//				unknownPattern += jppair.second;
-//			else if(decipherer[pattern]==label)
-//				successfulTrials += jppair.second;
-			if(labelOfClosestNeighbor(pattern, decipherer)==label)
+			if(decipherer.find(pattern)==decipherer.end())
+				unknownPattern += jppair.second;
+			else if(decipherer[pattern]==label)
 				successfulTrials += jppair.second;
+//			if(labelOfClosestNeighbor(pattern, decipherer)==label)
+//				successfulTrials += jppair.second;
 			totalTrials += jppair.second;
 		}
 		std::cout << "Out of " << totalTrials << " trials " << successfulTrials << " were successful and " << unknownPattern << " yielded unknown patterns" << std::endl;
