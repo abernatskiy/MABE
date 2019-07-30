@@ -142,6 +142,20 @@ std::map<std::string,std::string> loadClassifier(std::string filename) {
 	return theClassifier;
 }
 
+std::string labelOfClosestNeighbor(std::string pattern, const std::map<std::string,std::string>& patternsToLabels) {
+	// Hamming distance is used
+	unsigned minDist = pattern.size()*4;
+	std::string outPattern;
+	for(const auto& plpair : patternsToLabels) {
+		unsigned curDist = hexStringHammingDistance(pattern, plpair.first);
+		if(curDist<=minDist) { // TODO: maybe add meaningful tie breaking here, idk
+			minDist = curDist;
+			outPattern = plpair.second;
+		}
+	}
+	return outPattern;
+}
+
 /***** Public CompressedMentalImage class definitions *****/
 
 CompressedMentalImage::CompressedMentalImage(std::shared_ptr<std::string> curAstNamePtr,
@@ -264,8 +278,8 @@ void CompressedMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 		std::map<std::string,std::string> currentDecipherer = makeNaiveClassifier(jointCounts, patternCounts);
 
 //		saveClassifier(currentDecipherer, "decipherer.log");
-//		std::map<std::string,std::string> decipherer = loadClassifier("decipherer.log");
-		std::map<std::string,std::string> decipherer = currentDecipherer;
+		std::map<std::string,std::string> decipherer = loadClassifier("decipherer.log");
+//		std::map<std::string,std::string> decipherer = currentDecipherer;
 
 		long unsigned successfulTrials = 0;
 		long unsigned totalTrials = 0;
@@ -273,9 +287,11 @@ void CompressedMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 		for(const auto& jppair : jointCounts) {
 			std::string label, pattern;
 			std::tie(label, pattern) = jppair.first;
-			if(decipherer.find(pattern)==decipherer.end())
-				unknownPattern += jppair.second;
-			else if(decipherer[pattern]==label)
+//			if(decipherer.find(pattern)==decipherer.end())
+//				unknownPattern += jppair.second;
+//			else if(decipherer[pattern]==label)
+//				successfulTrials += jppair.second;
+			if(labelOfClosestNeighbor(pattern, decipherer)==label)
 				successfulTrials += jppair.second;
 			totalTrials += jppair.second;
 		}
