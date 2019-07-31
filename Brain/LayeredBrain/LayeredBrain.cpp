@@ -49,18 +49,18 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 	layerEvolvable.resize(numLayers, true);
 	for(unsigned i=0; i<numLayers; i++) {
 		layers[i] = DEMarkovBrain_brainFactory(i==0 ? _nrInNodes : junctionSizes[i-1],
-		                                       i==numLayers-1 ? _nrOutputNodes : junctionSizes[i],
+		                                       i==numLayers-1 ? _nrOutNodes : junctionSizes[i],
 		                                       PT_); // all brains start randomized, then some are read from their files
-		if(!bfn.empty()) {
-			ifstream brainFile(bfn);
+		if(!brainFileNames[i].empty()) {
+			ifstream brainFile(brainFileNames[i]);
 			string layerJSONStr;
 			getline(brainFile, layerJSONStr);
 			brainFile.close();
 
 			string name("currentLayer");
-			unordered_map<string,string> surrogateOrgData { { string("BRAIN_") + name + "_json",  layerJSONStr };
+			unordered_map<string,string> surrogateOrgData { { string("BRAIN_") + name + "_json", string("'") + layerJSONStr + string("'") } };
 			layers[i]->deserialize(PT_, surrogateOrgData, name);
-			layerEvolvable = false;
+			layerEvolvable[i] = false;
 		}
 	}
 	mutationRates = constMutationRates;
@@ -99,7 +99,7 @@ shared_ptr<AbstractBrain> LayeredBrain::makeCopy(shared_ptr<ParametersTable> PT_
 
 shared_ptr<AbstractBrain> LayeredBrain::makeBrain(unordered_map<string,shared_ptr<AbstractGenome>>& _genomes) {
 	auto newBrain = make_shared<LayeredBrain>(nrInputValues, nrOutputValues, PT);
-	newBrain->randomize();
+//	newBrain->randomize();
 	return newBrain;
 }
 
@@ -176,7 +176,7 @@ DataMap LayeredBrain::serialize(string& name) {
 
 	// storing the string at the DataMap and returning it
 	DataMap dm;
-	dm.set(name + "_json", string("'") + brainJSONs.dump() + "'");
+	dm.set(name + "_json", string("'") + brainsJSONs.dump() + "'");
 	return dm;
 }
 
@@ -189,11 +189,11 @@ void LayeredBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<str
 	}
 	brainJSONsStr = brainJSONsStr.substr(1, brainJSONsStr.size()-2);
 
-	nlohmann::json brainJSONs = nlohmann::json::parse(brainJSONsStr);
+	nlohmann::json brainsJSONs = nlohmann::json::parse(brainJSONsStr);
 
 	for(unsigned l=0; l<numLayers; l++) {
 		string name = string("brain") + to_string(l);
-		unordered_map<string,string> surrogateOrgData { { string("BRAIN_")+name+"_json", string("'") + brainJSONs[l].dump() + string("'") } };
+		unordered_map<string,string> surrogateOrgData { { string("BRAIN_")+name+"_json", string("'") + brainsJSONs[l].dump() + string("'") } };
 		layers[l]->deserialize(PT, surrogateOrgData, name);
 	}
 }
