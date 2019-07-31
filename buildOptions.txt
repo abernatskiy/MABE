@@ -25,6 +25,7 @@
   + BiLog
   - DerivedMarkov
   + DEMarkov
+  + LayeredBrain
 	
 % Optimizer
   * Simple
