@@ -51,7 +51,9 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 		layers[i] = DEMarkovBrain_brainFactory(i==0 ? _nrInNodes : junctionSizes[i-1],
 		                                       i==numLayers-1 ? _nrOutNodes : junctionSizes[i],
 		                                       PT_); // all brains start randomized, then some are read from their files
+		cout << "constructed layer " << i << endl;
 		if(!brainFileNames[i].empty()) {
+			cout << "file provided for current layer, deserializing..." << endl;
 			ifstream brainFile(brainFileNames[i]);
 			string layerJSONStr;
 			getline(brainFile, layerJSONStr);
@@ -63,6 +65,7 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 			layerEvolvable[i] = false;
 		}
 	}
+	cout << "done constructing layers" << endl;
 	mutationRates = constMutationRates;
 
 	// columns to be added to ave file
@@ -75,7 +78,6 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 //}
 
 void LayeredBrain::update() {
-
 	for(int i=0; i<nrInputValues; i++)
 		layers[0]->setInput(i, inputValues[i]);
 	layers[0]->update();
@@ -91,9 +93,10 @@ void LayeredBrain::update() {
 }
 
 shared_ptr<AbstractBrain> LayeredBrain::makeCopy(shared_ptr<ParametersTable> PT_) {
+	cout << "MakeCopy called" << endl;
 	auto newBrain = make_shared<LayeredBrain>(nrInputValues, nrOutputValues, PT);
 	for(unsigned l=0; l<numLayers; l++)
-		newBrain->layers[l] = layers[l]->makeCopy();
+		newBrain->layers[l] = layers[l]->makeCopy(PT_);
 	return newBrain;
 }
 
@@ -153,9 +156,13 @@ string LayeredBrain::description() {
 DataMap LayeredBrain::getStats(string& prefix) {
 	DataMap dataMap;
 	for(unsigned l=0; l<numLayers; l++) {
-		string prefix = string("brain") + to_string(l);
-		dataMap.merge(layers[l]->getStats(prefix));
+		string fullPrefix = prefix + (prefix==""?"":"_") + "brain" + to_string(l) + "_";
+		dataMap.merge(layers[l]->getStats(fullPrefix));
 	}
+
+	cout << "getStats called with prefix " << prefix << ", resulting DataMap:" << endl;
+	cout << dataMap.getTextualRepresentation() << endl;
+
 	return dataMap;
 }
 
