@@ -39,6 +39,7 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 	const vector<string> brainFileNames { "layer0.json", "" };
 	const vector<unsigned> junctionSizes { 20 };
 	const vector<double> constMutationRates { 0., 1. };
+	const vector<int> constHiddenNodes { 10, 10 };
 
 	numLayers = brainFileNames.size();
 	if( numLayers<1 ) {
@@ -48,12 +49,36 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 	layers.resize(numLayers);
 	layerEvolvable.resize(numLayers, true);
 	for(unsigned i=0; i<numLayers; i++) {
+		shared_ptr<ParametersTable> curPT = make_shared<ParametersTable>("", nullptr);
+
+		///// Layer-specific paramters /////
+		curPT->setParameter("BRAIN_DEMARKOV-hiddenNodes",
+		                    brainFileNames[i]=="" ? constHiddenNodes[i] : PT_->lookupInt("BRAIN_DEMARKOV-hiddenNodes") );
+		///// Layer-specific paramters END /////
+
+		///// Parameter forwarding /////
+		curPT->setParameter("BRAIN_DEMARKOV_ADVANCED-recordIOMap",
+		                    PT_->lookupBool("BRAIN_DEMARKOV_ADVANCED-recordIOMap"));
+		curPT->setParameter("BRAIN_MARKOV_GATES_DETERMINISTIC-IO_Ranges",
+		                    PT_->lookupString("BRAIN_MARKOV_GATES_DETERMINISTIC-IO_Ranges"));
+		const vector<string> forwardedDoubleParamNames = { "BRAIN_DEMARKOV-gateInsertionProbability",
+		                                                   "BRAIN_DEMARKOV-gateDuplicationProbability",
+		                                                   "BRAIN_DEMARKOV-gateDeletionProbability",
+		                                                   "BRAIN_DEMARKOV-connectionToTableChangeRatio" };
+		for(const auto& param : forwardedDoubleParamNames)
+			curPT->setParameter(param, PT_->lookupDouble(param));
+		const vector<string> forwardedIntParamNames = { "BRAIN_DEMARKOV-initialGateCount",
+		                                                "BRAIN_DEMARKOV-minGateCount" };
+		for(const auto& param : forwardedIntParamNames)
+			curPT->setParameter(param, PT_->lookupInt(param));
+		///// Parameter forwarding END /////
+
 		layers[i] = DEMarkovBrain_brainFactory(i==0 ? _nrInNodes : junctionSizes[i-1],
 		                                       i==numLayers-1 ? _nrOutNodes : junctionSizes[i],
-		                                       PT_); // all brains start randomized, then some are read from their files
-		cout << "constructed layer " << i << endl;
+		                                       curPT); // all brains start randomized, then some are read from their files
+//		cout << "constructed layer " << i << endl;
 		if(!brainFileNames[i].empty()) {
-			cout << "file provided for current layer, deserializing..." << endl;
+//			cout << "file provided for current layer, deserializing..." << endl;
 			ifstream brainFile(brainFileNames[i]);
 			string layerJSONStr;
 			getline(brainFile, layerJSONStr);
@@ -65,7 +90,7 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 			layerEvolvable[i] = false;
 		}
 	}
-	cout << "done constructing layers" << endl;
+//	cout << "done constructing layers" << endl;
 	mutationRates = constMutationRates;
 
 	// columns to be added to ave file
@@ -78,11 +103,14 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 //}
 
 void LayeredBrain::update() {
+//	cout << "Updating layer 0 of brain " << this << endl;
+
 	for(int i=0; i<nrInputValues; i++)
 		layers[0]->setInput(i, inputValues[i]);
 	layers[0]->update();
 
 	for(unsigned l=1; l<numLayers; l++) {
+//		cout << "Updating layer " << l << " of brain " << this << endl;
 		for(int i=0; i<(layers[l]->nrInputValues); i++)
 			layers[l]->setInput(i, layers[l-1]->readOutput(i));
 		layers[l]->update();
@@ -93,7 +121,7 @@ void LayeredBrain::update() {
 }
 
 shared_ptr<AbstractBrain> LayeredBrain::makeCopy(shared_ptr<ParametersTable> PT_) {
-	cout << "MakeCopy called" << endl;
+//	cout << "MakeCopy called" << endl;
 	auto newBrain = make_shared<LayeredBrain>(nrInputValues, nrOutputValues, PT);
 	for(unsigned l=0; l<numLayers; l++)
 		newBrain->layers[l] = layers[l]->makeCopy(PT_);
@@ -160,8 +188,8 @@ DataMap LayeredBrain::getStats(string& prefix) {
 		dataMap.merge(layers[l]->getStats(fullPrefix));
 	}
 
-	cout << "getStats called with prefix " << prefix << ", resulting DataMap:" << endl;
-	cout << dataMap.getTextualRepresentation() << endl;
+//	cout << "getStats called with prefix " << prefix << ", resulting DataMap:" << endl;
+//	cout << dataMap.getTextualRepresentation() << endl;
 
 	return dataMap;
 }
