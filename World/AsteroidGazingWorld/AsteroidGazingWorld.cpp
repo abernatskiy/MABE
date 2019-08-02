@@ -30,6 +30,9 @@ std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::numRandomInitialConditi
 	                               "Note: only relatve saccading sensors support this ATM. Non-positive values correspond to\n"
 	                               "one evaluation per view with default initial conditions (retina in the upper left corner for\n"
 	                               "relative saccading sensors). (default: -1)");
+std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::compressToBitsPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING-compressToBits", 20,
+                                 "if CompressedMentalImage is used, how many bits should it compress the input to? (default: 20)");
 
 int AsteroidGazingWorld::initialConditionsInitialized = 0;
 std::map<std::string,std::vector<Range2d>> AsteroidGazingWorld::commonRelativeSensorsInitialConditions;
@@ -93,6 +96,6 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 	                                                 numTriggerBitsPL->get(PT_),
 	                                                 integrateFitnessPL->get(PT_));
 */
-	mentalImage = std::make_shared<CompressedMentalImage>(currentAsteroidName, datasetParser, sensors, 20);
+	mentalImage = std::make_shared<CompressedMentalImage>(currentAsteroidName, datasetParser, sensors, compressToBitsPL->get(PT_));
 	makeMotors();
 };

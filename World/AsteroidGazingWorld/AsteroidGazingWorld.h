@@ -19,6 +19,7 @@ private:
 	static std::shared_ptr<ParameterLink<bool>> integrateFitnessPL;
 	static std::shared_ptr<ParameterLink<int>> numTriggerBitsPL;
 	static std::shared_ptr<ParameterLink<int>> numRandomInitialConditionsPL;
+	static std::shared_ptr<ParameterLink<int>> compressToBitsPL;
 
 	std::shared_ptr<AsteroidsDatasetParser> datasetParser;
 
