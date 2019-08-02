@@ -46,6 +46,10 @@ public:
 		numberOfControls(3+ceilLog2(gradations)) {};
 
 	Range2d decode2dRangeJump(const Range2d& start, std::vector<bool>::iterator controlsStart, std::vector<bool>::iterator controlsEnd) override {
+		// zero gradations case gets special treatment
+		if(gradations==0)
+			return Range2d( { {0, outSize}, {0, outSize} } );
+
     // bitmasks for main directions
 		// 0 0 0   1 1 0   1 0 1
 		// 1   0   1   0   0   0
@@ -88,7 +92,7 @@ public:
 		return Range2d(xrange, yrange);
 	};
 
-	unsigned numControls() override { return numberOfControls; };
+	unsigned numControls() override { return gradations==0 ? 0 : numberOfControls; };
 
 private:
 	Range1d shiftAndClip(const Range1d& start, int shift) {
