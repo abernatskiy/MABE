@@ -36,10 +36,14 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 	AbstractBrain(_nrInNodes, _nrOutNodes, PT_),
 	visualize(Global::modePL->get() == "visualize") {
 
+//	const vector<string> brainFileNames { "layer0.json", "layer1.json", "layer2.json", "" };
+//	const vector<unsigned> junctionSizes { 20, 15, 12 };
+//	const vector<double> constMutationRates { 0., 0., 0., 1. };
+//	const vector<int> constHiddenNodes { 10, 10, 0, 0 };
 	const vector<string> brainFileNames { "layer0.json", "" };
 	const vector<unsigned> junctionSizes { 20 };
 	const vector<double> constMutationRates { 0., 1. };
-	const vector<int> constHiddenNodes { 10, 10 };
+	const vector<int> constHiddenNodes { 0, 0 };
 
 	numLayers = brainFileNames.size();
 	if( numLayers<1 ) {
@@ -53,7 +57,7 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 
 		///// Layer-specific paramters /////
 		curPT->setParameter("BRAIN_DEMARKOV-hiddenNodes",
-		                    brainFileNames[i]=="" ? constHiddenNodes[i] : PT_->lookupInt("BRAIN_DEMARKOV-hiddenNodes") );
+		                    brainFileNames[i]=="" ? PT_->lookupInt("BRAIN_DEMARKOV-hiddenNodes") : constHiddenNodes[i] );
 		///// Layer-specific paramters END /////
 
 		///// Parameter forwarding /////
