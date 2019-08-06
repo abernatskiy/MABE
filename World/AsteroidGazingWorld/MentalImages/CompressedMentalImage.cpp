@@ -35,7 +35,7 @@ double computeFuzzySharedEntropy(const std::map<std::pair<std::string,std::strin
                                  const std::map<std::string,unsigned>& patternCounts,
                                  const std::map<std::string,unsigned>& labelCounts,
                                  unsigned numSamples,
-                                 HammingNeighborGenerator& hng) {
+                                 HammingNeighborhoodGenerator& hng) {
 	using namespace std;
 	map<string,double> labelDistribution;
 	for(const auto& lpair : labelCounts)
@@ -48,19 +48,19 @@ double computeFuzzySharedEntropy(const std::map<std::pair<std::string,std::strin
 		string label, pattern;
 		tie(label, pattern) = jcpair.first;
 
-		incrementMapField(fuzzyJoint, jcpair.first, 1.);
-		normalizationConstant += 1.;
+		incrementMapField(fuzzyJoint, jcpair.first, static_cast<double>(jcpair.second));
+		normalizationConstant += static_cast<double>(jcpair.second);
 
 		for(unsigned d=1; d<3; d++) {
 			vector<string> neighborhood = hng.getNeighbors(pattern, d);
-			double increment = 1./static_cast<double>(neighborhood.size());
-			for(const auto& fn : firstNeighborhood) {
-				incrementMapField(fuzzyJoint, jcpair.first, increment);
+			double increment = static_cast<double>(jcpair.second)/static_cast<double>(neighborhood.size());
+			for(const auto& fn : neighborhood) {
+				incrementMapField(fuzzyJoint, make_pair(label, fn), increment);
 				normalizationConstant += increment;
 			}
 		}
 	}
-	cout << "Normalization const is " << normalizationConstant << " while num samples is " << numSamples << endl;
+//	cout << "Normalization const is " << scientific << normalizationConstant << " while num samples is " << numSamples << endl;
 	for(auto& fjpair : fuzzyJoint)
 		fjpair.second /= normalizationConstant;
 //	printMap(fuzzyJoint); cout << endl;
