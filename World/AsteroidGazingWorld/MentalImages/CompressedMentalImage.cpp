@@ -7,8 +7,8 @@
 
 /***** Auxiliary functions *****/
 
-template<class T>
-void incrementMapField(std::map<T,unsigned>& mymap, const T& key, int theIncrement = 1) {
+template<class KeyClass, typename NumType>
+void incrementMapField(std::map<KeyClass,NumType>& mymap, const KeyClass& key, NumType theIncrement = 1) {
 	if(mymap.find(key)==mymap.end())
 		mymap[key] = theIncrement;
 	else
@@ -29,6 +29,55 @@ void printMap(const std::map<std::pair<std::string,std::string>,NumType>& mymap)
 	for(const auto& mpair : mymap)
 		std::cout << (st++==0?"(":" (") << mpair.first.first << "," << mpair.first.second << "):" << mpair.second;
 	std::cout << std::endl;
+}
+
+double computeFuzzySharedEntropy(const std::map<std::pair<std::string,std::string>,unsigned>& jointCounts,
+                                 const std::map<std::string,unsigned>& patternCounts,
+                                 const std::map<std::string,unsigned>& labelCounts,
+                                 unsigned numSamples,
+                                 HammingNeighborGenerator& hng) {
+	using namespace std;
+	map<string,double> labelDistribution;
+	for(const auto& lpair : labelCounts)
+		labelDistribution[lpair.first] = static_cast<double>(lpair.second)/static_cast<double>(numSamples);
+//	printMap(labelDistribution); cout << endl;
+
+	map<pair<string,string>,double> fuzzyJoint;
+	double normalizationConstant = 0.;
+	for(const auto& jcpair : jointCounts) {
+		string label, pattern;
+		tie(label, pattern) = jcpair.first;
+
+		incrementMapField(fuzzyJoint, jcpair.first, 1.);
+		normalizationConstant += 1.;
+
+		for(unsigned d=1; d<3; d++) {
+			vector<string> neighborhood = hng.getNeighbors(pattern, d);
+			double increment = 1./static_cast<double>(neighborhood.size());
+			for(const auto& fn : firstNeighborhood) {
+				incrementMapField(fuzzyJoint, jcpair.first, increment);
+				normalizationConstant += increment;
+			}
+		}
+	}
+	cout << "Normalization const is " << normalizationConstant << " while num samples is " << numSamples << endl;
+	for(auto& fjpair : fuzzyJoint)
+		fjpair.second /= normalizationConstant;
+//	printMap(fuzzyJoint); cout << endl;
+
+
+	map<string,double> fuzzyPatterns;
+	for(const auto& fjpair : fuzzyJoint)
+		incrementMapField(fuzzyPatterns, fjpair.first.second, fjpair.second);
+//	printMap(fuzzyPatterns); cout << endl;
+
+	double patternLabelInfo = 0.;
+	for(const auto& fjpair : fuzzyJoint) {
+		string label, pattern;
+		tie(label, pattern) = fjpair.first;
+		patternLabelInfo += fjpair.second*log10(fjpair.second/(labelDistribution[label]*fuzzyPatterns[pattern]));
+	}
+	return patternLabelInfo;
 }
 
 double computeSharedEntropy(const std::map<std::pair<std::string,std::string>,unsigned>& jointCounts,
@@ -166,7 +215,8 @@ CompressedMentalImage::CompressedMentalImage(std::shared_ptr<std::string> curAst
 	datasetParserPtr(dsParserPtr),
 	sensorsPtr(sPtr),
 	mVisualize(Global::modePL->get() == "visualize"),
-	numBits(nBits) {}
+	numBits(nBits),
+	hngen(nBits) {}
 //	numTriggerBits(nTriggerBits<0 ? static_cast<unsigned>(-1*nTriggerBits) : static_cast<unsigned>(nTriggerBits)),
 //	requireTriggering(nTriggerBits<0),
 //	integrateFitness(intFitness),
@@ -272,6 +322,7 @@ void CompressedMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 	sampleScoresMap->append("lostStates", static_cast<double>(lostStates));
 	sampleScoresMap->append("lostLabels", static_cast<double>(lostLabels));
 
+	sampleScoresMap->append("fuzzyPatternLabelInformation", computeFuzzySharedEntropy(jointCounts, patternCounts, labelCounts, numSamples, hngen));
 	sampleScoresMap->append("patternLabelInformation", computeSharedEntropy(jointCounts, patternCounts, labelCounts, numSamples));
 	sampleScoresMap->append("averageLabelConditionalEntropy", computeAverageLabelConditionalEntropy(jointCounts, labelCounts, numSamples));
 	if(mVisualize) {
@@ -306,6 +357,7 @@ void CompressedMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std:
 	org->dataMap.append("lostStates", sampleScoresMap->getAverage("lostStates"));
 	org->dataMap.append("lostLabels", sampleScoresMap->getAverage("lostLabels"));
 
+	org->dataMap.append("fuzzyPatternLabelInformation", sampleScoresMap->getAverage("fuzzyPatternLabelInformation"));
 	org->dataMap.append("patternLabelInformation", sampleScoresMap->getAverage("patternLabelInformation"));
 	org->dataMap.append("averageLabelConditionalEntropy", sampleScoresMap->getAverage("averageLabelConditionalEntropy"));
 

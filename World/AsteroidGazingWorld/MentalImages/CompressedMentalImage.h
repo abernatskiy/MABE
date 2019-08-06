@@ -9,6 +9,7 @@
 #include "../../AbstractMentalImage.h"
 #include "../Utilities/AsteroidsDatasetParser.h"
 #include "../../AbstractSensors.h"
+#include "../../../Utilities/hngen/hngen.h"
 
 class CompressedMentalImage : public AbstractMentalImage {
 
@@ -38,6 +39,8 @@ private:
 	const bool mVisualize;
 
 	const unsigned numBits;
+
+	HammingNeighborhoodGenerator hngen;
 
 	//// Stuff that might become useful in the future
 	// std::vector<std::string> stateTS;
