@@ -80,6 +80,57 @@ double computeFuzzySharedEntropy(const std::map<std::pair<std::string,std::strin
 	return patternLabelInfo;
 }
 
+double computeRepellingSharedEntropy(const std::map<std::pair<std::string,std::string>,unsigned>& jointCounts,
+                                     const std::map<std::string,unsigned>& patternCounts,
+                                     const std::map<std::string,unsigned>& labelCounts,
+                                     unsigned numSamples) {
+	using namespace std;
+	map<string,double> labelDistribution;
+	for(const auto& lpair : labelCounts)
+		labelDistribution[lpair.first] = static_cast<double>(lpair.second)/static_cast<double>(numSamples);
+//	printMap(labelDistribution); cout << endl;
+
+	map<pair<string,string>,double> repellingJoint;
+	double normalizationConstant = 0.;
+	for(const auto& jcpair : jointCounts) {
+		string label, pattern;
+		tie(label, pattern) = jcpair.first;
+
+		incrementMapField(repellingJoint, jcpair.first, static_cast<double>(jcpair.second));
+		normalizationConstant += static_cast<double>(jcpair.second);
+
+		for(const auto& otherJCPair : jointCounts) {
+			string otherLabel, otherPattern;
+			tie(otherLabel, otherPattern) = otherJCPair.first;
+			if(otherPattern==pattern)
+				continue;
+
+			double dist = static_cast<double>(hexStringHammingDistance(pattern, otherPattern));
+			double crosstalk = static_cast<double>(jcpair.second)*exp(-dist);
+			incrementMapField(repellingJoint, make_pair(label, otherPattern), crosstalk);
+			normalizationConstant += crosstalk;
+		}
+	}
+//	cout << "Normalization const is " << scientific << normalizationConstant << " while num samples is " << numSamples << endl;
+	for(auto& rjpair : repellingJoint)
+		rjpair.second /= normalizationConstant;
+//	printMap(repellingJoint); cout << endl;
+
+
+	map<string,double> repellingPatterns;
+	for(const auto& rjpair : repellingJoint)
+		incrementMapField(repellingPatterns, rjpair.first.second, rjpair.second);
+//	printMap(repellingPatterns); cout << endl;
+
+	double patternLabelInfo = 0.;
+	for(const auto& rjpair : repellingJoint) {
+		string label, pattern;
+		tie(label, pattern) = rjpair.first;
+		patternLabelInfo += rjpair.second*log10(rjpair.second/(labelDistribution[label]*repellingPatterns[pattern]));
+	}
+	return patternLabelInfo;
+}
+
 double computeSharedEntropy(const std::map<std::pair<std::string,std::string>,unsigned>& jointCounts,
                             const std::map<std::string,unsigned>& patternCounts,
                             const std::map<std::string,unsigned>& labelCounts,
@@ -322,7 +373,8 @@ void CompressedMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 	sampleScoresMap->append("lostStates", static_cast<double>(lostStates));
 	sampleScoresMap->append("lostLabels", static_cast<double>(lostLabels));
 
-	sampleScoresMap->append("fuzzyPatternLabelInformation", computeFuzzySharedEntropy(jointCounts, patternCounts, labelCounts, numSamples, hngen));
+	sampleScoresMap->append("repellingPatternLabelInformation", computeRepellingSharedEntropy(jointCounts, patternCounts, labelCounts, numSamples));
+//	sampleScoresMap->append("fuzzyPatternLabelInformation", computeFuzzySharedEntropy(jointCounts, patternCounts, labelCounts, numSamples, hngen));
 	sampleScoresMap->append("patternLabelInformation", computeSharedEntropy(jointCounts, patternCounts, labelCounts, numSamples));
 	sampleScoresMap->append("averageLabelConditionalEntropy", computeAverageLabelConditionalEntropy(jointCounts, labelCounts, numSamples));
 	if(mVisualize) {
@@ -338,12 +390,12 @@ void CompressedMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 		for(const auto& jppair : jointCounts) {
 			std::string label, pattern;
 			std::tie(label, pattern) = jppair.first;
-			if(decipherer.find(pattern)==decipherer.end())
-				unknownPattern += jppair.second;
-			else if(decipherer[pattern]==label)
-				successfulTrials += jppair.second;
-//			if(labelOfClosestNeighbor(pattern, decipherer)==label)
+//			if(decipherer.find(pattern)==decipherer.end())
+//				unknownPattern += jppair.second;
+//			else if(decipherer[pattern]==label)
 //				successfulTrials += jppair.second;
+			if(labelOfClosestNeighbor(pattern, decipherer)==label)
+				successfulTrials += jppair.second;
 			totalTrials += jppair.second;
 		}
 		std::cout << "Out of " << totalTrials << " trials " << successfulTrials << " were successful and " << unknownPattern << " yielded unknown patterns" << std::endl;
@@ -357,7 +409,8 @@ void CompressedMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std:
 	org->dataMap.append("lostStates", sampleScoresMap->getAverage("lostStates"));
 	org->dataMap.append("lostLabels", sampleScoresMap->getAverage("lostLabels"));
 
-	org->dataMap.append("fuzzyPatternLabelInformation", sampleScoresMap->getAverage("fuzzyPatternLabelInformation"));
+	org->dataMap.append("repellingPatternLabelInformation", sampleScoresMap->getAverage("repellingPatternLabelInformation"));
+//	org->dataMap.append("fuzzyPatternLabelInformation", sampleScoresMap->getAverage("fuzzyPatternLabelInformation"));
 	org->dataMap.append("patternLabelInformation", sampleScoresMap->getAverage("patternLabelInformation"));
 	org->dataMap.append("averageLabelConditionalEntropy", sampleScoresMap->getAverage("averageLabelConditionalEntropy"));
 
