@@ -37,13 +37,24 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 	visualize(Global::modePL->get() == "visualize") {
 
 //	const vector<string> brainFileNames { "layer0.json", "layer1.json", "layer2.json", "" };
-//	const vector<unsigned> junctionSizes { 20, 15, 12 };
+//	const vector<unsigned> junctionSizes { 20, 15, 10 };
 //	const vector<double> constMutationRates { 0., 0., 0., 1. };
-//	const vector<int> constHiddenNodes { 10, 10, 0, 0 };
-	const vector<string> brainFileNames { "layer0.json", "" };
-	const vector<unsigned> junctionSizes { 20 };
-	const vector<double> constMutationRates { 0., 1. };
-	const vector<int> constHiddenNodes { 0, 0 };
+//	const vector<int> constHiddenNodes { 0, 0, 0, 0 };
+
+//	const vector<string> brainFileNames { "layer0.json", "layer1.json", "" };
+//	const vector<unsigned> junctionSizes { 20, 15 };
+//	const vector<double> constMutationRates { 0., 0., 1. };
+//	const vector<int> constHiddenNodes { 0, 0, 0 };
+
+//	const vector<string> brainFileNames { "layer0.json", "" };
+//	const vector<unsigned> junctionSizes { 20 };
+//	const vector<double> constMutationRates { 0., 1. };
+//	const vector<int> constHiddenNodes { 0, 0 };
+
+	const vector<string> brainFileNames { "" };
+	const vector<unsigned> junctionSizes { };
+	const vector<double> constMutationRates { 1. };
+	const vector<int> constHiddenNodes { 0 };
 
 	numLayers = brainFileNames.size();
 	if( numLayers<1 ) {
