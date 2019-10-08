@@ -42,7 +42,7 @@ def touch(fname, mode=0o666, dir_fd=None, **kwargs): ## from https://stackoverfl
             dir_fd=None if os.supports_fd else dir_fd, **kwargs)
 
 compiler = args.compiler
-compFlags='-g -Wno-c++98-compat -w -Wall -std=c++14 -O3 -lpng -lpthread -pthread -I${HOME}/libs/include -I${HOME}/libs-tmp/boost_1_65_0 -L${HOME}/libs-tmp/boost_1_65_0/stage/lib -lboost_filesystem -lboost_system -fopenmp'
+compFlags='-g -Wno-c++98-compat -w -Wall -std=c++14 -O3 -lpng -lpthread -pthread -L${HOME}/local/lib -lboost_filesystem -lboost_system -fopenmp'
 
 if (args.gprof):
     compFlags =  compFlags + ' -pg'
