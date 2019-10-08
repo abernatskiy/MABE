@@ -373,7 +373,7 @@ void CompressedMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 	sampleScoresMap->append("lostStates", static_cast<double>(lostStates));
 	sampleScoresMap->append("lostLabels", static_cast<double>(lostLabels));
 
-//	sampleScoresMap->append("repellingPatternLabelInformation", computeRepellingSharedEntropy(jointCounts, patternCounts, labelCounts, numSamples));
+	sampleScoresMap->append("repellingPatternLabelInformation", computeRepellingSharedEntropy(jointCounts, patternCounts, labelCounts, numSamples));
 //	sampleScoresMap->append("fuzzyPatternLabelInformation", computeFuzzySharedEntropy(jointCounts, patternCounts, labelCounts, numSamples, hngen));
 	sampleScoresMap->append("patternLabelInformation", computeSharedEntropy(jointCounts, patternCounts, labelCounts, numSamples));
 	sampleScoresMap->append("averageLabelConditionalEntropy", computeAverageLabelConditionalEntropy(jointCounts, labelCounts, numSamples));
