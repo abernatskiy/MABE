@@ -409,7 +409,7 @@ void CompressedMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std:
 	org->dataMap.append("lostStates", sampleScoresMap->getAverage("lostStates"));
 	org->dataMap.append("lostLabels", sampleScoresMap->getAverage("lostLabels"));
 
-//	org->dataMap.append("repellingPatternLabelInformation", sampleScoresMap->getAverage("repellingPatternLabelInformation"));
+	org->dataMap.append("repellingPatternLabelInformation", sampleScoresMap->getAverage("repellingPatternLabelInformation"));
 //	org->dataMap.append("fuzzyPatternLabelInformation", sampleScoresMap->getAverage("fuzzyPatternLabelInformation"));
 	org->dataMap.append("patternLabelInformation", sampleScoresMap->getAverage("patternLabelInformation"));
 	org->dataMap.append("averageLabelConditionalEntropy", sampleScoresMap->getAverage("averageLabelConditionalEntropy"));
