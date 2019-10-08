@@ -51,7 +51,7 @@ public:
 private:
 	texture_type texture;
 	static unsigned long allocatedPixels;
-	const unsigned long maxMebibytes = 1024; // dataset must fit into 1 GiB
+	const unsigned long maxMebibytes = 10240; // dataset must fit into 10 GiB
 	const unsigned long maxPixels = maxMebibytes * 1024 * 1024 / sizeof(pixel_value_type);
 
 	std::map<std::tuple<std::uint32_t,std::uint32_t,std::uint32_t,std::uint32_t,std::uint32_t,std::uint32_t,std::uint8_t>,AsteroidSnapshot> areaCache;
