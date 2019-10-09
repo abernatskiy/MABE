@@ -10,10 +10,8 @@ std::vector<unsigned> getBatchSizes(unsigned numEvals, unsigned numBatches);
 class ParallelIsolatedEmbodiedWorld : public AbstractWorld {
 
 public:
-//  static std::shared_ptr<ParameterLink<int>> modePL;
-//  static std::shared_ptr<ParameterLink<int>> numberOfOutputsPL;
-//  static std::shared_ptr<ParameterLink<int>> evaluationsPerGenerationPL;
-//  static std::shared_ptr<ParameterLink<std::string>> brainNamePL;
+	static std::shared_ptr<ParameterLink<bool>> assumeDeterministicEvaluationsPL;
+	bool assumeDeterministicEvaluations;
 
 	static std::shared_ptr<ParameterLink<std::string>> groupNamePL; std::string groupName;
 	static std::shared_ptr<ParameterLink<int>> numThreadsPL; unsigned numThreads;

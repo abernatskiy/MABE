@@ -70,6 +70,7 @@ public:
 		for(int i=0; i<popSize; i++)
 			evaluateSolo(groups[groupName]->population[i], analyze, visualize, debug);
   };
+	bool assumesDeterministicEvaluations() const { return assumeDeterministicEvaluations; };
 
 	// Will need a rewrite if sensory or motor system will need a genome
 	std::unordered_map<std::string, std::unordered_set<std::string>> requiredGroups() override {

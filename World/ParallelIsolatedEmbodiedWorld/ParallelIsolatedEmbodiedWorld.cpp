@@ -19,25 +19,35 @@ std::vector<unsigned> getBatchSizes(unsigned numEvals, unsigned numBatches) {
 	return batchSizes;
 }
 
-/***** Parallel isolated embodied world class definitions *****/
+unsigned estimateActualEvaluationCount(std::vector<std::shared_ptr<Organism>>& population, bool assumeDeterministicEvaluations) {
+	unsigned numEvals = 0;
+	for(auto& org : population) {
+		if(assumeDeterministicEvaluations && org->dataMap.findKeyInData("evaluated")==11 && org->dataMap.getBool("evaluated"))
+			continue;
+		numEvals++;
+	}
+	return numEvals;
+}
 
-/*
-std::shared_ptr<ParameterLink<int>> TestWorld::modePL =
-    Parameters::register_parameter(
-        "WORLD_TEST-mode", 0, "0 = bit outputs before adding, 1 = add outputs");
-std::shared_ptr<ParameterLink<int>> TestWorld::numberOfOutputsPL =
-    Parameters::register_parameter("WORLD_TEST-numberOfOutputs", 10,
-                                   "number of outputs in this world");
-std::shared_ptr<ParameterLink<int>> TestWorld::evaluationsPerGenerationPL =
-    Parameters::register_parameter("WORLD_TEST-evaluationsPerGeneration", 1,
-                                   "Number of times to test each Genome per "
-                                   "generation (useful with non-deterministic "
-                                   "brains)");
-std::shared_ptr<ParameterLink<std::string>> TestWorld::brainNamePL =
-    Parameters::register_parameter(
-        "WORLD_TEST_NAMES-brainNameSpace", (std::string) "root::",
-        "namespace for parameters used to define brain");
-*/
+std::vector<unsigned> getBatchStarts(unsigned numBatches, const std::vector<unsigned>& batchSizes, std::vector<std::shared_ptr<Organism>>& population, bool assumeDeterministicEvaluations) {
+	std::vector<unsigned> batchStarts(numBatches);
+	unsigned curOrgPos = 0;
+	for(unsigned b=0; b<numBatches; b++) {
+		batchStarts[b] = curOrgPos;
+		unsigned evalsInCurBatch = 0;
+		while(evalsInCurBatch<batchSizes[b]) {
+			std::shared_ptr<Organism> org = population[curOrgPos];
+			curOrgPos++;
+			if(assumeDeterministicEvaluations && org->dataMap.findKeyInData("evaluated")==11 && org->dataMap.getBool("evaluated"))
+				continue;
+			else
+				evalsInCurBatch++;
+		}
+	}
+	return batchStarts;
+}
+
+/***** Parallel isolated embodied world class definitions *****/
 
 std::shared_ptr<ParameterLink<std::string>> ParallelIsolatedEmbodiedWorld::groupNamePL = Parameters::register_parameter("WORLD_PARALLEL_ISOLATED_EMBODIED-groupNameSpace", (std::string) "root::", "namespace of group to be evaluated");
 std::shared_ptr<ParameterLink<int>> ParallelIsolatedEmbodiedWorld::numThreadsPL = Parameters::register_parameter("WORLD_PARALLEL_ISOLATED_EMBODIED-numThreads", 8, "number of threads");
@@ -57,19 +67,27 @@ ParallelIsolatedEmbodiedWorld::ParallelIsolatedEmbodiedWorld(std::shared_ptr<Par
 
 void ParallelIsolatedEmbodiedWorld::evaluate(std::map<std::string, std::shared_ptr<Group>>& groups, int analyze, int visualize, int debug) {
 
-	unsigned popSize = groups[groupNamePL->get(PT)]->population.size();
-	if(popSize<numThreads)
-		std::cout << "ParalleIsolatedEmbodiedWorld: WARNING: population size " << popSize << " is less than the number of threads " << numThreads << std::endl;
+	unsigned numEvals = estimateActualEvaluationCount(groups[groupNamePL->get(PT)]->population, subworlds[0]->assumesDeterministicEvaluations());
 
-	std::vector<unsigned> batchSizes = getBatchSizes(popSize, numThreads);
-	std::vector<unsigned> batchStarts(numThreads, 0);
-	std::partial_sum(batchSizes.begin(), batchSizes.begin()+numThreads-1, batchStarts.begin()+1);
+	if(numEvals<numThreads)
+		std::cout << "ParalleIsolatedEmbodiedWorld: WARNING: number of evaluations " << numEvals << " is less than the number of threads " << numThreads << std::endl;
+
+	std::vector<unsigned> batchSizes = getBatchSizes(numEvals, numThreads);
+	std::vector<unsigned> batchStarts = getBatchStarts(numThreads, batchSizes, groups[groupNamePL->get(PT)]->population, subworlds[0]->assumesDeterministicEvaluations());
+
+//	std::cout << "Distributed " << numEvals << " evaluations of a population of size " << groups[groupNamePL->get(PT)]->population.size() << " over " << numThreads << " batches. Ranges:" << std::endl;
+//	for(unsigned b=0; b<numThreads; b++) {
+//		unsigned batchEnd = b==numThreads-1 ? groups[groupNamePL->get(PT)]->population.size() : batchStarts[b+1]+1;
+//		std::cout << "batch " << b << " begins at " << batchStarts[b] << " and contains " << batchSizes[b] << " evaluations (ends at " << batchEnd << ")" << std::endl;
+//	}
 
 	#pragma omp parallel num_threads(numThreads)
 	{
 		#pragma omp for
 		for(unsigned t=0; t<numThreads; t++) {
-			for(unsigned i=batchStarts[t]; i<(batchStarts[t]+batchSizes[t]); i++) {
+			unsigned batchStart = batchStarts[t];
+			unsigned batchEnd = t==numThreads-1 ? groups[groupNamePL->get(PT)]->population.size() : batchStarts[t+1]+1;
+			for(unsigned i=batchStart; i<batchEnd	; i++) {
 				subworlds[t]->evaluateSolo(groups[groupName]->population[i], analyze, visualize, debug);
 			}
 		}
