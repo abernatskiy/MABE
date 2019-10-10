@@ -77,7 +77,7 @@ void ParallelIsolatedEmbodiedWorld::evaluate(std::map<std::string, std::shared_p
 
 //	std::cout << "Distributed " << numEvals << " evaluations of a population of size " << groups[groupNamePL->get(PT)]->population.size() << " over " << numThreads << " batches. Ranges:" << std::endl;
 //	for(unsigned b=0; b<numThreads; b++) {
-//		unsigned batchEnd = b==numThreads-1 ? groups[groupNamePL->get(PT)]->population.size() : batchStarts[b+1]+1;
+//		unsigned batchEnd = b==numThreads-1 ? groups[groupNamePL->get(PT)]->population.size() : batchStarts[b+1];
 //		std::cout << "batch " << b << " begins at " << batchStarts[b] << " and contains " << batchSizes[b] << " evaluations (ends at " << batchEnd << ")" << std::endl;
 //	}
 
@@ -86,8 +86,9 @@ void ParallelIsolatedEmbodiedWorld::evaluate(std::map<std::string, std::shared_p
 		#pragma omp for
 		for(unsigned t=0; t<numThreads; t++) {
 			unsigned batchStart = batchStarts[t];
-			unsigned batchEnd = t==numThreads-1 ? groups[groupNamePL->get(PT)]->population.size() : batchStarts[t+1]+1;
+			unsigned batchEnd = t==numThreads-1 ? groups[groupNamePL->get(PT)]->population.size() : batchStarts[t+1];
 			for(unsigned i=batchStart; i<batchEnd	; i++) {
+//				std::cout << "Batch " << t << " evaluating indiv " << i << std::endl << std::flush;
 				subworlds[t]->evaluateSolo(groups[groupName]->population[i], analyze, visualize, debug);
 			}
 		}
