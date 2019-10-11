@@ -31,6 +31,33 @@ void printMap(const std::map<std::pair<std::string,std::string>,NumType>& mymap)
 	std::cout << std::endl;
 }
 
+template<class NumType>
+void printPatternConditionals(const std::map<std::pair<std::string,std::string>,NumType>& joint) {
+	std::map<std::string,std::map<std::string,NumType>> patternConditionals;
+	for(const auto& mpair : joint) {
+		std::string pattern = mpair.first.second;
+		auto itCurConditional = patternConditionals.find(pattern);
+		if(itCurConditional==patternConditionals.end()) {
+			patternConditionals[pattern] = {};
+			itCurConditional = patternConditionals.find(pattern);
+		}
+		std::string label = mpair.first.first;
+		auto itCurField = itCurConditional->second.find(label);
+		if(itCurField==itCurConditional->second.end()) {
+			itCurConditional->second.emplace(label, 0);
+			itCurField = itCurConditional->second.find(label);
+		}
+		itCurField->second += mpair.second;
+	}
+
+	for(const auto& patpair : patternConditionals) {
+		std::cout << patpair.first << ":";
+		for(const auto& labpair : patpair.second)
+			std::cout << " " << labpair.first << "-" << labpair.second;
+		std::cout << std::endl;
+	}
+}
+
 double computeFuzzySharedEntropy(const std::map<std::pair<std::string,std::string>,unsigned>& jointCounts,
                                  const std::map<std::string,unsigned>& patternCounts,
                                  const std::map<std::string,unsigned>& labelCounts,
@@ -85,6 +112,11 @@ double computeRepellingSharedEntropy(const std::map<std::pair<std::string,std::s
                                      const std::map<std::string,unsigned>& labelCounts,
                                      unsigned numSamples) {
 	using namespace std;
+
+//	cout << "Raw pattern conditional label distributions:" << endl;
+//	printPatternConditionals(jointCounts);
+//	cout << endl;
+
 	map<string,double> labelDistribution;
 	for(const auto& lpair : labelCounts)
 		labelDistribution[lpair.first] = static_cast<double>(lpair.second)/static_cast<double>(numSamples);
@@ -102,20 +134,25 @@ double computeRepellingSharedEntropy(const std::map<std::pair<std::string,std::s
 		for(const auto& otherJCPair : jointCounts) {
 			string otherLabel, otherPattern;
 			tie(otherLabel, otherPattern) = otherJCPair.first;
-			if(otherPattern==pattern)
-				continue;
+			if(otherPattern==pattern) continue;
+//			if(otherLabel==label) continue;
 
 			double dist = static_cast<double>(hexStringHammingDistance(pattern, otherPattern));
 			double crosstalk = static_cast<double>(jcpair.second)*exp(-dist);
+//			cout << "Crosstalk from (" << label << ", " << pattern << ") to (" << otherLabel << ", " << otherPattern << ") is " << crosstalk << " (added to " << label << ", " << otherPattern << ")" << endl;
 			incrementMapField(repellingJoint, make_pair(label, otherPattern), crosstalk);
 			normalizationConstant += crosstalk;
 		}
 	}
+
+//	cout << "Leaky pattern conditional label distributions:" << endl;
+//	printPatternConditionals(repellingJoint);
+//	cout << endl;
+
 //	cout << "Normalization const is " << scientific << normalizationConstant << " while num samples is " << numSamples << endl;
 	for(auto& rjpair : repellingJoint)
 		rjpair.second /= normalizationConstant;
 //	printMap(repellingJoint); cout << endl;
-
 
 	map<string,double> repellingPatterns;
 	for(const auto& rjpair : repellingJoint)
