@@ -1,0 +1,42 @@
+// compile with g++ -std=c++11 -o testhnng -x c++ hnng.cpp.test hnng.cpp labeledHNNG.cpp
+
+#include <iostream>
+
+#include "labeledHNNG.h"
+
+using namespace std;
+
+int main(int argc, char** argv) {
+
+	LabeledHNNG gen(30, 16);
+
+	const map<pair<string,string>,unsigned> testrawdb
+	{ {{"1","aabbcc"},5},
+	  {{"1","abbacd"},10},
+	  {{"5","abbacd"},7},
+	  {{"6","45716a"},2},
+	  {{"4","bbaccde"},6},
+	  {{"2","225566"},10} };
+
+	gen.index(testrawdb);
+
+	gen.print();
+
+	string testPat("aabbcd");
+
+	vector<pair<pair<string,string>,unsigned>> neighbors = gen.nearestNeighbors(testPat, 5);
+
+	cout << "Got nearest neighbors for " << testPat << ":" << endl;
+	for(const auto& neighstruct : neighbors) {
+		pair<string,string> lppair;
+		string label, pattern;
+		unsigned value;
+
+		tie(lppair, value) = neighstruct;
+		tie(label, pattern) = lppair;
+
+		cout << "(" << label << "," << pattern << "):" << value << endl;
+	}
+
+	return 0;
+}
