@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
-#include <map>
+#include <unordered_map>
 
 // Decoders based on "one-hot" encoding
 // Quotes are due to the fact that only the leftmost one counts, if there are any more ones to the right of it the decoder does not care
@@ -129,7 +129,7 @@ inline std::string bitRangeToHexStr(std::vector<double>::iterator startAt, unsig
 
 inline unsigned hexStringHammingDistance(const std::string& first, const std::string& second) {
 	unsigned dist = 0;
-	const std::map<char,unsigned> dec {{'0',0},{'1',1},{'2',2},{'3',3},{'4',4},{'5',5},{'6',6},{'7',7},{'8',8},{'9',9},{'a',10},{'b',11},{'c',12},{'d',13},{'e',14},{'f',15}};
+	const std::unordered_map<char,unsigned> dec {{'0',0},{'1',1},{'2',2},{'3',3},{'4',4},{'5',5},{'6',6},{'7',7},{'8',8},{'9',9},{'a',10},{'b',11},{'c',12},{'d',13},{'e',14},{'f',15}};
 	for(unsigned i=0; i<first.size(); i++) {
 		const unsigned diff = dec.at(first.at(i))^dec.at(second.at(i));
 		dist += (diff&1) + ((diff&2)>>1) + ((diff&4)>>2) + ((diff&8)>>3);
