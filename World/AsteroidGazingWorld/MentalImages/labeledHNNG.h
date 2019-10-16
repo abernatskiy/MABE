@@ -31,6 +31,7 @@ private:
 	std::vector<std::string> labels;
 	std::vector<ValueType> values;
 
+	const unsigned patternLength;
 	const unsigned subpatternsPerPattern;
 	const unsigned hexCharsPerSubpattern;
 

@@ -25,11 +25,15 @@ HammingNearestNeighborsGenerator::HammingNearestNeighborsGenerator(unsigned patt
 
 void HammingNearestNeighborsGenerator::index(shared_ptr<vector<vector<subpattern_t>>> newDatabase) {
 	database = newDatabase;
-	for(size_t pi=0; pi<database->size(); pi++) {
+	for(auto& subpatrec : multiIndex)
+		subpatrec.clear();
+//	cout << "Indexing a new database of size " << database->size() << " chunking patterns into " << subpatternsPerPattern << " each" << endl;
+	for(size_t pi=0; pi<(database->size()); pi++) {
 		for(size_t spi=0; spi<subpatternsPerPattern; spi++) {
 			auto itCurIndex = multiIndex.begin() + spi;
 			subpattern_t newSubpattern = database->at(pi).at(spi);
 			auto itSubpatternRecord = itCurIndex->find(newSubpattern);
+//			cout << "adding " << pi << endl;
 			if(itSubpatternRecord == itCurIndex->end())
 				itCurIndex->emplace(make_pair(newSubpattern, vector<size_t>({pi})));
 			else
@@ -82,6 +86,7 @@ set<pair<size_t,size_t>> HammingNearestNeighborsGenerator::getIndicesAndDistance
 					for(size_t spj=0; spj<subpatternsPerPattern; spj++) {
 						if(spj==spi) continue;
 
+//						cout << "nci=" << nci << " spj=" << spj << endl;
 						subpattern_t buffer1 = database->at(nci).at(spj);
 						buffer1 ^= centralPattern.at(spj);
 

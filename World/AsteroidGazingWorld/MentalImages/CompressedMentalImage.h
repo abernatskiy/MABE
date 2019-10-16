@@ -9,7 +9,8 @@
 #include "../../AbstractMentalImage.h"
 #include "../Utilities/AsteroidsDatasetParser.h"
 #include "../../AbstractSensors.h"
-#include "../../../Utilities/hngen/hngen.h"
+#include "../../../Utilities/hngen/hngen.h" // enumerator of spheres in Hamming space
+#include "labeledHNNG.h" // purpose-built fast Hamming neighborhood explorer that uses multi-index hashing
 
 class CompressedMentalImage : public AbstractMentalImage {
 
@@ -42,6 +43,8 @@ private:
 
 	HammingNeighborhoodGenerator hngen;
 
+	LabeledHNNG neighborsdb;
+
 	//// Stuff that might become useful in the future
 	// std::vector<std::string> stateTS;
 	// unsigned numTriggerBits;
@@ -72,4 +75,5 @@ public:
 
 private:
 	void readLabel();
+	double computeFastRepellingSharedEntropy();
 };

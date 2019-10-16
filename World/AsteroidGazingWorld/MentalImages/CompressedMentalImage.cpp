@@ -134,8 +134,7 @@ double computeRepellingSharedEntropy(const std::map<std::pair<std::string,std::s
 		for(const auto& otherJCPair : jointCounts) {
 			string otherLabel, otherPattern;
 			tie(otherLabel, otherPattern) = otherJCPair.first;
-			if(otherPattern==pattern) continue;
-//			if(otherLabel==label) continue;
+			if(otherPattern==pattern && otherLabel==label) continue;
 
 			double dist = static_cast<double>(hexStringHammingDistance(pattern, otherPattern));
 			double crosstalk = static_cast<double>(jcpair.second)*exp(-dist);
@@ -304,7 +303,8 @@ CompressedMentalImage::CompressedMentalImage(std::shared_ptr<std::string> curAst
 	sensorsPtr(sPtr),
 	mVisualize(Global::modePL->get() == "visualize"),
 	numBits(nBits),
-	hngen(nBits) {}
+	hngen(nBits),
+	neighborsdb(nBits, 16) {}
 //	numTriggerBits(nTriggerBits<0 ? static_cast<unsigned>(-1*nTriggerBits) : static_cast<unsigned>(nTriggerBits)),
 //	requireTriggering(nTriggerBits<0),
 //	integrateFitness(intFitness),
@@ -410,6 +410,7 @@ void CompressedMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 	sampleScoresMap->append("lostStates", static_cast<double>(lostStates));
 	sampleScoresMap->append("lostLabels", static_cast<double>(lostLabels));
 
+	sampleScoresMap->append("fastRepellingPatternLabelInformation", computeFastRepellingSharedEntropy());
 	sampleScoresMap->append("repellingPatternLabelInformation", computeRepellingSharedEntropy(jointCounts, patternCounts, labelCounts, numSamples));
 //	sampleScoresMap->append("fuzzyPatternLabelInformation", computeFuzzySharedEntropy(jointCounts, patternCounts, labelCounts, numSamples, hngen));
 	sampleScoresMap->append("patternLabelInformation", computeSharedEntropy(jointCounts, patternCounts, labelCounts, numSamples));
@@ -446,6 +447,7 @@ void CompressedMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std:
 	org->dataMap.append("lostStates", sampleScoresMap->getAverage("lostStates"));
 	org->dataMap.append("lostLabels", sampleScoresMap->getAverage("lostLabels"));
 
+	org->dataMap.append("fastRepellingPatternLabelInformation", sampleScoresMap->getAverage("fastRepellingPatternLabelInformation"));
 	org->dataMap.append("repellingPatternLabelInformation", sampleScoresMap->getAverage("repellingPatternLabelInformation"));
 //	org->dataMap.append("fuzzyPatternLabelInformation", sampleScoresMap->getAverage("fuzzyPatternLabelInformation"));
 	org->dataMap.append("patternLabelInformation", sampleScoresMap->getAverage("patternLabelInformation"));
@@ -476,4 +478,57 @@ void* CompressedMentalImage::logTimeSeries(const std::string& label) {
 void CompressedMentalImage::readLabel() {
 	const std::vector<std::vector<unsigned>>& commands = datasetParserPtr->cachingGetDescription(*currentAsteroidNamePtr);
 	curLabelString = std::to_string(commands[0][0]); // OK for ten digits; for higher number of labels should be fine, too, if less readable
+}
+
+double CompressedMentalImage::computeFastRepellingSharedEntropy() {
+	using namespace std;
+
+//	cout << "Raw pattern conditional label distributions:" << endl; printPatternConditionals(jointCounts); cout << endl;
+
+	map<string,double> labelDistribution;
+	for(const auto& lpair : labelCounts)
+		labelDistribution[lpair.first] = static_cast<double>(lpair.second)/static_cast<double>(numSamples);
+
+	neighborsdb.index(jointCounts);
+	map<pair<string,string>,double> repellingJoint;
+	double normalizationConstant = 0.;
+
+	for(const auto& jcpair : jointCounts) {
+		string label, pattern;
+		tie(label, pattern) = jcpair.first;
+
+		incrementMapField(repellingJoint, jcpair.first, static_cast<double>(jcpair.second));
+		normalizationConstant += static_cast<double>(jcpair.second);
+
+		for(auto neighborInfo : neighborsdb.getSomeNeighbors(pattern, 11)) {
+			string otherLabel, otherPattern;
+			unsigned otherCount;
+			size_t otherDistance;
+			tie(otherLabel, otherPattern, otherCount, otherDistance) = neighborInfo;
+			if(otherPattern==pattern && otherLabel==label) continue;
+
+			double dist = static_cast<double>(otherDistance);
+			double crosstalk = static_cast<double>(otherCount)*exp(-dist);
+//			cout << "Crosstalk from (" << label << ", " << pattern << ") to (" << otherLabel << ", " << otherPattern << ") is " << crosstalk << " (added to " << label << ", " << otherPattern << ")" << endl;
+			incrementMapField(repellingJoint, make_pair(otherLabel, pattern), crosstalk);
+			normalizationConstant += crosstalk;
+		}
+	}
+
+//	cout << "Leaky pattern conditional label distributions:" << endl; printPatternConditionals(repellingJoint); cout << endl;
+
+	for(auto& rjpair : repellingJoint)
+		rjpair.second /= normalizationConstant;
+
+	map<string,double> repellingPatterns;
+	for(const auto& rjpair : repellingJoint)
+		incrementMapField(repellingPatterns, rjpair.first.second, rjpair.second);
+
+	double patternLabelInfo = 0.;
+	for(const auto& rjpair : repellingJoint) {
+		string label, pattern;
+		tie(label, pattern) = rjpair.first;
+		patternLabelInfo += rjpair.second*log10(rjpair.second/(labelDistribution[label]*repellingPatterns[pattern]));
+	}
+	return patternLabelInfo;
 }

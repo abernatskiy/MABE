@@ -7,10 +7,11 @@
 
 using namespace std;
 
-LabeledHNNG::LabeledHNNG(unsigned patternLength, unsigned subpatternLength) :
-	hnng(patternLength, subpatternLength),
+LabeledHNNG::LabeledHNNG(unsigned pLength, unsigned subpatternLength) :
+	hnng(pLength, subpatternLength),
 	patternsdb(make_shared<vector<vector<subpattern_t>>>()),
-	subpatternsPerPattern(1 + ((patternLength-1) / subpatternLength)),
+	patternLength(pLength),
+	subpatternsPerPattern(1 + ((pLength-1) / subpatternLength)),
 	hexCharsPerSubpattern(subpatternLength/4) {
 
 	if(subpatternLength>8*sizeof(subpattern_t)) {
@@ -47,9 +48,10 @@ vector<tuple<string,string,ValueType,size_t>> LabeledHNNG::getSomeNeighbors(stri
 	vector<tuple<string,string,ValueType,size_t>> output;
 	set<pair<size_t,size_t>> neighborhood;
 	size_t radius = 0;
-	while(neighborhood.size() < minNumNeighbors) {
+//	print();
+	for(; radius<=patternLength; radius++) {
 		neighborhood = hnng.getIndicesAndDistancesOfNeighborsWithinSphere(pattern, radius);
-		radius++;
+//		cout << "Tried neighborhood of radius " << radius << ", got " << neighborhood.size() << " points" << endl;
 	}
 //	cout << "Stopping at radius " << radius << ", got " << neighborhood.size() << " neighbors" << endl;
 	for(auto nnpair : neighborhood) // nearest neighbor + distance pair
