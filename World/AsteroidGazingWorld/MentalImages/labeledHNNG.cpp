@@ -51,7 +51,7 @@ vector<tuple<string,string,ValueType,size_t>> LabeledHNNG::getSomeNeighbors(stri
 		neighborhood = hnng.getIndicesAndDistancesOfNeighborsWithinSphere(pattern, radius);
 		radius++;
 	}
-	cout << "Stopping at radius " << radius << ", got " << neighborhood.size() << " neighbors" << endl;
+//	cout << "Stopping at radius " << radius << ", got " << neighborhood.size() << " neighbors" << endl;
 	for(auto nnpair : neighborhood) // nearest neighbor + distance pair
 		output.push_back(make_tuple(labels[nnpair.first], patterns[nnpair.first], values[nnpair.first], nnpair.second));
 	return output;

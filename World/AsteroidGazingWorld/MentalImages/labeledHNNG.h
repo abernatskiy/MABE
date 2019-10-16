@@ -22,6 +22,7 @@ public:
 	std::vector<std::tuple<std::string,std::string,ValueType,size_t>> getSomeNeighbors(std::string pattern, size_t minNumNeighbors);
 	void print();
 	void printPerformanceStats();
+	std::pair<long unsigned, long unsigned> getPerformanceStats() { return hnng.stats(); };
 
 private:
 	HammingNearestNeighborsGenerator hnng;

@@ -58,9 +58,9 @@ set<pair<size_t,size_t>> HammingNearestNeighborsGenerator::getIndicesAndDistance
 	set<pair<size_t,size_t>> neighbors;
 	const subpattern_t subpatternRadius = radius / subpatternsPerPattern;
 	for(size_t spi=0; spi<subpatternsPerPattern; spi++) { // subpattern index
-		cout << "Subpattern " << spi << ":";
+//		cout << "Subpattern " << spi << ":";
 		for(const auto& curSPRecord : multiIndex[spi]) {
-			cout << " " << hex << curSPRecord.first << dec << ":d";
+//			cout << " " << hex << curSPRecord.first << dec << ":d";
 
 			subpattern_t buffer = curSPRecord.first;
 			buffer ^= centralPattern.at(spi);
@@ -71,10 +71,10 @@ set<pair<size_t,size_t>> HammingNearestNeighborsGenerator::getIndicesAndDistance
 			buffer = (buffer & 0x00ff00ff) + ((buffer>>8) & 0x00ff00ff);
 			buffer = (buffer & 0x0000ffff) + ((buffer>>16) & 0x0000ffff);
 
-			cout << buffer;
+//			cout << buffer;
 
 			if(buffer<=subpatternRadius) {
-				cout << ",added";
+//				cout << ",added";
 				for(const auto& nci : curSPRecord.second) { // neighbor candidate index
 					candidates++;
 
@@ -97,12 +97,12 @@ set<pair<size_t,size_t>> HammingNearestNeighborsGenerator::getIndicesAndDistance
 					if(totalDist<=radius) {
 						hits++;
 						neighbors.insert(make_pair(nci, totalDist));
-						cout << nci << ",";
+//						cout << nci << ",";
 					}
 				}
 			}
 		}
-		cout << endl;
+//		cout << endl;
 	}
 	return neighbors;
 }
