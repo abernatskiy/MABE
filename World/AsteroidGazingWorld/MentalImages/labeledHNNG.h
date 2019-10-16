@@ -2,7 +2,7 @@
 
 #include <map>
 #include <string>
-#include <utility>
+#include <tuple>
 #include <vector>
 #include <memory>
 #include <type_traits>
@@ -19,8 +19,9 @@ class LabeledHNNG {
 public:
 	LabeledHNNG(unsigned patternLength, unsigned subpatternLength);
 	void index(const std::map<std::pair<std::string,std::string>,ValueType>& rawDatabase);
-	std::vector<std::pair<std::pair<std::string,std::string>,ValueType>> nearestNeighbors(std::string pattern, size_t numNeighbors);
+	std::vector<std::tuple<std::string,std::string,ValueType,size_t>> getSomeNeighbors(std::string pattern, size_t minNumNeighbors);
 	void print();
+	void printPerformanceStats();
 
 private:
 	HammingNearestNeighborsGenerator hnng;

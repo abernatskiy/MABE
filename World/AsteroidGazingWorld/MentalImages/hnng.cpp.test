@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
 
 	const map<pair<string,string>,unsigned> testrawdb
 	{ {{"1","aabbcc"},5},
-	  {{"1","abbacd"},10},
+	  {{"1","abbacc"},10},
 	  {{"5","abbacd"},7},
 	  {{"6","45716a"},2},
 	  {{"4","bbaccde"},6},
@@ -22,21 +22,23 @@ int main(int argc, char** argv) {
 
 	gen.print();
 
-	string testPat("aabbcd");
+	string testPat("aabbcc");
 
-	vector<pair<pair<string,string>,unsigned>> neighbors = gen.nearestNeighbors(testPat, 5);
+	vector<tuple<string,string,unsigned,size_t>> neighbors = gen.getSomeNeighbors(testPat, 3);
 
 	cout << "Got nearest neighbors for " << testPat << ":" << endl;
 	for(const auto& neighstruct : neighbors) {
-		pair<string,string> lppair;
 		string label, pattern;
 		unsigned value;
+		size_t distance;
 
-		tie(lppair, value) = neighstruct;
-		tie(label, pattern) = lppair;
+		tie(label, pattern, value, distance) = neighstruct;
 
-		cout << "(" << label << "," << pattern << "):" << value << endl;
+		cout << "(" << label << "," << pattern << ":" << value << "," << distance << ")" << endl;
 	}
+
+	cout << "Performance stats:" << endl;
+	gen.printPerformanceStats();
 
 	return 0;
 }

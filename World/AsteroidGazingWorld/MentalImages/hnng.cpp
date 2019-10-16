@@ -8,7 +8,9 @@
 using namespace std;
 
 HammingNearestNeighborsGenerator::HammingNearestNeighborsGenerator(unsigned patternLength, unsigned subpatternLength) :
-	subpatternsPerPattern(1 + ((patternLength-1) / subpatternLength)) {
+	subpatternsPerPattern(1 + ((patternLength-1) / subpatternLength)),
+	candidates(0),
+	hits(0) {
 
 	if(subpatternLength>8*sizeof(subpattern_t)) {
 		cerr << "HammingNearestNeighborsGenerator: subpatterns of requested length (" << subpatternLength
@@ -34,6 +36,7 @@ void HammingNearestNeighborsGenerator::index(shared_ptr<vector<vector<subpattern
 				itSubpatternRecord->second.push_back(pi);
 		}
 	}
+	candidates = 0; hits = 0;
 }
 
 void HammingNearestNeighborsGenerator::printIndex() {
@@ -50,9 +53,9 @@ void HammingNearestNeighborsGenerator::printIndex() {
 	}
 }
 
-set<size_t> HammingNearestNeighborsGenerator::getIndicesOfNeighborsWithinSphere(const vector<subpattern_t>& centralPattern, unsigned radius) {
+set<pair<size_t,size_t>> HammingNearestNeighborsGenerator::getIndicesAndDistancesOfNeighborsWithinSphere(const vector<subpattern_t>& centralPattern, unsigned radius) {
 	static_assert(is_same<subpattern_t,uint32_t>::value, "HammingNearestNeighborsGenerator::getIndicesOfNeighborsWithinSphere requires rework whenever subpattern type is changed");
-	set<size_t> neighbors;
+	set<pair<size_t,size_t>> neighbors;
 	const subpattern_t subpatternRadius = radius / subpatternsPerPattern;
 	for(size_t spi=0; spi<subpatternsPerPattern; spi++) { // subpattern index
 		cout << "Subpattern " << spi << ":";
@@ -73,8 +76,29 @@ set<size_t> HammingNearestNeighborsGenerator::getIndicesOfNeighborsWithinSphere(
 			if(buffer<=subpatternRadius) {
 				cout << ",added";
 				for(const auto& nci : curSPRecord.second) { // neighbor candidate index
-					neighbors.insert(nci);
-					cout << nci << ",";
+					candidates++;
+
+					unsigned totalDist = buffer;
+					for(size_t spj=0; spj<subpatternsPerPattern; spj++) {
+						if(spj==spi) continue;
+
+						subpattern_t buffer1 = database->at(nci).at(spj);
+						buffer1 ^= centralPattern.at(spj);
+
+						buffer1 = (buffer1 & 0x55555555) + ((buffer1>>1) & 0x55555555);
+						buffer1 = (buffer1 & 0x33333333) + ((buffer1>>2) & 0x33333333);
+						buffer1 = (buffer1 & 0x0f0f0f0f) + ((buffer1>>4) & 0x0f0f0f0f);
+						buffer1 = (buffer1 & 0x00ff00ff) + ((buffer1>>8) & 0x00ff00ff);
+						buffer1 = (buffer1 & 0x0000ffff) + ((buffer1>>16) & 0x0000ffff);
+
+						totalDist += buffer1;
+					}
+
+					if(totalDist<=radius) {
+						hits++;
+						neighbors.insert(make_pair(nci, totalDist));
+						cout << nci << ",";
+					}
 				}
 			}
 		}

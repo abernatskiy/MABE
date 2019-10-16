@@ -42,11 +42,18 @@ void LabeledHNNG::index(const map<pair<string,string>,ValueType>& rawDatabase) {
 	hnng.index(patternsdb);
 }
 
-vector<pair<pair<string,string>,ValueType>> LabeledHNNG::nearestNeighbors(string rawPattern, size_t numNeighbors) {
+vector<tuple<string,string,ValueType,size_t>> LabeledHNNG::getSomeNeighbors(string rawPattern, size_t minNumNeighbors) {
 	vector<subpattern_t> pattern = hexStringPatternToSubpatternVector(rawPattern);
-	vector<pair<pair<string,string>,ValueType>> output;
-	for(auto nnidx : hnng.getIndicesOfNeighborsWithinSphere(pattern, 1)) // nearest neighbor index
-		output.push_back(make_pair(make_pair(labels[nnidx], patterns[nnidx]),values[nnidx]));
+	vector<tuple<string,string,ValueType,size_t>> output;
+	set<pair<size_t,size_t>> neighborhood;
+	size_t radius = 0;
+	while(neighborhood.size() < minNumNeighbors) {
+		neighborhood = hnng.getIndicesAndDistancesOfNeighborsWithinSphere(pattern, radius);
+		radius++;
+	}
+	cout << "Stopping at radius " << radius << ", got " << neighborhood.size() << " neighbors" << endl;
+	for(auto nnpair : neighborhood) // nearest neighbor + distance pair
+		output.push_back(make_tuple(labels[nnpair.first], patterns[nnpair.first], values[nnpair.first], nnpair.second));
 	return output;
 }
 
@@ -65,7 +72,10 @@ void LabeledHNNG::print() {
 	hnng.printIndex();
 }
 
-
-
+void LabeledHNNG::printPerformanceStats() {
+	long unsigned candidates, hits;
+	tie(candidates, hits) = hnng.stats();
+	cout << "Out of " << candidates << " evaluated candidates " << hits << " were hits" << endl;
+}
 
 
