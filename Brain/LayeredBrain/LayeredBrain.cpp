@@ -10,7 +10,9 @@
 
 using namespace std;
 
-/********** Static variables definition **********/
+/**************************************************/
+/********** Static variables definitions **********/
+/**************************************************/
 
 /*
 shared_ptr<ParameterLink<int>> DEMarkovBrain::hiddenNodesPL = Parameters::register_parameter("BRAIN_DEMARKOV-hiddenNodes", 8, "number of hidden nodes");
@@ -30,7 +32,9 @@ shared_ptr<ParameterLink<double>> DEMarkovBrain::connectionToTableChangeRatioPL 
 shared_ptr<ParameterLink<int>> DEMarkovBrain::minGateCountPL = Parameters::register_parameter("BRAIN_DEMARKOV-minGateCount", 0, "number of gates that causes gate deletions to become impossible (mutation operator calls itself if the mutation happens to be a deletion)");
 */
 
+/****************************************/
 /********** Public definitions **********/
+/****************************************/
 
 LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<ParametersTable> PT_) :
 	AbstractBrain(_nrInNodes, _nrOutNodes, PT_),
@@ -114,9 +118,6 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 //	popFileColumns.push_back("markovBrainDeterministicGates");
 }
 
-//void LayeredBrain::randomize() {
-//}
-
 void LayeredBrain::update() {
 //	cout << "Updating layer 0 of brain " << this << endl;
 
@@ -145,7 +146,6 @@ shared_ptr<AbstractBrain> LayeredBrain::makeCopy(shared_ptr<ParametersTable> PT_
 
 shared_ptr<AbstractBrain> LayeredBrain::makeBrain(unordered_map<string,shared_ptr<AbstractGenome>>& _genomes) {
 	auto newBrain = make_shared<LayeredBrain>(nrInputValues, nrOutputValues, PT);
-//	newBrain->randomize();
 	return newBrain;
 }
 
@@ -177,14 +177,6 @@ void LayeredBrain::resetBrain() {
 	for(auto& l : layers)
 		l->resetBrain();
 }
-
-//void LayeredBrain::resetInputs() {
-//	AbstractBrain::resetInputs();
-//}
-
-//void LayeredBrain::resetOutputs() {
-//	AbstractBrain::resetOutputs();
-//}
 
 string LayeredBrain::description() {
   string S = "Layered Brain\nins:" + to_string(nrInputValues) + " outs:" +
@@ -248,4 +240,6 @@ void LayeredBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<str
 	}
 }
 
+/*****************************************/
 /********** Private definitions **********/
+/*****************************************/

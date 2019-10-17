@@ -8,8 +8,6 @@
 class LayeredBrain : public AbstractBrain {
 private:
 	// Major constants
-//	int nrNodes;
-//	int nrHiddenNodes;
 
 	// Major state vars
 	unsigned numLayers;
@@ -18,17 +16,9 @@ private:
 	std::vector<double> mutationRates;
 
 	// Private methods
-//	std::shared_ptr<AbstractGate> getRandomGate(int gateID);
-//	void beginLogging();
 
 	// Infrastructure
 	const bool visualize;
-//	const bool recordIOMap;
-//	std::vector<std::vector<double>> nodesStatesTimeSeries;
-//	LogFile log;
-//	void logBrainStructure();
-//	int getLowestAvailableGateID();
-//	std::string originationStory;
 
 /*
 	static std::shared_ptr<ParameterLink<int>> hiddenNodesPL;
@@ -49,8 +39,6 @@ public:
 	LayeredBrain(int ins, int outs, std::shared_ptr<ParametersTable> PT); // constructor generates an empty brain, then it is randomized be the factory
 	~LayeredBrain() = default;
 
-//	void randomize();
-
 	void update() override;
 	std::shared_ptr<AbstractBrain> makeCopy(std::shared_ptr<ParametersTable> PT_) override;
 	std::shared_ptr<AbstractBrain> makeBrain(std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& _genomes) override; // returns a random brain like the one from which it's called
@@ -60,8 +48,6 @@ public:
 	                                                 std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& _genomes) override; // brains' procreation
 	void mutate() override;
 	void resetBrain() override;
-//	void resetOutputs() override;
-//	void resetInputs() override;
 	std::unordered_set<std::string> requiredGenomes() override { return {}; }
 
 	// Infrastructure
@@ -76,6 +62,5 @@ public:
 
 inline std::shared_ptr<AbstractBrain> LayeredBrain_brainFactory(int ins, int outs, std::shared_ptr<ParametersTable> PT) {
 	auto newBrain = std::make_shared<LayeredBrain>(ins, outs, PT);
-//	newBrain->randomize();
 	return newBrain;
 }
