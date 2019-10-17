@@ -22,6 +22,8 @@ private:
 	static std::shared_ptr<ParameterLink<int>> compressToBitsPL;
 	static std::shared_ptr<ParameterLink<int>> fastRepellingPLInfoNumNeighborsPL;
 	static std::shared_ptr<ParameterLink<int>> mihPatternChunkSizeBitsPL;
+	static std::shared_ptr<ParameterLink<double>> leakBaseMultiplierPL;
+	static std::shared_ptr<ParameterLink<double>> leakDecayRadiusPL;
 
 	std::shared_ptr<AsteroidsDatasetParser> datasetParser;
 

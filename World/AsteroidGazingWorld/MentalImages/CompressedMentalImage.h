@@ -45,6 +45,8 @@ private:
 
 	LabeledHNNG neighborsdb;
 	const unsigned numNeighbors;
+	const double leakBaseMultiplier;
+	const double leakDecayRadius;
 
 	//// Stuff that might become useful in the future
 	// std::vector<std::string> stateTS;
@@ -60,7 +62,9 @@ public:
 	                      std::shared_ptr<AbstractSensors> sPtr,
 	                      unsigned numBits,
 	                      unsigned patternChunkSize,
-	                      unsigned numNeighbors);
+	                      unsigned numNeighbors,
+	                      double leakBaseMultiplier,
+	                      double leakDecayRadius);
 
 	void reset(int visualize) override;
 	void resetAfterWorldStateChange(int visualize) override;
@@ -78,5 +82,6 @@ public:
 
 private:
 	void readLabel();
+	double computeRepellingSharedEntropy();
 	double computeFastRepellingSharedEntropy();
 };

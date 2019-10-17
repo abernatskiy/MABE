@@ -44,6 +44,16 @@ std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::mihPatternChunkSizeBits
 	                               "size that should be used for that algorithm? Max efficiency is reached at log2(N), where\n"
 	                               "N is the number of asteroids/slides, assuming that output patterns are uniformly distributed.\n"
 	                               "Must be 4, 8, 12, 16, 20, 24, 28 or 32. (default: 16)\n");
+std::shared_ptr<ParameterLink<double>> AsteroidGazingWorld::leakBaseMultiplierPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING-leakBaseMultiplier", 1.,
+                                 "if CompressedMentalImage is used AND any kind of repelling mutual information is being computed,\n"
+	                               "the leaks between pattern-label pairs will be computed as b*exp(-d/a), where d is the Hammming\n"
+	                               "distance from the neighbor of the point. What the value of b should be? (default: 1.)");
+std::shared_ptr<ParameterLink<double>> AsteroidGazingWorld::leakDecayRadiusPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING-leakDecayRadius", 1.,
+                                 "if CompressedMentalImage is used AND any kind of repelling mutual information is being computed,\n"
+	                               "the leaks between pattern-label pairs will be computed as b*exp(-d/a), where d is the Hammming\n"
+	                               "distance from the neighbor of the point. What the value of a should be? Cannot be zero. (default: 1.)");
 
 int AsteroidGazingWorld::initialConditionsInitialized = 0;
 std::map<std::string,std::vector<Range2d>> AsteroidGazingWorld::commonRelativeSensorsInitialConditions;
@@ -112,6 +122,8 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 	                                                      sensors,
 	                                                      compressToBitsPL->get(PT_),
 	                                                      mihPatternChunkSizeBitsPL->get(PT_),
-	                                                      fastRepellingPLInfoNumNeighborsPL->get(PT_));
+	                                                      fastRepellingPLInfoNumNeighborsPL->get(PT_),
+	                                                      leakBaseMultiplierPL->get(PT_),
+	                                                      leakDecayRadiusPL->get(PT_));
 	makeMotors();
 };
