@@ -167,10 +167,11 @@ int main(int argc, const char *argv[]) {
                                                       // a World
 			std::chrono::system_clock::time_point updateEndedAt = std::chrono::system_clock::now();
 			std::chrono::duration<double> updateDuration = updateEndedAt - updateBeganAt;
+			std::streamsize defaultPrec = std::cout.precision();
       std::cout <<  "update: " << Global::update
 			          << std::scientific << std::setprecision(2)
 								<< " wct=" << updateDuration.count() << "s "
-			          << std::fixed << std::setprecision(0)
+			          << std::defaultfloat << std::setprecision(defaultPrec)
 			          << std::flush;
       done = true; // until we find out otherwise, assume we are done.
       for (auto const &group : groups) {
