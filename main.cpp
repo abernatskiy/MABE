@@ -29,7 +29,7 @@
 #include <memory>
 #include <regex>
 #include <vector>
-
+#include <chrono>
 
 #if defined(__MINGW32__)
 #include <windows.h> /// for getting PID, for proper RNG for MinGW
@@ -148,7 +148,6 @@ int main(int argc, const char *argv[]) {
 
   Global::update = 0;
 
-
   if (Global::modePL->get() == "run") {
     ////////////////////////////////////////////////////////////////////////////////////
     // run mode - evolution loop
@@ -157,14 +156,22 @@ int main(int argc, const char *argv[]) {
               << "\n"
               << "\n";
 
+
     // in run mode we evolve organsims
     auto done = false;
     while ((!done) && (!userExitFlag)) { //! groups[defaultGroup]->archivist->finished) {
+			std::chrono::system_clock::time_point updateBeganAt = std::chrono::system_clock::now();
       world->evaluate(groups, false, false,
                       AbstractWorld::debugPL->get()); // evaluate each organism
                                                       // in the population using
                                                       // a World
-      std::cout << "update: " << Global::update << "   " << std::flush;
+			std::chrono::system_clock::time_point updateEndedAt = std::chrono::system_clock::now();
+			std::chrono::duration<double> updateDuration = updateEndedAt - updateBeganAt;
+      std::cout <<  "update: " << Global::update
+			          << std::scientific << std::setprecision(2)
+								<< " wct=" << updateDuration.count() << "s "
+			          << std::fixed << std::setprecision(0)
+			          << std::flush;
       done = true; // until we find out otherwise, assume we are done.
       for (auto const &group : groups) {
         if (!group.second->archivist->finished_) {
