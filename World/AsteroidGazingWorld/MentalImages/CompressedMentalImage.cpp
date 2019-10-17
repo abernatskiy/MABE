@@ -297,14 +297,17 @@ std::string labelOfClosestNeighbor(std::string pattern, const std::map<std::stri
 CompressedMentalImage::CompressedMentalImage(std::shared_ptr<std::string> curAstNamePtr,
                                              std::shared_ptr<AsteroidsDatasetParser> dsParserPtr,
                                              std::shared_ptr<AbstractSensors> sPtr,
-                                             unsigned nBits) :
+                                             unsigned nBits,
+                                             unsigned patternChunkSize,
+                                             unsigned nNeighbors) :
 	currentAsteroidNamePtr(curAstNamePtr),
 	datasetParserPtr(dsParserPtr),
 	sensorsPtr(sPtr),
 	mVisualize(Global::modePL->get() == "visualize"),
 	numBits(nBits),
 	hngen(nBits),
-	neighborsdb(nBits, 16) {}
+	neighborsdb(nBits, patternChunkSize),
+	numNeighbors(nNeighbors) {}
 //	numTriggerBits(nTriggerBits<0 ? static_cast<unsigned>(-1*nTriggerBits) : static_cast<unsigned>(nTriggerBits)),
 //	requireTriggering(nTriggerBits<0),
 //	integrateFitness(intFitness),
@@ -411,7 +414,7 @@ void CompressedMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 	sampleScoresMap->append("lostLabels", static_cast<double>(lostLabels));
 
 	sampleScoresMap->append("fastRepellingPatternLabelInformation", computeFastRepellingSharedEntropy());
-	sampleScoresMap->append("repellingPatternLabelInformation", computeRepellingSharedEntropy(jointCounts, patternCounts, labelCounts, numSamples));
+//	sampleScoresMap->append("repellingPatternLabelInformation", computeRepellingSharedEntropy(jointCounts, patternCounts, labelCounts, numSamples));
 //	sampleScoresMap->append("fuzzyPatternLabelInformation", computeFuzzySharedEntropy(jointCounts, patternCounts, labelCounts, numSamples, hngen));
 	sampleScoresMap->append("patternLabelInformation", computeSharedEntropy(jointCounts, patternCounts, labelCounts, numSamples));
 	sampleScoresMap->append("averageLabelConditionalEntropy", computeAverageLabelConditionalEntropy(jointCounts, labelCounts, numSamples));
@@ -448,7 +451,7 @@ void CompressedMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std:
 	org->dataMap.append("lostLabels", sampleScoresMap->getAverage("lostLabels"));
 
 	org->dataMap.append("fastRepellingPatternLabelInformation", sampleScoresMap->getAverage("fastRepellingPatternLabelInformation"));
-	org->dataMap.append("repellingPatternLabelInformation", sampleScoresMap->getAverage("repellingPatternLabelInformation"));
+//	org->dataMap.append("repellingPatternLabelInformation", sampleScoresMap->getAverage("repellingPatternLabelInformation"));
 //	org->dataMap.append("fuzzyPatternLabelInformation", sampleScoresMap->getAverage("fuzzyPatternLabelInformation"));
 	org->dataMap.append("patternLabelInformation", sampleScoresMap->getAverage("patternLabelInformation"));
 	org->dataMap.append("averageLabelConditionalEntropy", sampleScoresMap->getAverage("averageLabelConditionalEntropy"));
@@ -500,7 +503,7 @@ double CompressedMentalImage::computeFastRepellingSharedEntropy() {
 		incrementMapField(repellingJoint, jcpair.first, static_cast<double>(jcpair.second));
 		normalizationConstant += static_cast<double>(jcpair.second);
 
-		for(auto neighborInfo : neighborsdb.getSomeNeighbors(pattern, 11)) {
+		for(auto neighborInfo : neighborsdb.getSomeNeighbors(pattern, numNeighbors+1)) {
 			string otherLabel, otherPattern;
 			unsigned otherCount;
 			size_t otherDistance;

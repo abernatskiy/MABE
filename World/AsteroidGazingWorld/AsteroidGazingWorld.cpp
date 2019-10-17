@@ -33,6 +33,17 @@ std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::numRandomInitialConditi
 std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::compressToBitsPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING-compressToBits", 20,
                                  "if CompressedMentalImage is used, how many bits should it compress the input to? (default: 20)");
+std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::fastRepellingPLInfoNumNeighborsPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING-fastRepellingPLInfoNumNeighbors", 10,
+                                 "if CompressedMentalImage is used AND fastRepellingPatternLabelInformation is being computed,\n"
+	                               "how many neighbors should the computation take into account? (default: 10)");
+std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::mihPatternChunkSizeBitsPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING-mihPatternChunkSizeBits", 16,
+                                 "if CompressedMentalImage is used AND fastRepellingPatternLabelInformation is being computed,\n"
+	                               "the nearest neighbors will be looked up with multi-index hashing algorithm. What is the chunk\n"
+	                               "size that should be used for that algorithm? Max efficiency is reached at log2(N), where\n"
+	                               "N is the number of asteroids/slides, assuming that output patterns are uniformly distributed.\n"
+	                               "Must be 4, 8, 12, 16, 20, 24, 28 or 32. (default: 16)\n");
 
 int AsteroidGazingWorld::initialConditionsInitialized = 0;
 std::map<std::string,std::vector<Range2d>> AsteroidGazingWorld::commonRelativeSensorsInitialConditions;
@@ -96,6 +107,11 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 	                                                 numTriggerBitsPL->get(PT_),
 	                                                 integrateFitnessPL->get(PT_));
 */
-	mentalImage = std::make_shared<CompressedMentalImage>(currentAsteroidName, datasetParser, sensors, compressToBitsPL->get(PT_));
+	mentalImage = std::make_shared<CompressedMentalImage>(currentAsteroidName,
+	                                                      datasetParser,
+	                                                      sensors,
+	                                                      compressToBitsPL->get(PT_),
+	                                                      mihPatternChunkSizeBitsPL->get(PT_),
+	                                                      fastRepellingPLInfoNumNeighborsPL->get(PT_));
 	makeMotors();
 };

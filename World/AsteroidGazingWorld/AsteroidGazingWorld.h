@@ -20,6 +20,8 @@ private:
 	static std::shared_ptr<ParameterLink<int>> numTriggerBitsPL;
 	static std::shared_ptr<ParameterLink<int>> numRandomInitialConditionsPL;
 	static std::shared_ptr<ParameterLink<int>> compressToBitsPL;
+	static std::shared_ptr<ParameterLink<int>> fastRepellingPLInfoNumNeighborsPL;
+	static std::shared_ptr<ParameterLink<int>> mihPatternChunkSizeBitsPL;
 
 	std::shared_ptr<AsteroidsDatasetParser> datasetParser;
 

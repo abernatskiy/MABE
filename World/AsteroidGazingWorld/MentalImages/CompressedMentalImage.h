@@ -44,6 +44,7 @@ private:
 	HammingNeighborhoodGenerator hngen;
 
 	LabeledHNNG neighborsdb;
+	const unsigned numNeighbors;
 
 	//// Stuff that might become useful in the future
 	// std::vector<std::string> stateTS;
@@ -57,7 +58,9 @@ public:
 	CompressedMentalImage(std::shared_ptr<std::string> curAstName,
 	                      std::shared_ptr<AsteroidsDatasetParser> dsParser,
 	                      std::shared_ptr<AbstractSensors> sPtr,
-	                      unsigned numBits);
+	                      unsigned numBits,
+	                      unsigned patternChunkSize,
+	                      unsigned numNeighbors);
 
 	void reset(int visualize) override;
 	void resetAfterWorldStateChange(int visualize) override;
