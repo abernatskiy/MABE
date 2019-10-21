@@ -56,6 +56,7 @@ public:
   static int update; // the current "evolutionary" time (number of full world updates since the beginning of the run)
 
 	// Variables meant to only makes sense in the context of AbstractIsolatedEmbodiedWorld
+	static int currentIndividualID;
 	// static int timeWithinUpdate; // the current "evaluation" time (how many within-world-update ticks have passed since the evaluation of the current individual has begun)
 
 	// Variables meant to only makes sense in the context of AbstractIsolatedEmbodiedWorld
