@@ -67,10 +67,8 @@ public:
 	};
 	void evaluate(std::map<std::string, std::shared_ptr<Group>> &groups, int analyze, int visualize, int debug) {
 		int popSize = groups[groupName]->population.size();
-		for(int i=0; i<popSize; i++) {
-			Global::currentIndividualID = groups[groupName]->population[i]->ID;
+		for(int i=0; i<popSize; i++)
 			evaluateSolo(groups[groupName]->population[i], analyze, visualize, debug);
-		}
   };
 	bool assumesDeterministicEvaluations() const { return assumeDeterministicEvaluations; };
 
