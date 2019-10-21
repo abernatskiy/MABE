@@ -42,6 +42,7 @@ public:
 		terminalState(false) {
 
 		*currentAsteroidName = asteroidNames[currentAsteroidIndex];
+		Global::currentWorldState = currentAsteroidName;
 	};
 
 	virtual void reset(int visualize) override {

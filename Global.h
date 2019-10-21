@@ -26,7 +26,7 @@ public:
   static std::shared_ptr<ParameterLink<int>> randomSeedPL;
   // seed for random number generator if -1 random number generator will be
   // seeded randomly
-  
+
   static std::shared_ptr<ParameterLink<int>>
       updatesPL; // run until there is a MCRA at this time
   static std::shared_ptr<ParameterLink<std::string>>
@@ -53,6 +53,13 @@ public:
   // Below are non configurable values (not set directly by Parameters.h
   // methods)
   //////////
-  static int update; // the current "time"
+  static int update; // the current "evolutionary" time (number of full world updates since the beginning of the run)
+
+	// Variables meant to only makes sense in the context of AbstractIsolatedEmbodiedWorld
+	// static int timeWithinUpdate; // the current "evaluation" time (how many within-world-update ticks have passed since the evaluation of the current individual has begun)
+
+	// Variables meant to only makes sense in the context of AbstractIsolatedEmbodiedWorld
+	static int timeWithinWorldState;
+	static std::shared_ptr<std::string> currentWorldState;
 };
 

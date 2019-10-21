@@ -56,3 +56,6 @@ std::shared_ptr<ParameterLink<std::string>> Global::outputPrefixPL =
 
 int Global::update = 0;
 
+int Global::timeWithinWorldState = 0;
+std::shared_ptr<std::string> Global::currentWorldState = std::make_shared<std::string>("");
+
