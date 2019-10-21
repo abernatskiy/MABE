@@ -363,3 +363,10 @@ nlohmann::json Organism::getJSONRecord() {
 
 	return orgJSON;
 }
+
+void Organism::receiveWorldInfo(void* pInfo) {
+	for(auto& gnpair : genomes)
+		gnpair.second->receiveWorldInfo(pInfo);
+	for(auto& brpair : brains)
+		brpair.second->receiveWorldInfo(pInfo);
+}

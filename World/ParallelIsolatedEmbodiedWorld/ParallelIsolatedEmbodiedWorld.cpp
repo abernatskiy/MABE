@@ -89,7 +89,9 @@ void ParallelIsolatedEmbodiedWorld::evaluate(std::map<std::string, std::shared_p
 			unsigned batchEnd = t==numThreads-1 ? groups[groupNamePL->get(PT)]->population.size() : batchStarts[t+1];
 			for(unsigned i=batchStart; i<batchEnd	; i++) {
 //				std::cout << "Batch " << t << " evaluating indiv " << i << std::endl << std::flush;
-				subworlds[t]->evaluateSolo(groups[groupName]->population[i], analyze, visualize, debug);
+				std::shared_ptr<Organism> org = groups[groupName]->population[i];
+				org->receiveWorldInfo(subworlds[t]->worldInfoForOrganisms());
+				subworlds[t]->evaluateSolo(org, analyze, visualize, debug);
 			}
 		}
 	}
