@@ -46,6 +46,4 @@ public:
 
   virtual void evaluate(std::map<std::string, std::shared_ptr<Group>> &groups,
 	  int analyze = 0, int visualize = 0, int debug = 0) = 0;
-
-	virtual void* worldInfoForOrganisms() { return nullptr; };
 };

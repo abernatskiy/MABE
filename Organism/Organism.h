@@ -118,7 +118,5 @@ public:
 	void translateGenomesToBrains();
 
 	nlohmann::json getJSONRecord();
-
-	void receiveWorldInfo(void* pInfo);
 };
 

@@ -235,7 +235,5 @@ public:
   }
 
   virtual void recordDataMap() = 0;
-
-	virtual void receiveWorldInfo(void* pInfo) {};
 };
 

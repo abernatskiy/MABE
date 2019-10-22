@@ -66,13 +66,9 @@ public:
 		if(visualize) std::cout << "Organism data map after the evaluation:" << std::endl << org->dataMap.getTextualRepresentation();
 	};
 	void evaluate(std::map<std::string, std::shared_ptr<Group>> &groups, int analyze, int visualize, int debug) {
-		// NOTE: this function is rarely called in practice, as ParallelIsolatedEmbodied world uses it and it's used almost always
 		int popSize = groups[groupName]->population.size();
-		for(int i=0; i<popSize; i++) {
-			std::shared_ptr<Organism> org = groups[groupName]->population[i];
-			org->receiveWorldInfo(worldInfoForOrganisms());
+		for(int i=0; i<popSize; i++)
 			evaluateSolo(groups[groupName]->population[i], analyze, visualize, debug);
-		}
   };
 	bool assumesDeterministicEvaluations() const { return assumeDeterministicEvaluations; };
 

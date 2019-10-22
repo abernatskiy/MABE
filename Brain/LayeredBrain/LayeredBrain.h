@@ -58,7 +58,6 @@ public:
 	void logNote(std::string note) override { std::cout << "Layered Brain's external note: " << note << std::endl; };
 	DataMap serialize(std::string& name) override;
 	void deserialize(std::shared_ptr<ParametersTable> PT, std::unordered_map<std::string,std::string>& orgData, std::string& name) override;
-	void receiveWorldInfo(void* pInfo) override;
 };
 
 inline std::shared_ptr<AbstractBrain> LayeredBrain_brainFactory(int ins, int outs, std::shared_ptr<ParametersTable> PT) {

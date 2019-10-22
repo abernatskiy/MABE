@@ -240,10 +240,6 @@ void LayeredBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<str
 	}
 }
 
-void LayeredBrain::receiveWorldInfo(void* pInfo) {
-	cout << "LayeredBrain received pointer " << pInfo << endl;
-}
-
 /*****************************************/
 /********** Private definitions **********/
 /*****************************************/

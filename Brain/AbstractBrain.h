@@ -204,6 +204,4 @@ public:
 	virtual void logNote(std::string) {};
 
 	virtual void* logTimeSeries(const std::string& label) { return nullptr; }; // optionally returns a pointer to an arbitrary data structure for global processing
-
-	virtual void receiveWorldInfo(void* pInfo) {};
 };
