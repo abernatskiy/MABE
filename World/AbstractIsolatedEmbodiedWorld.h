@@ -41,7 +41,7 @@ private:
 	static std::shared_ptr<ParameterLink<bool>> assumeDeterministicEvaluationsPL;
 	bool assumeDeterministicEvaluations;
 
-	void evaluateOnce(std::shared_ptr<Organism> org, int visualize);
+	virtual void evaluateOnce(std::shared_ptr<Organism> org, int visualize);
 	int numInputs() { return motors->numOutputs() + sensors->numOutputs(); }; // brain inputs
 	int numOutputs() { return motors->numInputs() + sensors->numInputs(); }; // brain outputs
 
@@ -72,8 +72,7 @@ public:
   };
 	bool assumesDeterministicEvaluations() const { return assumeDeterministicEvaluations; };
 
-	// Will need a rewrite if sensory or motor system will need a genome
-	std::unordered_map<std::string, std::unordered_set<std::string>> requiredGroups() override {
+	virtual std::unordered_map<std::string, std::unordered_set<std::string>> requiredGroups() override {
 		return {{groupName, {"B:" + brainName + "," + std::to_string(numInputs()) + "," + std::to_string(numOutputs())}}};
   };
 };

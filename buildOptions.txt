@@ -10,6 +10,7 @@
 	+ TestSlideshow
 	+ AsteroidGazing
 	+ ParallelIsolatedEmbodied
+	+ AsteroidTeamGazing
 
 % Genome
   - Multi
