@@ -1,0 +1,43 @@
+// compile with g++ -o dagtest -x c++ dag.test
+
+#include <iostream>
+
+#include "dag.h"
+
+using namespace std;
+
+int main(int argc, char** argv) {
+	// 1 -> 2 -> 5 -> 3 -> 4
+	//      |              ^
+	//      +--------------+
+	DAGraph<size_t> dag;
+	dag.insertNode(1, {});
+	dag.insertNode(2, {1});
+	dag.insertNode(5, {2});
+	dag.insertNode(3, {5});
+	dag.insertNode(4, {2, 3});
+
+	dag.printGraph();
+
+	cout << "Parents of node 4:";
+	for(auto p : dag.getParents(4))
+		cout << " " << p;
+	cout << endl;
+
+	cout << "Children of node 2:";
+	for(auto c : dag.getChildren(2))
+		cout << " " << c;
+	cout << endl;
+
+	cout << "Ancestry of node 3:";
+	for(auto a : dag.getAllAncestors(3))
+		cout << " " << a;
+	cout << endl;
+
+	cout << "Ancestry of node 4:";
+	for(auto a : dag.getAllAncestors(4))
+		cout << " " << a;
+	cout << endl;
+
+	return 0;
+}
