@@ -71,7 +71,7 @@ void DAGraph<T>::printGraph() const {
 		std::cout << node.payload << ": parents";
 		for(const auto& pit : node.parents)
 			std::cout << " " << pit;
-		std::cout << " children:";
+		std::cout << " children";
 		for(const auto& cit : node.children)
 			std::cout << " " << cit;
 		std::cout << std::endl;

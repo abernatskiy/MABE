@@ -55,8 +55,8 @@ std::shared_ptr<ParameterLink<double>> AsteroidTeamGazingWorld::leakDecayRadiusP
                                  "if CompressedMentalImage is used AND any kind of repelling mutual information is being computed,\n"
 	                               "the leaks between pattern-label pairs will be computed as b*exp(-d/a), where d is the Hammming\n"
 	                               "distance from the neighbor of the point. What the value of a should be? Cannot be zero. (default: 1.)");
-std::shared_ptr<ParameterLink<std::string>> AsteroidTeamGazingWorld::pathToBrainTreeJSONPL =
-  Parameters::register_parameter("WORLD_ASTEROID_TEAM_GAZING-pathToBrainTreeJSON", (std::string) "./braindag.json",
+std::shared_ptr<ParameterLink<std::string>> AsteroidTeamGazingWorld::pathToBrainGraphJSONPL =
+  Parameters::register_parameter("WORLD_ASTEROID_TEAM_GAZING-pathToBrainGraphJSON", (std::string) "./braindag.json",
                                  "path to the JSON file describing how the multiple brains should be connected and where to read the constant ones");
 
 int AsteroidTeamGazingWorld::initialConditionsInitialized = 0;
@@ -117,7 +117,7 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 	sensors->writeSensorStats();
 
 	// Preparing the brain graph
-	std::ifstream brainsJSONStream(pathToBrainTreeJSONPL->get(PT_));
+	std::ifstream brainsJSONStream(pathToBrainGraphJSONPL->get(PT_));
 	nlohmann::json brainsJSON;
 	brainsJSON << brainsJSONStream;
 
@@ -126,21 +126,9 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 	unsigned numEvolvableBrains = 0;
 	for(const auto& brainJSON : brainsJSON) { // for each brain description on the JSON
 		if(brainJSON["type"]!="DEMarkovBrain") {
-			std::cerr << "AsteroidTeamGazingWorld: components of types other than DEMArkovBrain are not surrently supported" << std::endl;
+			std::cerr << "AsteroidTeamGazingWorld: components of types other than DEMarkovBrain are not surrently supported" << std::endl;
 			exit(EXIT_FAILURE);
 		}
-
-		// add a node to the map graph
-		std::vector<int> componentParentIdxs;
-		for(size_t ci=0; ci<numBrains; ci) { // component index
-			for(const auto& parentID : brainJSON["feedsFrom"]) {
-				if(parentID==brainsIDs[ci])
-					componentParentIdxs.push_back(ci);
-				else if(parentID=="thesensor")
-					componentParentIdxs.push_back(-1);
-			}
-		}
-		brainsDiagram.insertNode(numBrains, componentParentIdxs);
 
 		// make records where it is possible without conditioning on evolvability
 		brainsIDs.push_back(brainJSON["id"]);
@@ -153,6 +141,19 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 			numBrainsOutputs += brainsNumOutputs.back();
 		}
 
+		// add a node to the map graph
+		std::vector<int> componentParentIdxs;
+		for(size_t ci=0; ci<numBrains; ci++) { // component index
+			for(const std::string& parentID : brainJSON["feedsFrom"]) {
+				if(parentID==brainsIDs[ci])
+					componentParentIdxs.push_back(ci);
+				else if(parentID=="thesensor")
+					componentParentIdxs.push_back(-1);
+			}
+		}
+
+		brainsDiagram.insertNode(numBrains, componentParentIdxs);
+
 		// depending on whether the brain is evolvable or not, we do quite a few things differently
 		if(brainJSON["evolvable"]) {
 			brainsEvolvable.push_back(1);
@@ -164,7 +165,7 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 			if(PT_->lookupInt("BRAIN_DEMARKOV-hiddenNodes") != brainsNumHidden.back()) {
 				std::cerr << "AsteroidTeamGazingWorld: number of hidden nodes in MABE config (" << (PT_->lookupInt("BRAIN_DEMARKOV-hiddenNodes"))
 				          << ") must be equal to the number of hidden nodes for the evolvable component listed in the brain DAG JSON description ("
-				          << brainsNumHidden.back() << ", read from " << pathToBrainTreeJSONPL->get(PT_) << ")" << std::endl;
+				          << brainsNumHidden.back() << ", read from " << pathToBrainGraphJSONPL->get(PT_) << ")" << std::endl;
 				exit(EXIT_FAILURE);
 			}
 
@@ -230,4 +231,16 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 	                                                      leakBaseMultiplierPL->get(PT_),
 	                                                      leakDecayRadiusPL->get(PT_));
 	makeMotors();
+
+	std::cout << "Done constructing AsteroidTeamGazingWorld" << std::endl;
+	printVector(brains, "brains");
+	printVector(brainsIDs, "brainIDs");
+	printVector(brainsEvolvable, "brainsEvolvable");
+	printVector(brainsNumOutputs, "brainsNumOutputs");
+	printVector(brainsNumHidden, "brainsNumHidden");
+	printVector(brainsInputCached, "brainsInputCached"); // format: 0 = do not cache, 1 = input to be cached, 2 = input cached
+//	printVector(brainsInputCache);
+	printVector(exposedOutputs, "exposedOutputs");
+	std::cout << "Total exposed outputs: " << numBrainsOutputs << std::endl;
+	std::cout << "Brain graph:" << std::endl; brainsDiagram.printGraph();
 };

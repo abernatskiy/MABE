@@ -33,7 +33,7 @@ private:
 	static std::shared_ptr<ParameterLink<int>> mihPatternChunkSizeBitsPL;
 	static std::shared_ptr<ParameterLink<double>> leakBaseMultiplierPL;
 	static std::shared_ptr<ParameterLink<double>> leakDecayRadiusPL;
-	static std::shared_ptr<ParameterLink<std::string>> pathToBrainTreeJSONPL;
+	static std::shared_ptr<ParameterLink<std::string>> pathToBrainGraphJSONPL;
 
 	std::shared_ptr<AsteroidsDatasetParser> datasetParser;
 	std::shared_ptr<std::string> currentAsteroidName;
@@ -58,3 +58,11 @@ private:
 public:
 	AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable> PT_);
 };
+
+template<typename T>
+inline void printVector(std::vector<T> theVec, std::string vecName) {
+	std::cout << vecName << ":";
+	for(const auto& v : theVec)
+		std::cout << " " << v;
+	std::cout << std::endl;
+}
