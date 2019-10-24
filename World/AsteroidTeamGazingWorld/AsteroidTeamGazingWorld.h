@@ -57,6 +57,8 @@ private:
 
 public:
 	AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable> PT_);
+	void evaluateOnce(std::shared_ptr<Organism> org, int visualize) override;
+	// overload requiredGroups() when you add brain coevolution support
 };
 
 template<typename T>

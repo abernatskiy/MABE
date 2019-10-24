@@ -31,7 +31,6 @@ protected:
 	// Do not touch this one, its values will be taken from Organisms
 	std::shared_ptr<AbstractBrain> brain;
 
-private:
 	static std::shared_ptr<ParameterLink<int>> evaluationsPerGenerationPL;
 	int evaluationsPerGeneration;
 	static std::shared_ptr<ParameterLink<std::string>> groupNamePL;

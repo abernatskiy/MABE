@@ -28,7 +28,6 @@ protected:
 		mentalImage->reset(visualize);
 	}; // keeping it virtual because state of the World is likely to grow
 
-private:
 	// Stuff from AbstractIsolatedEmbodiedWorld that stays virtual and must be defined in daughter classes
 	// virtual void postEvaluationOuterWorldUpdate(unsigned long timeStep, int visualize) = 0; // likely, a schedule of world changes (a "slideshow"
 	//                                                                                         // in the discrete case) will be implemented here

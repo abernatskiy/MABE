@@ -244,3 +244,41 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 	std::cout << "Total exposed outputs: " << numBrainsOutputs << std::endl;
 	std::cout << "Brain graph:" << std::endl; brainsDiagram.printGraph();
 };
+
+void AsteroidTeamGazingWorld::evaluateOnce(std::shared_ptr<Organism> org, int visualize) {
+
+//	if(visualize) std::cout << "Evaluating organism " << org->ID << " at " << org << std::endl;
+	std::cout << "Evaluating organism " << org->ID << " at " << org << std::endl;
+
+//	org->translateGenomesToBrains();
+
+	resetWorld(visualize);
+
+  brain = org->brains[brainName];
+
+//	std::cout << "Organism is " << (org->alive ? "alive" : "dead") << ", brain pointer is " << brain << std::endl;
+
+	sensors->reset(visualize);
+	brain->resetBrain();
+	motors->reset(visualize);
+
+	sensors->attachToBrain(brain);
+	motors->attachToBrain(brain);
+
+	unsigned long timeStep = 0;
+
+	while(!endEvaluation(timeStep)) {
+		sensors->update(visualize);
+		brain->update();
+		motors->update(visualize);
+		preEvaluationOuterWorldUpdate(org, timeStep, visualize);
+		recordRunningScores(org, timeStep, visualize);
+		postEvaluationOuterWorldUpdate(org, timeStep, visualize);
+		timeStep++;
+	}
+
+	recordSampleScores(org, timeStep, visualize);
+
+	if(assumeDeterministicEvaluations)
+		org->dataMap.set("evaluated", true);
+}

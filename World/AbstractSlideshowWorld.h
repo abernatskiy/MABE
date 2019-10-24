@@ -14,7 +14,6 @@ protected:
 	std::shared_ptr<AbstractStateSchedule> stateSchedule; // must be kinda like a motor: takes a pointer to some subset of World state upon construction, modifies it when advance() is called
 	std::shared_ptr<AbstractTimeSeriesLogger> timeSeriesLogger;
 
-private:
 	// New functions to override. These two are the only ones.
 	virtual bool resetAgentBetweenStates() = 0;
 	virtual int brainUpdatesPerWorldState() = 0;
