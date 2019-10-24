@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "AsteroidTeamGazingWorld.h"
 
 #include "../AsteroidGazingWorld/MentalImages/CompressedMentalImage.h"
@@ -124,6 +126,7 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 	brainsDiagram.insertNode(-1, {}); // the sensor
 
 	unsigned numEvolvableBrains = 0;
+	unsigned numBrainsConnectedToOculomotors = 0;
 	for(const auto& brainJSON : brainsJSON) { // for each brain description on the JSON
 		if(brainJSON["type"]!="DEMarkovBrain") {
 			std::cerr << "AsteroidTeamGazingWorld: components of types other than DEMarkovBrain are not surrently supported" << std::endl;
@@ -140,6 +143,25 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 			exposedOutputs.push_back(numBrains);
 			numBrainsOutputs += brainsNumOutputs.back();
 		}
+		brainsConnectedToOculomotors.push_back( (brainJSON.count("connectToOculomotors")==0 || !brainJSON["connectToOculomotors"]) ? 0 : 1 );
+		if(brainsConnectedToOculomotors.back()==1) {
+			numBrainsConnectedToOculomotors++;
+			if(numBrainsConnectedToOculomotors>1) {
+				std::cerr << "AsteroidTeamGazingWorld: more than one component requests a connection to oculomotors, which is not supported" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+			if(brainJSON["feedsFrom"].size()!=1 || brainJSON["feedsFrom"][0]!="thesensor") {
+				std::cerr << "AsteroidTeamGazingWorld: current implementation requires that a component that is connected to oculomotors must feed only from the sensor. Component " << numBrains << " feeds instead from [";
+				for(const auto& ff : brainJSON["feedsFrom"])
+					std::cerr << " " << ff;
+				std::cerr << " ]" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+			if(brainsInputCached.back()==1) {
+				std::cerr << "AsteroidTeamGazingWorld: input of component " << numBrains << " that is connected to oculomotors cannot be cached" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+		}
 
 		// add a node to the map graph
 		std::vector<int> componentParentIdxs;
@@ -147,11 +169,19 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 			for(const std::string& parentID : brainJSON["feedsFrom"]) {
 				if(parentID==brainsIDs[ci])
 					componentParentIdxs.push_back(ci);
-				else if(parentID=="thesensor")
+				else if(parentID=="thesensor") {
 					componentParentIdxs.push_back(-1);
+					if(brainJSON["feedsFrom"].size()!=1) {
+						std::cerr << "AsteroidTeamGazingWorld: currently, any component that feeds from the sensor must not feed from anything else. Component " << numBrains << " feeds from [";
+						for(const auto& pp : brainJSON["feedsFrom"])
+							std::cerr << " " << pp;
+						std::cerr << " ]" << std::endl;
+						exit(EXIT_FAILURE);
+					}
+				}
 			}
 		}
-
+		std::sort(componentParentIdxs.begin(), componentParentIdxs.end());
 		brainsDiagram.insertNode(numBrains, componentParentIdxs);
 
 		// depending on whether the brain is evolvable or not, we do quite a few things differently
@@ -230,7 +260,7 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 	                                                      fastRepellingPLInfoNumNeighborsPL->get(PT_),
 	                                                      leakBaseMultiplierPL->get(PT_),
 	                                                      leakDecayRadiusPL->get(PT_));
-	makeMotors();
+	motors = nullptr;
 
 	std::cout << "Done constructing AsteroidTeamGazingWorld" << std::endl;
 	printVector(brains, "brains");
@@ -241,44 +271,140 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 	printVector(brainsInputCached, "brainsInputCached"); // format: 0 = do not cache, 1 = input to be cached, 2 = input cached
 //	printVector(brainsInputCache);
 	printVector(exposedOutputs, "exposedOutputs");
+	printVector(brainsConnectedToOculomotors, "brainsConnectedToOculomotors");
 	std::cout << "Total exposed outputs: " << numBrainsOutputs << std::endl;
 	std::cout << "Brain graph:" << std::endl; brainsDiagram.printGraph();
 };
 
+void AsteroidTeamGazingWorld::resetWorld(int visualize) {
+	AbstractSlideshowWorld::resetWorld(visualize);
+	for(unsigned i=0; i<numBrains; i++)
+		if(brainsEvolvable[i])
+			brains[i] = nullptr;
+}
+
 void AsteroidTeamGazingWorld::evaluateOnce(std::shared_ptr<Organism> org, int visualize) {
 
-//	if(visualize) std::cout << "Evaluating organism " << org->ID << " at " << org << std::endl;
-	std::cout << "Evaluating organism " << org->ID << " at " << org << std::endl;
+	if(visualize) std::cout << "Evaluating organism " << org->ID << " at " << org << std::endl;
+//	std::cout << "Evaluating organism " << org->ID << " at " << org << std::endl;
 
 //	org->translateGenomesToBrains();
 
 	resetWorld(visualize);
 
-  brain = org->brains[brainName];
-
-//	std::cout << "Organism is " << (org->alive ? "alive" : "dead") << ", brain pointer is " << brain << std::endl;
+	for(unsigned i=0; i<numBrains; i++) {
+		if(brainsEvolvable[i]) {
+			brains[i] = org->brains[brainName];
+			break;
+		}
+	}
 
 	sensors->reset(visualize);
-	brain->resetBrain();
-	motors->reset(visualize);
-
-	sensors->attachToBrain(brain);
-	motors->attachToBrain(brain);
+	for(auto& curBrain : brains)
+		curBrain->resetBrain();
 
 	unsigned long timeStep = 0;
+	while(!stateSchedule->stateIsFinal()) {
+		std::vector<StateTimeSeries> rawExposedOutputsTS;
+		for(int eo : exposedOutputs)
+			rawExposedOutputsTS.push_back(executeBrainComponent(eo, visualize));
+		for(unsigned t=0; t<brainUpdatesPerAsteroid; t++) {
+			std::vector<double> outputs;
+			for(auto& reots : rawExposedOutputsTS)
+				outputs.insert(output.end(), reots[t].begin(), reots[t].end());
 
-	while(!endEvaluation(timeStep)) {
-		sensors->update(visualize);
-		brain->update();
-		motors->update(visualize);
-		preEvaluationOuterWorldUpdate(org, timeStep, visualize);
-		recordRunningScores(org, timeStep, visualize);
-		postEvaluationOuterWorldUpdate(org, timeStep, visualize);
-		timeStep++;
+			// from here on outputs[] contains the final values and we can begin to process them
+			mentalImage->updateWithInputs(outputs);
+			// recordRunningScores(org, timeStep, visualize); // not used anymore, this comment is just to remind me of where it used to be called
+			mentalImage->recordRunningScoresWithinState(org, t, brainUpdatesPerAsteroid);
+			timeStep++;
+		}
+		if(visualize) {
+			std::string stateLabel = std::string("state_") + stateSchedule->currentStateDescription();
+			void* sts; void* bts; void* mits; void* mts = nullptr;
+			sts = sensors->logTimeSeries(stateLabel);
+			bts = brain->logTimeSeries(stateLabel);
+			mits = mentalImage->logTimeSeries(stateLabel);
+			timeSeriesLogger->logData(stateLabel, sts, bts, mts, mits, visualize);
+		}
+		mentalImage->resetAfterWorldStateChange(visualize); // lol before
+		stateSchedule->advance(visualize);
 	}
 
 	recordSampleScores(org, timeStep, visualize);
 
 	if(assumeDeterministicEvaluations)
 		org->dataMap.set("evaluated", true);
+}
+
+std::unordered_map<std::string, std::unordered_set<std::string>> AsteroidTeamGazingWorld::requiredGroups() {
+	unsigned nInputs = 0;
+	unsigned nOutputs = 0;
+
+	for(unsigned i=0; i<numBrains; i++) {
+		if(brainsEvolvable[i]) {
+			for(int parent : brainsDiagram.getParents(i))
+				nInputs += parent==-1 ? sensors->numOutputs() : brainsNumOutputs[parent];
+
+			nOutputs += brainsNumOutputs[i];
+			if(brainsConnectedToOculomotors)
+				nOutputs += sensors->numInputs();
+
+			return {{groupName, {"B:" + brainName + "," + std::to_string(nInputs) + "," + std::to_string(nOutputs)}}};
+		}
+	}
+
+	std::cerr << "AsteroidTeamGazingWorld: at least one component should be evolvable" << std::endl;
+	exit(EXIT_FAILURE);
+}
+
+/*****************************************/
+/********** Private definitions **********/
+/*****************************************/
+
+StateTimeSeries AsteroidTeamGazingWorld::executeBrainComponent(unsigned idx, int visualize) {
+
+	StateTimeSeries componentOutputTimeSeries;
+
+	auto parents = brainsDiagram.getParents(idx);
+	if(parents.size==1 && parents[0]==-1) {
+		// we're feeding from sensors
+		sensors->attachToBrain(brains[idx]);
+		for(unsigned t=0; t<brainUpdatesPerAsteroid; t++) {
+			sensors->update(visualize);
+
+			brains[idx]->update();
+
+			std::vector<double> componentOutput(brainsNumOutputs[i]);
+			for(unsigned i=0; i<brainsNumOutputs[i]; i++)
+				componentOutput[i] = brains[idx]->readOutput(sensors->numInputs() + i);
+			componentOutputTimeSeries.push_back(componentOutput);
+		}
+		sensors->reset(visualize);
+	}
+	else {
+		// we're feeding from some lower layers
+		std::vector<StateTimeSeries> parentsOutputs;
+		for(int p : parents)
+			parentsOutputs.push_back(executeBrainComponent(p, visualize));
+		for(unsigned t=0; t<brainUpdatesPerAsteroid; t++) {
+			std::vector<double> componentInput;
+			for(unsigned pi=0; pi<parents.size(); pi++)
+				for(double v : parentsOutputs[pi][t])
+					componentInput.push_back(v);
+
+			for(unsigned i=0; i<componentInput.size(); i++)
+				brains[idx]->setInput(i, componentInput[i]);
+			brains[idx]->update();
+
+			std::vector<double> componentOutput(brainsNumOutputs[i]);
+			for(unsigned i=0; i<brainsNumOutputs[i]; i++)
+				componentOutput[i] = brains[idx]->readOutput(sensors->numInputs() + i);
+			componentOutputTimeSeries.push_back(componentOutput);
+		}
+	}
+
+	brains[idx]->resetBrain();
+
+	return componentOutputTimeSeries;
 }

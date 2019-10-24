@@ -4,6 +4,8 @@
 #include <memory>
 #include <vector>
 #include <map>
+#include <iostream>
+#include <cstdlib>
 
 #include "../AbstractSlideshowWorld.h"
 #include "../AsteroidGazingWorld/Utilities/AsteroidsDatasetParser.h"
@@ -15,6 +17,10 @@
 typedef std::vector<std::vector<double>> StateTimeSeries;
 
 class AsteroidTeamGazingWorld : public AbstractSlideshowWorld {
+
+	// DANGER: DO NOT INHERIT FROM THIS CLASS UNDER ANY CIRCUMSTANCES
+	// This class breaks a few assumptions that are made by its parent classes.
+	// Inherit from it, and you'll quickly lose track of what your overrides are doing.
 
 	// The agent here must construct a mental image of the asteroid based on snapshots.
 	// Snapshots are read by the agent via its saccading eye, and the shape is
@@ -50,15 +56,19 @@ private:
 	std::vector<unsigned> brainsInputCached; // format: 0 = do not cache, 1 = input to be cached, 2 = input cached
 	std::vector<StateTimeSeries> brainsInputCache; // preference for fast evolvable end point brains over the fast combined constant-evolvable end point brains
 	std::vector<unsigned> exposedOutputs;
+	std::vector<unsigned> brainsConnectedToOculomotors;
 	unsigned numBrainsOutputs;
 
-	bool resetAgentBetweenStates() override { return true; };
+	bool resetAgentBetweenStates() override { std::cerr << "resetAgentBetweenStates() should not be called for AsteroidTeamGazingWorld" << std::endl; exit(EXIT_FAILURE); return true; };
 	int brainUpdatesPerWorldState() override { return brainUpdatesPerAsteroid; };
+
+	StateTimeSeries executeBrainComponent(unsigned idx, int visualize);
 
 public:
 	AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable> PT_);
+	void resetWorld(int visualize) override;
 	void evaluateOnce(std::shared_ptr<Organism> org, int visualize) override;
-	// overload requiredGroups() when you add brain coevolution support
+	std::unordered_map<std::string, std::unordered_set<std::string>> requiredGroups() override;
 };
 
 template<typename T>
