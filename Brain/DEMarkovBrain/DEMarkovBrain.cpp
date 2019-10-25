@@ -398,6 +398,21 @@ void DEMarkovBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<st
 
 	nlohmann::json brainJSON = nlohmann::json::parse(gatesJSONStr);
 
+	if(brainJSON["numInputs"]!=nrInputValues) {
+		cout << "DEMarkovBrain.deserialize: mismatch between the native size of the brain input (" << nrInputValues << ") and the size of the deserialized brain input (" << brainJSON["numInputs"] << ")" << endl;
+		exit(EXIT_FAILURE);
+	}
+
+	if(brainJSON["numHidden"]!=nrHiddenNodes) {
+		cout << "DEMarkovBrain.deserialize: mismatch between the native size of the brain hidden layer (" << nrHiddenNodes << ") and the size of the deserialized brain hidden layer (" << brainJSON["numHidden"] << ")" << endl;
+		exit(EXIT_FAILURE);
+	}
+
+	if(brainJSON["numOutputs"]!=nrOutputValues) {
+		cout << "DEMarkovBrain.deserialize: mismatch between the native size of the brain output (" << nrInputValues << ") and the size of the deserialized brain output (" << brainJSON["numOutputs"] << ")" << endl;
+		exit(EXIT_FAILURE);
+	}
+
 	originationStory = brainJSON["originationStory"];
 
 	nlohmann::json gatesJSON = brainJSON["gates"];
