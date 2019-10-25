@@ -311,7 +311,7 @@ void AsteroidTeamGazingWorld::evaluateOnce(std::shared_ptr<Organism> org, int vi
 		for(unsigned t=0; t<brainUpdatesPerAsteroid; t++) {
 			std::vector<double> outputs;
 			for(auto& reots : rawExposedOutputsTS)
-				outputs.insert(output.end(), reots[t].begin(), reots[t].end());
+				outputs.insert(outputs.end(), reots[t].begin(), reots[t].end());
 
 			// from here on outputs[] contains the final values and we can begin to process them
 			mentalImage->updateWithInputs(outputs);
@@ -347,7 +347,7 @@ std::unordered_map<std::string, std::unordered_set<std::string>> AsteroidTeamGaz
 				nInputs += parent==-1 ? sensors->numOutputs() : brainsNumOutputs[parent];
 
 			nOutputs += brainsNumOutputs[i];
-			if(brainsConnectedToOculomotors)
+			if(brainsConnectedToOculomotors[i])
 				nOutputs += sensors->numInputs();
 
 			return {{groupName, {"B:" + brainName + "," + std::to_string(nInputs) + "," + std::to_string(nOutputs)}}};
@@ -367,7 +367,7 @@ StateTimeSeries AsteroidTeamGazingWorld::executeBrainComponent(unsigned idx, int
 	StateTimeSeries componentOutputTimeSeries;
 
 	auto parents = brainsDiagram.getParents(idx);
-	if(parents.size==1 && parents[0]==-1) {
+	if(parents.size()==1 && parents[0]==-1) {
 		// we're feeding from sensors
 		sensors->attachToBrain(brains[idx]);
 		for(unsigned t=0; t<brainUpdatesPerAsteroid; t++) {
@@ -375,8 +375,8 @@ StateTimeSeries AsteroidTeamGazingWorld::executeBrainComponent(unsigned idx, int
 
 			brains[idx]->update();
 
-			std::vector<double> componentOutput(brainsNumOutputs[i]);
-			for(unsigned i=0; i<brainsNumOutputs[i]; i++)
+			std::vector<double> componentOutput(brainsNumOutputs[idx]);
+			for(unsigned i=0; i<brainsNumOutputs[idx]; i++)
 				componentOutput[i] = brains[idx]->readOutput(sensors->numInputs() + i);
 			componentOutputTimeSeries.push_back(componentOutput);
 		}
@@ -397,8 +397,8 @@ StateTimeSeries AsteroidTeamGazingWorld::executeBrainComponent(unsigned idx, int
 				brains[idx]->setInput(i, componentInput[i]);
 			brains[idx]->update();
 
-			std::vector<double> componentOutput(brainsNumOutputs[i]);
-			for(unsigned i=0; i<brainsNumOutputs[i]; i++)
+			std::vector<double> componentOutput(brainsNumOutputs[idx]);
+			for(unsigned i=0; i<brainsNumOutputs[idx]; i++)
 				componentOutput[i] = brains[idx]->readOutput(sensors->numInputs() + i);
 			componentOutputTimeSeries.push_back(componentOutput);
 		}
