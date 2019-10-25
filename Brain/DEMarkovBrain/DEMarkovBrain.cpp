@@ -409,7 +409,7 @@ void DEMarkovBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<st
 	}
 
 	if(brainJSON["numOutputs"]!=nrOutputValues) {
-		cout << "DEMarkovBrain.deserialize: mismatch between the native size of the brain output (" << nrInputValues << ") and the size of the deserialized brain output (" << brainJSON["numOutputs"] << ")" << endl;
+		cout << "DEMarkovBrain.deserialize: mismatch between the native size of the brain output (" << nrOutputValues << ") and the size of the deserialized brain output (" << brainJSON["numOutputs"] << ")" << endl;
 		exit(EXIT_FAILURE);
 	}
 
