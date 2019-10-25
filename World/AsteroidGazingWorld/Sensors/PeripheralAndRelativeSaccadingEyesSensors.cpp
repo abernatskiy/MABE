@@ -89,6 +89,8 @@ void PeripheralAndRelativeSaccadingEyesSensors::update(int visualize) {
 	for(unsigned i=0; i<numMotors; i++)
 		controls[i] = brain->readOutput(i) > 0.5;
 
+//	cout << "Read controls:"; for(bool c : controls) cout << c; cout << endl;
+
 	AsteroidSnapshot& astSnap = asteroidSnapshots.at(make_tuple(*currentAsteroidName));
 	savedPercept.clear();
 
@@ -118,6 +120,8 @@ void PeripheralAndRelativeSaccadingEyesSensors::update(int visualize) {
 
 	for(unsigned k=0; k<numSensors; k++)
 		brain->setInput(k, savedPercept[k]);
+
+//	cout << "Wrote sensor readings:"; for(bool p : savedPercept) cout << p; cout << endl;
 
 	foveaPositionTimeSeries.push_back(foveaPosition);
 	perceptTimeSeries.push_back(savedPercept);
