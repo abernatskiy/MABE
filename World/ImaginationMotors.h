@@ -11,9 +11,12 @@ class ImaginationMotors : public AbstractMotors {
 private:
 	std::shared_ptr<AbstractMentalImage> image;
 	std::vector<double> currentBrainOutput;
+	unsigned offset;
 
 public:
-	ImaginationMotors(std::shared_ptr<AbstractMentalImage> img) : image(img) {
+	ImaginationMotors(std::shared_ptr<AbstractMentalImage> img, unsigned inputOffset) :
+		image(img),
+		offset(inputOffset) {
 		currentBrainOutput.resize(numInputs());
 	};
 	void reset(int visualize) override {
@@ -23,7 +26,7 @@ public:
 	void update(int visualize) override {
 		AbstractMotors::update(visualize);
 		for(int i=0; i<numInputs(); i++)
-			currentBrainOutput[i] = brain->readOutput(i);
+			currentBrainOutput[i] = brain->readOutput(offset+i);
 		image->updateWithInputs(currentBrainOutput);
 	};
 	int numInputs() override { return image->numInputs(); };

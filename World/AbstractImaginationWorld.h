@@ -20,8 +20,8 @@ protected:
 	std::shared_ptr<AbstractMentalImage> mentalImage;
 	// Also, make sure to call makeMotors() after the image pointer is set up.
 
-	void makeMotors() { motors = std::make_shared<ImaginationMotors>(mentalImage); }; // conveniently encapsulates call to ImaginationMotors constructor
-	                                                                            // so that there's no need to mind it in daughter classes
+	// conveniently encapsulates call to ImaginationMotors constructor so that there's no need to mind it in daughter classes
+	void makeMotors() { motors = std::make_shared<ImaginationMotors>(mentalImage, sensors->numInputs()); };
 
 	virtual void resetWorld(int visualize) override {
 		AbstractIsolatedEmbodiedWorld::resetWorld(visualize);
