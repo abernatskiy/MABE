@@ -165,23 +165,25 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 
 		// add a node to the map graph
 		std::vector<int> componentParentIdxs;
-		for(size_t ci=0; ci<numBrains; ci++) { // component index
-			for(const std::string& parentID : brainJSON["feedsFrom"]) {
-				if(parentID==brainsIDs[ci])
-					componentParentIdxs.push_back(ci);
-				else if(parentID=="thesensor") {
-					componentParentIdxs.push_back(-1);
-					if(brainJSON["feedsFrom"].size()!=1) {
-						std::cerr << "AsteroidTeamGazingWorld: currently, any component that feeds from the sensor must not feed from anything else. Component " << numBrains << " feeds from [";
-						for(const auto& pp : brainJSON["feedsFrom"])
-							std::cerr << " " << pp;
-						std::cerr << " ]" << std::endl;
-						exit(EXIT_FAILURE);
-					}
+		for(const std::string& parentID : brainJSON["feedsFrom"]) {
+			if(parentID=="thesensor") {
+				componentParentIdxs.push_back(-1);
+				if(brainJSON["feedsFrom"].size()!=1) {
+					std::cerr << "AsteroidTeamGazingWorld: currently, any component that feeds from the sensor must not feed from anything else. Component " << numBrains << " feeds from [";
+					for(const auto& pp : brainJSON["feedsFrom"])
+						std::cerr << " " << pp;
+					std::cerr << " ]" << std::endl;
+					exit(EXIT_FAILURE);
 				}
+			}
+			else {
+				for(size_t ci=0; ci<numBrains; ci++) // component index
+					if(parentID==brainsIDs[ci])
+						componentParentIdxs.push_back(ci);
 			}
 		}
 		std::sort(componentParentIdxs.begin(), componentParentIdxs.end());
+		// std::cout << "For brain " << numBrains << " parents were"; for(int p : componentParentIdxs) std::cout << " " << p; std::cout << std::endl;
 		brainsDiagram.insertNode(numBrains, componentParentIdxs);
 
 		// depending on whether the brain is evolvable or not, we do quite a few things differently
@@ -234,7 +236,11 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 					numComponentInputs += brainsNumOutputs[parentIdx];
 			}
 
-			std::shared_ptr<AbstractBrain> component = DEMarkovBrain_brainFactory(numComponentInputs, brainsNumOutputs.back(), curPT);
+			unsigned numComponentOutputs = brainsNumOutputs.back();
+			if(brainsConnectedToOculomotors.back())
+				numComponentOutputs += sensors->numInputs();
+
+			std::shared_ptr<AbstractBrain> component = DEMarkovBrain_brainFactory(numComponentInputs, numComponentOutputs, curPT);
 
 			// deserializing the description file
 			std::ifstream componentFile(brainJSON["loadFrom"]);
@@ -308,10 +314,15 @@ void AsteroidTeamGazingWorld::evaluateOnce(std::shared_ptr<Organism> org, int vi
 		std::vector<StateTimeSeries> rawExposedOutputsTS;
 		for(int eo : exposedOutputs)
 			rawExposedOutputsTS.push_back(executeBrainComponent(eo, visualize));
+		// for(unsigned eoi=0; eoi<rawExposedOutputsTS.size(); eoi++) { std::cout << "Exposed component " << eoi << " (idx " << exposedOutputs[eoi] << "):" << std::endl; for(unsigned t=0; t<rawExposedOutputsTS[eoi].size(); t++) printVector(rawExposedOutputsTS[eoi][t], "t=" + std::to_string(t)); }
+
+		// std::cout << "Iterating over timesteps and feeding the concatenated exposed outputs to the mental image:" << std::endl;
+
 		for(unsigned t=0; t<brainUpdatesPerAsteroid; t++) {
 			std::vector<double> outputs;
 			for(auto& reots : rawExposedOutputsTS)
 				outputs.insert(outputs.end(), reots[t].begin(), reots[t].end());
+			// printVector(outputs, "t=" + std::to_string(t));
 
 			// from here on outputs[] contains the final values and we can begin to process them
 			mentalImage->updateWithInputs(outputs);
@@ -328,6 +339,7 @@ void AsteroidTeamGazingWorld::evaluateOnce(std::shared_ptr<Organism> org, int vi
 			timeSeriesLogger->logData(stateLabel, sts, bts, mts, mits, visualize);
 		}
 		mentalImage->resetAfterWorldStateChange(visualize); // lol before
+
 		stateSchedule->advance(visualize);
 	}
 
@@ -335,6 +347,10 @@ void AsteroidTeamGazingWorld::evaluateOnce(std::shared_ptr<Organism> org, int vi
 
 	if(assumeDeterministicEvaluations)
 		org->dataMap.set("evaluated", true);
+
+	// std::cout << "Done evaluating organism " << org->ID << " at " << org << std::endl;
+	// std::cout << "Here's what it looks like evaluated: " << (org->getJSONRecord()).dump() << std::endl;
+	// exit(EXIT_FAILURE);
 }
 
 std::unordered_map<std::string, std::unordered_set<std::string>> AsteroidTeamGazingWorld::requiredGroups() {
@@ -349,6 +365,9 @@ std::unordered_map<std::string, std::unordered_set<std::string>> AsteroidTeamGaz
 			nOutputs += brainsNumOutputs[i];
 			if(brainsConnectedToOculomotors[i])
 				nOutputs += sensors->numInputs();
+
+			// std::cout << "The brain at " << i << " is evolvable with " << nInputs << " inputs and " << nOutputs << " outputs" << std::endl;
+			// std::cout << "requiredGroups() is about to return {{" << groupName << ", {" << ("B:" + brainName + "," + std::to_string(nInputs) + "," + std::to_string(nOutputs)) << "}}}" << std::endl;
 
 			return {{groupName, {"B:" + brainName + "," + std::to_string(nInputs) + "," + std::to_string(nOutputs)}}};
 		}
@@ -369,24 +388,31 @@ StateTimeSeries AsteroidTeamGazingWorld::executeBrainComponent(unsigned idx, int
 	auto parents = brainsDiagram.getParents(idx);
 	if(parents.size()==1 && parents[0]==-1) {
 		// we're feeding from sensors
+		// std::cout << "Brain " << idx << " feeds from sensors" << std::endl;
+		// std::cout << "Attaching sensors to brain " << brains[idx] << std::endl;
 		sensors->attachToBrain(brains[idx]);
 		for(unsigned t=0; t<brainUpdatesPerAsteroid; t++) {
 			sensors->update(visualize);
-
 			brains[idx]->update();
 
 			std::vector<double> componentOutput(brainsNumOutputs[idx]);
 			for(unsigned i=0; i<brainsNumOutputs[idx]; i++)
-				componentOutput[i] = brains[idx]->readOutput(sensors->numInputs() + i);
+				componentOutput[i] = brains[idx]->readOutput(sensors->numInputs() + i); // we're attached to sensors and the sensors know how many outputs they claimed for controls, so we can just trust them
 			componentOutputTimeSeries.push_back(componentOutput);
 		}
 		sensors->reset(visualize);
 	}
 	else {
 		// we're feeding from some lower layers
+		// std::cout << "Brain " << idx << " feeds from lower layers, as its parents are";
+		// for(int p : parents) std::cout << " " << p; std::cout << std::endl;
+
 		std::vector<StateTimeSeries> parentsOutputs;
 		for(int p : parents)
 			parentsOutputs.push_back(executeBrainComponent(p, visualize));
+
+		// for(unsigned eoi=0; eoi<parentsOutputs.size(); eoi++) { std::cout << "Parent " << eoi << " (idx " << parents[eoi] << "):" << std::endl; for(unsigned t=0; t<parentsOutputs[eoi].size(); t++) printVector(parentsOutputs[eoi][t], "t=" + std::to_string(t)); }
+
 		for(unsigned t=0; t<brainUpdatesPerAsteroid; t++) {
 			std::vector<double> componentInput;
 			for(unsigned pi=0; pi<parents.size(); pi++)
@@ -399,7 +425,7 @@ StateTimeSeries AsteroidTeamGazingWorld::executeBrainComponent(unsigned idx, int
 
 			std::vector<double> componentOutput(brainsNumOutputs[idx]);
 			for(unsigned i=0; i<brainsNumOutputs[idx]; i++)
-				componentOutput[i] = brains[idx]->readOutput(sensors->numInputs() + i);
+				componentOutput[i] = brains[idx]->readOutput(i); // since only the bottommost components are allowed to interface with sensors, no shift is needed here
 			componentOutputTimeSeries.push_back(componentOutput);
 		}
 	}
