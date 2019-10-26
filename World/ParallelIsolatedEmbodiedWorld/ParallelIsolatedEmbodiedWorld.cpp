@@ -1,6 +1,7 @@
 #include "ParallelIsolatedEmbodiedWorld.h"
 
 #include "../AsteroidTeamGazingWorld/AsteroidTeamGazingWorld.h"
+// #include "../AsteroidGazingWorld/AsteroidGazingWorld.h"
 
 /***** Auxiliary functions *****/
 
@@ -62,6 +63,7 @@ ParallelIsolatedEmbodiedWorld::ParallelIsolatedEmbodiedWorld(std::shared_ptr<Par
 
 	for(unsigned i=0; i<numThreads; i++) {
 		subworlds.push_back(std::make_unique<AsteroidTeamGazingWorld>(PT_)); // setting the daughter class manually for now
+		// subworlds.push_back(std::make_unique<AsteroidGazingWorld>(PT_)); // setting the daughter class manually for now
 	}
 }
 
