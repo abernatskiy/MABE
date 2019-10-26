@@ -243,7 +243,16 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 			std::shared_ptr<AbstractBrain> component = DEMarkovBrain_brainFactory(numComponentInputs, numComponentOutputs, curPT);
 
 			// deserializing the description file
+			if(brainJSON.count("loadFrom")==0) {
+				std::cerr << "AsteroidTeamGazingWorld: fixed brain component " << numBrains << " must be loaded from file and not loadFrom field has been supplied in the config" << std::endl;
+				exit(EXIT_FAILURE);
+			}
 			std::ifstream componentFile(brainJSON["loadFrom"]);
+			if(!componentFile.is_open()) {
+				std::cerr << "AsteroidTeamGazingWorld: couldn't open file " << brainJSON["loadFrom"] << " to load brain component " << numBrains << " from" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+
 			std::string componentJSONStr;
 			std::getline(componentFile, componentJSONStr);
 
@@ -255,6 +264,20 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 		}
 
 		numBrains++;
+	}
+
+	if(numEvolvableBrains==0) {
+		std::cerr << "AsteroidTeamGazingWorld: at least one brain component should be evolvable" << std::endl;
+		std::cerr << "(actually, exactly one in the current implementation)" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	if(sensors->numInputs()!=0 && numBrainsConnectedToOculomotors==0) {
+		std::cerr << "AsteroidTeamGazingWorld: at least one brain component should be marked as connected to oculomotors when sensors are active (current ones have " << sensors->numInputs() << " inputs)" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	if(exposedOutputs.size()==0) {
+		std::cerr << "AsteroidTeamGazingWorld: at least one brain component must be exposed" << std::endl;
+		exit(EXIT_FAILURE);
 	}
 
 	// Preparing the mental Image and adding motors that will be shaping it
