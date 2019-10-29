@@ -192,7 +192,7 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 				exit(EXIT_FAILURE);
 			}
 			for(int pi : brainsDiagram.getAllAncestors(numBrains)) { // parent index
-				if(brainsEvolvable[pi]) {
+				if(pi>=0 && brainsEvolvable[pi]) {
 					std::cerr << "AsteroidTeamGazingWorld: cannot cache inputs for component " << brainsIDs.back() << " which has an evolvable ancestor " << brainsIDs[pi] << std::endl;
 					exit(EXIT_FAILURE);
 				}
