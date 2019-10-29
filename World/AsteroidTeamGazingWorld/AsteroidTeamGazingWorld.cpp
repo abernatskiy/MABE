@@ -67,6 +67,7 @@ std::map<std::string,std::vector<Range2d>> AsteroidTeamGazingWorld::commonRelati
 AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 	AbstractSlideshowWorld(PT_),
 	numBrains(0),
+	cachingComplete(false),
 	numBrainsOutputs(0) {
 
 	// Localizing and validating settings
@@ -137,8 +138,6 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 		brainsIDs.push_back(brainJSON["id"]);
 		brainsNumOutputs.push_back(brainJSON["numOutputs"]);
 		brainsNumHidden.push_back(brainJSON["numHidden"]);
-		brainsInputCached.push_back(brainJSON["cacheInputs"] ? 1 : 0);
-		brainsInputCache.push_back({});
 		if(brainJSON["exposeOutput"]) {
 			exposedOutputs.push_back(numBrains);
 			numBrainsOutputs += brainsNumOutputs.back();
@@ -155,10 +154,6 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 				for(const auto& ff : brainJSON["feedsFrom"])
 					std::cerr << " " << ff;
 				std::cerr << " ]" << std::endl;
-				exit(EXIT_FAILURE);
-			}
-			if(brainsInputCached.back()==1) {
-				std::cerr << "AsteroidTeamGazingWorld: input of component " << numBrains << " that is connected to oculomotors cannot be cached" << std::endl;
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -185,6 +180,39 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 		std::sort(componentParentIdxs.begin(), componentParentIdxs.end());
 		// std::cout << "For brain " << numBrains << " parents were"; for(int p : componentParentIdxs) std::cout << " " << p; std::cout << std::endl;
 		brainsDiagram.insertNode(numBrains, componentParentIdxs);
+
+		// preparing cache variables
+		if(brainJSON["cacheInputs"]) {
+			if(!assumeDeterministicEvaluations) {
+				std::cerr << "AsteroidTeamGazingWorld: caching only supported if deterministic evaluations are assumed. It was requested for component " << brainsIDs.back() << std::endl;
+				exit(EXIT_FAILURE);
+			}
+			if(evaluationsPerGeneration!=1) {
+				std::cerr << "AsteroidTeamGazingWorld: multiple evaluations per generation (" << evaluationsPerGeneration << ") are not supported alongside caching (requested for component " << brainsIDs.back() << ")" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+			for(int pi : brainsDiagram.getAllAncestors(numBrains)) { // parent index
+				if(brainsEvolvable[pi]) {
+					std::cerr << "AsteroidTeamGazingWorld: cannot cache inputs for component " << brainsIDs.back() << " which has an evolvable ancestor " << brainsIDs[pi] << std::endl;
+					exit(EXIT_FAILURE);
+				}
+			}
+			if(brainsConnectedToOculomotors.back()) {
+/*				if(sensors->numInputs()==0)
+					std::cerr << "AsteroidTeamGazingWorld: WARNING! Caching and connection to oculomotors simulataneously reqested for component " << brainsIDs.back() << ", permitting due to sensors being passive" << std::endl;
+				else {
+					std::cerr << "AsteroidTeamGazingWorld: Caching and connection to oculomotors simulataneously reqested for component " << brainsIDs.back() << " and sensors are active with " << sensors->numInputs() << " oculomotors, exiting" << std::endl;
+					exit(EXIT_FAILURE);
+				}
+*/
+				std::cerr << "AsteroidTeamGazingWorld: caching of sensor-connected component inputs is currently not supported" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+			brainsInputCached.push_back(1);
+		}
+		else
+			brainsInputCached.push_back(0);
+		brainsInputCache.push_back({});
 
 		// depending on whether the brain is evolvable or not, we do quite a few things differently
 		if(brainJSON["evolvable"]) {
@@ -312,7 +340,7 @@ void AsteroidTeamGazingWorld::resetWorld(int visualize) {
 			brains[i] = nullptr;
 }
 
-void AsteroidTeamGazingWorld::evaluateOnce(std::shared_ptr<Organism> org, int visualize) {
+void AsteroidTeamGazingWorld::evaluateOnce(std::shared_ptr<Organism> org, unsigned repIdx, int visualize) {
 
 	if(visualize) std::cout << "Evaluating organism " << org->ID << " at " << org << std::endl;
 //	std::cout << "Evaluating organism " << org->ID << " at " << org << std::endl;
@@ -367,6 +395,13 @@ void AsteroidTeamGazingWorld::evaluateOnce(std::shared_ptr<Organism> org, int vi
 	}
 
 	recordSampleScores(org, timeStep, visualize);
+
+	if(!cachingComplete) {
+		cachingComplete = true;
+		for(unsigned i=0; i<numBrains; i++)
+			if(brainsInputCached[i]==1)
+				brainsInputCached[i] = 2;
+	}
 
 	if(assumeDeterministicEvaluations)
 		org->dataMap.set("evaluated", true);
@@ -430,26 +465,56 @@ StateTimeSeries AsteroidTeamGazingWorld::executeBrainComponent(unsigned idx, int
 		// std::cout << "Brain " << idx << " feeds from lower layers, as its parents are";
 		// for(int p : parents) std::cout << " " << p; std::cout << std::endl;
 
-		std::vector<StateTimeSeries> parentsOutputs;
-		for(int p : parents)
-			parentsOutputs.push_back(executeBrainComponent(p, visualize));
+		if(brainsInputCached[idx]==2) {
+			std::string stateID = stateSchedule->currentStateDescription();
+			for(unsigned t=0; t<brainUpdatesPerAsteroid; t++) {
+				for(unsigned i=0; i<brainsInputCache[idx][stateID][t].size(); i++)
+					brains[idx]->setInput(i, brainsInputCache[idx][stateID][t][i]);
+				brains[idx]->update();
 
-		// for(unsigned eoi=0; eoi<parentsOutputs.size(); eoi++) { std::cout << "Parent " << eoi << " (idx " << parents[eoi] << "):" << std::endl; for(unsigned t=0; t<parentsOutputs[eoi].size(); t++) printVector(parentsOutputs[eoi][t], "t=" + std::to_string(t)); }
+				std::vector<double> componentOutput(brainsNumOutputs[idx]);
+				for(unsigned i=0; i<brainsNumOutputs[idx]; i++)
+					componentOutput[i] = brains[idx]->readOutput(i); // since only the bottommost components are allowed to interface with sensors, no shift is needed here
+				componentOutputTimeSeries.push_back(componentOutput);
+			}
 
-		for(unsigned t=0; t<brainUpdatesPerAsteroid; t++) {
-			std::vector<double> componentInput;
-			for(unsigned pi=0; pi<parents.size(); pi++)
-				for(double v : parentsOutputs[pi][t])
-					componentInput.push_back(v);
+			// std::cout << "Retrieved inputs from cache " << idx << " (id " << brainsIDs[idx] << ") for state " << stateSchedule->currentStateDescription() << ":" << std::endl;
+			// for(const auto& v : brainsInputCache[idx][stateSchedule->currentStateDescription()])
+			// 	printVector(v, "ts");
+		}
+		else {
+			std::vector<StateTimeSeries> parentsOutputs;
+			if(brainsInputCached[idx]==1)
+				brainsInputCache[idx][stateSchedule->currentStateDescription()] = std::vector<std::vector<double>>(brainUpdatesPerAsteroid);
+			for(int p : parents)
+				parentsOutputs.push_back(executeBrainComponent(p, visualize));
 
-			for(unsigned i=0; i<componentInput.size(); i++)
-				brains[idx]->setInput(i, componentInput[i]);
-			brains[idx]->update();
+			// for(unsigned eoi=0; eoi<parentsOutputs.size(); eoi++) { std::cout << "Parent " << eoi << " (idx " << parents[eoi] << "):" << std::endl; for(unsigned t=0; t<parentsOutputs[eoi].size(); t++) printVector(parentsOutputs[eoi][t], "t=" + std::to_string(t)); }
 
-			std::vector<double> componentOutput(brainsNumOutputs[idx]);
-			for(unsigned i=0; i<brainsNumOutputs[idx]; i++)
-				componentOutput[i] = brains[idx]->readOutput(i); // since only the bottommost components are allowed to interface with sensors, no shift is needed here
-			componentOutputTimeSeries.push_back(componentOutput);
+			for(unsigned t=0; t<brainUpdatesPerAsteroid; t++) {
+				std::vector<double> componentInput;
+				for(unsigned pi=0; pi<parents.size(); pi++)
+					for(double v : parentsOutputs[pi][t])
+						componentInput.push_back(v);
+
+				if(brainsInputCached[idx]==1)
+					brainsInputCache[idx][stateSchedule->currentStateDescription()][t] = componentInput;
+
+				for(unsigned i=0; i<componentInput.size(); i++)
+					brains[idx]->setInput(i, componentInput[i]);
+				brains[idx]->update();
+
+				std::vector<double> componentOutput(brainsNumOutputs[idx]);
+				for(unsigned i=0; i<brainsNumOutputs[idx]; i++)
+					componentOutput[i] = brains[idx]->readOutput(i); // since only the bottommost components are allowed to interface with sensors, no shift is needed here
+				componentOutputTimeSeries.push_back(componentOutput);
+			}
+
+			// if(brainsInputCached[idx]==1) {
+			// 	std::cout << "Filled cache " << idx << " (id " << brainsIDs[idx] << ") for state " << stateSchedule->currentStateDescription() << ":" << std::endl;
+			// 	for(const auto& v : brainsInputCache[idx][stateSchedule->currentStateDescription()])
+			// 		printVector(v, "ts");
+			// }
 		}
 	}
 

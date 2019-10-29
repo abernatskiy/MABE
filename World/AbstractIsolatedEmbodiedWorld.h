@@ -31,6 +31,9 @@ protected:
 	// Do not touch this one, its values will be taken from Organisms
 	std::shared_ptr<AbstractBrain> brain;
 
+	// Infrastructure
+	unsigned currentActualEvaluationNum; // within the generation
+
 	static std::shared_ptr<ParameterLink<int>> evaluationsPerGenerationPL;
 	int evaluationsPerGeneration;
 	static std::shared_ptr<ParameterLink<std::string>> groupNamePL;
@@ -40,7 +43,7 @@ protected:
 	static std::shared_ptr<ParameterLink<bool>> assumeDeterministicEvaluationsPL;
 	bool assumeDeterministicEvaluations;
 
-	virtual void evaluateOnce(std::shared_ptr<Organism> org, int visualize);
+	virtual void evaluateOnce(std::shared_ptr<Organism> org, unsigned repIdx, int visualize);
 	int numInputs() { return motors->numOutputs() + sensors->numOutputs(); }; // brain inputs
 	int numOutputs() { return motors->numInputs() + sensors->numInputs(); }; // brain outputs
 
@@ -59,15 +62,17 @@ public:
 	void evaluateSolo(std::shared_ptr<Organism> org, int analyze, int visualize, int debug) {
 		if(assumeDeterministicEvaluations && org->dataMap.findKeyInData("evaluated")==11 && org->dataMap.getBool("evaluated"))
 			return;
-		for(int r=0; r<evaluationsPerGeneration; r++)
-			evaluateOnce(org, visualize);
+		for(unsigned r=0; r<evaluationsPerGeneration; r++)
+			evaluateOnce(org, r, visualize);
 		evaluateOrganism(org, visualize);
 		if(visualize) std::cout << "Organism data map after the evaluation:" << std::endl << org->dataMap.getTextualRepresentation();
+		currentActualEvaluationNum++;
 	};
 	void evaluate(std::map<std::string, std::shared_ptr<Group>> &groups, int analyze, int visualize, int debug) {
 		int popSize = groups[groupName]->population.size();
 		for(int i=0; i<popSize; i++)
 			evaluateSolo(groups[groupName]->population[i], analyze, visualize, debug);
+		currentActualEvaluationNum = 0;
   };
 	bool assumesDeterministicEvaluations() const { return assumeDeterministicEvaluations; };
 

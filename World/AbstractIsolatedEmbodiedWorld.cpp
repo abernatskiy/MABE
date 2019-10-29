@@ -24,18 +24,24 @@ std::shared_ptr<ParameterLink<std::string>> AbstractIsolatedEmbodiedWorld::brain
     Parameters::register_parameter("WORLD_ISOLATED_EMBODIED_NAMES-brainNameSpace", (std::string) "root::",
                                    "Namespace for parameters used to define brain");
 
-AbstractIsolatedEmbodiedWorld::AbstractIsolatedEmbodiedWorld(std::shared_ptr<ParametersTable> PT_) : AbstractWorld(PT_), brain(nullptr) {
+AbstractIsolatedEmbodiedWorld::AbstractIsolatedEmbodiedWorld(std::shared_ptr<ParametersTable> PT_) :
+	AbstractWorld(PT_),
+	brain(nullptr),
+	currentActualEvaluationNum(0) {
 
 	// Locatizing the settings
 	evaluationsPerGeneration = evaluationsPerGenerationPL->get(PT_);
 	groupName = groupNamePL->get(PT_);
 	brainName = brainNamePL->get(PT_);
 	assumeDeterministicEvaluations = assumeDeterministicEvaluationsPL->get(PT_);
-	if(assumeDeterministicEvaluations)
+	if(assumeDeterministicEvaluations) {
+		if(evaluationsPerGeneration != 1)
+			std::cerr << "AbstractIsolatedEmbodiedWorld: WARNING! Request for repeating evaluations " << evaluationsPerGeneration << " times declined because WORLD_ISOLATED_EMBODIED-assumeDeterministicEvaluations is true" << std::endl;
 		evaluationsPerGeneration = 1;
+	}
 }
 
-void AbstractIsolatedEmbodiedWorld::evaluateOnce(std::shared_ptr<Organism> org, int visualize) {
+void AbstractIsolatedEmbodiedWorld::evaluateOnce(std::shared_ptr<Organism> org, unsigned repIdx, int visualize) {
 
 	if(visualize) std::cout << "Evaluating organism " << org->ID << " at " << org << std::endl;
 //	std::cout << "Evaluating organism " << org->ID << " at " << org << std::endl;

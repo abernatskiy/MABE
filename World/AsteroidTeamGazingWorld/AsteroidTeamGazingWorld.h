@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <iostream>
 #include <cstdlib>
 
@@ -54,7 +55,8 @@ private:
 	std::vector<unsigned> brainsNumOutputs;
 	std::vector<unsigned> brainsNumHidden;
 	std::vector<unsigned> brainsInputCached; // format: 0 = do not cache, 1 = input to be cached, 2 = input cached
-	std::vector<StateTimeSeries> brainsInputCache; // preference for fast evolvable end point brains over the fast combined constant-evolvable end point brains
+	std::vector<std::unordered_map<std::string,StateTimeSeries>> brainsInputCache; // caching inputs prioritizes fast evolvable end point brains over the combintations of variable end point brains with constant components' outputs
+	bool cachingComplete;
 	std::vector<unsigned> exposedOutputs;
 	std::vector<unsigned> brainsConnectedToOculomotors;
 	unsigned numBrainsOutputs;
@@ -67,7 +69,7 @@ private:
 public:
 	AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable> PT_);
 	void resetWorld(int visualize) override;
-	void evaluateOnce(std::shared_ptr<Organism> org, int visualize) override;
+	void evaluateOnce(std::shared_ptr<Organism> org, unsigned repIdx, int visualize) override;
 	std::unordered_map<std::string, std::unordered_set<std::string>> requiredGroups() override;
 };
 
