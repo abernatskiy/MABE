@@ -127,6 +127,7 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 	brainsDiagram.insertNode(-1, {}); // the sensor
 
 	unsigned numEvolvableBrains = 0;
+	unsigned numBrainsConnectedToSensors = 0;
 	unsigned numBrainsConnectedToOculomotors = 0;
 	for(const auto& brainJSON : brainsJSON) { // for each brain description on the JSON
 		if(brainJSON["type"]!="DEMarkovBrain") {
@@ -162,6 +163,7 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 		std::vector<int> componentParentIdxs;
 		for(const std::string& parentID : brainJSON["feedsFrom"]) {
 			if(parentID=="thesensor") {
+				numBrainsConnectedToSensors++;
 				componentParentIdxs.push_back(-1);
 				if(brainJSON["feedsFrom"].size()!=1) {
 					std::cerr << "AsteroidTeamGazingWorld: currently, any component that feeds from the sensor must not feed from anything else. Component " << numBrains << " feeds from [";
@@ -170,6 +172,8 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 					std::cerr << " ]" << std::endl;
 					exit(EXIT_FAILURE);
 				}
+				if(numBrainsConnectedToSensors>1 && (sensors->numInputs()!=0))
+					std::cerr << "AsteroidTeamGazingWorld: WARNING! Multiple components are connected to active sensors. The measured number of saccades will only reflect the sensor usage by the last component utilizing them" << std::endl;
 			}
 			else {
 				for(size_t ci=0; ci<numBrains; ci++) // component index
@@ -356,10 +360,6 @@ void AsteroidTeamGazingWorld::evaluateOnce(std::shared_ptr<Organism> org, unsign
 		}
 	}
 
-	sensors->reset(visualize);
-	for(auto& curBrain : brains)
-		curBrain->resetBrain();
-
 	unsigned long timeStep = 0;
 	while(!stateSchedule->stateIsFinal()) {
 		std::vector<StateTimeSeries> rawExposedOutputsTS;
@@ -441,6 +441,8 @@ std::unordered_map<std::string, std::unordered_set<std::string>> AsteroidTeamGaz
 
 StateTimeSeries AsteroidTeamGazingWorld::executeBrainComponent(unsigned idx, int visualize) {
 
+	brains[idx]->resetBrain();
+
 	StateTimeSeries componentOutputTimeSeries;
 
 	auto parents = brainsDiagram.getParents(idx);
@@ -448,6 +450,7 @@ StateTimeSeries AsteroidTeamGazingWorld::executeBrainComponent(unsigned idx, int
 		// we're feeding from sensors
 		// std::cout << "Brain " << idx << " feeds from sensors" << std::endl;
 		// std::cout << "Attaching sensors to brain " << brains[idx] << std::endl;
+		sensors->reset(visualize);
 		sensors->attachToBrain(brains[idx]);
 		for(unsigned t=0; t<brainUpdatesPerAsteroid; t++) {
 			sensors->update(visualize);
@@ -458,7 +461,6 @@ StateTimeSeries AsteroidTeamGazingWorld::executeBrainComponent(unsigned idx, int
 				componentOutput[i] = brains[idx]->readOutput(sensors->numInputs() + i); // we're attached to sensors and the sensors know how many outputs they claimed for controls, so we can just trust them
 			componentOutputTimeSeries.push_back(componentOutput);
 		}
-		sensors->reset(visualize);
 	}
 	else {
 		// we're feeding from some lower layers
@@ -517,8 +519,6 @@ StateTimeSeries AsteroidTeamGazingWorld::executeBrainComponent(unsigned idx, int
 			// }
 		}
 	}
-
-	brains[idx]->resetBrain();
 
 	return componentOutputTimeSeries;
 }
