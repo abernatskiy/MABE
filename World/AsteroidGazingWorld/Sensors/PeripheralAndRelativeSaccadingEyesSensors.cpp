@@ -41,6 +41,7 @@ PeripheralAndRelativeSaccadingEyesSensors::PeripheralAndRelativeSaccadingEyesSen
 	jumpType(jumpTypePL->get(PT_)),
 	jumpGradations(jumpGradationsPL->get(PT_)),
 	forbidRest(forbidRestPL->get(PT_)),
+	numThresholdsToTry(peripheralFOVNumThresholdsToTryPL->get(PT_)),
 	rangeDecoder(constructRangeDecoder(jumpType, jumpGradations, frameRes, foveaRes, forbidRest)),
 	foveaPositionControls(rangeDecoder->numControls()),
 	numSensors(foveaRes*foveaRes + (usePeripheralFOV ? peripheralFOVRes*peripheralFOVRes : 0 )),
@@ -52,37 +53,6 @@ PeripheralAndRelativeSaccadingEyesSensors::PeripheralAndRelativeSaccadingEyesSen
 		cerr << "Fovea size (" << foveaRes << ") exceeds frame size, exiting" << endl;
 		exit(EXIT_FAILURE);
 	}
-
-	// Caching asteroid snapshots, determining optimal peripheral FOV threshold for each
-	set<string> asteroidNames = datasetParser->getAsteroidsNames();
-	for(const string& an : asteroidNames) {
-		map<string,set<unsigned>> parameterValuesSets = datasetParser->getAllParameterValues(an);
-		for(const auto& pvs : parameterValuesSets) {
-			if(pvs.second.size()!=1) {
-				cerr << "PeripheralAndRelativeSaccadingEyesSensors: Only asteroids with single available snapshot are supported at this moment" << endl;
-				exit(EXIT_FAILURE);
-			}
-		}
-		unsigned condition = *(parameterValuesSets["condition"].begin());
-		unsigned distance = *(parameterValuesSets["distance"].begin());
-		unsigned phase = *(parameterValuesSets["phase"].begin());
-		string snapshotPath = datasetParser->getPicturePath(an, condition, distance, phase);
-		asteroidSnapshots.emplace(pair<AsteroidViewParameters,AsteroidSnapshot>(make_tuple(an),
-		                                                                        AsteroidSnapshot(snapshotPath, baseThreshold)));
-
-		if(peripheralFOVNumThresholdsToTryPL->get(PT_) > 0) {
-			uint8_t periFOVThresh = asteroidSnapshots[make_tuple(an)].getBestThreshold(peripheralFOVRes, peripheralFOVNumThresholdsToTryPL->get(PT_));
-			peripheralFOVThresholds.emplace(make_tuple(an), periFOVThresh);
-		}
-		else
-			peripheralFOVThresholds.emplace(make_tuple(an), baseThreshold);
-	}
-
-	// Preparing the state
-	resetFoveaPosition();
-	controls.assign(numMotors, false);
-
-	analyzeDataset();
 }
 
 void PeripheralAndRelativeSaccadingEyesSensors::update(int visualize) {
@@ -140,6 +110,40 @@ void PeripheralAndRelativeSaccadingEyesSensors::reset(int visualize) {
 	perceptTimeSeries.clear();
 	controlsTimeSeries.clear();
 	sensorStateDescriptionTimeSeries.clear();
+}
+
+void PeripheralAndRelativeSaccadingEyesSensors::doHeavyInit() {
+
+	// Caching asteroid snapshots, determining optimal peripheral FOV threshold for each
+	set<string> asteroidNames = datasetParser->getAsteroidsNames();
+	for(const string& an : asteroidNames) {
+		map<string,set<unsigned>> parameterValuesSets = datasetParser->getAllParameterValues(an);
+		for(const auto& pvs : parameterValuesSets) {
+			if(pvs.second.size()!=1) {
+				cerr << "PeripheralAndRelativeSaccadingEyesSensors: Only asteroids with single available snapshot are supported at this moment" << endl;
+				exit(EXIT_FAILURE);
+			}
+		}
+		unsigned condition = *(parameterValuesSets["condition"].begin());
+		unsigned distance = *(parameterValuesSets["distance"].begin());
+		unsigned phase = *(parameterValuesSets["phase"].begin());
+		string snapshotPath = datasetParser->getPicturePath(an, condition, distance, phase);
+		asteroidSnapshots.emplace(pair<AsteroidViewParameters,AsteroidSnapshot>(make_tuple(an),
+		                                                                        AsteroidSnapshot(snapshotPath, baseThreshold)));
+
+		if(numThresholdsToTry > 0) {
+			uint8_t periFOVThresh = asteroidSnapshots[make_tuple(an)].getBestThreshold(peripheralFOVRes, numThresholdsToTry);
+			peripheralFOVThresholds.emplace(make_tuple(an), periFOVThresh);
+		}
+		else
+			peripheralFOVThresholds.emplace(make_tuple(an), baseThreshold);
+	}
+
+	// Preparing the state
+	resetFoveaPosition();
+	controls.assign(numMotors, false);
+
+	analyzeDataset();
 }
 
 void* PeripheralAndRelativeSaccadingEyesSensors::logTimeSeries(const string& label) {

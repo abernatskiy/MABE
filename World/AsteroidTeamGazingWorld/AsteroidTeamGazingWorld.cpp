@@ -101,6 +101,8 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 
 	sensors->writeSensorStats();
 
+	sensors->doHeavyInit();
+
 	// Preparing the brain graph
 	std::ifstream brainsJSONStream(pathToBrainGraphJSONPL->get(PT_));
 	nlohmann::json brainsJSON;

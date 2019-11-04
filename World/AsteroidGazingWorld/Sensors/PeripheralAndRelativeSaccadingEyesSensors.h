@@ -18,6 +18,7 @@ public:
 	                                          std::shared_ptr<ParametersTable> PT);
 	void update(int visualize) override;
 	void reset(int visualize) override;
+	void doHeavyInit() override;
 
 	int numOutputs() override { return numSensors; };
 	int numInputs() override { return numMotors; };
@@ -51,6 +52,7 @@ private:
 	const unsigned numPhases = 1;
 	const unsigned phaseControls = 0; // no controls for one phase
 	const std::uint8_t baseThreshold = 128;
+	const int numThresholdsToTry;
 
 	// Derived vars and facilities
 	std::shared_ptr<AbstractRangeDecoder> rangeDecoder;

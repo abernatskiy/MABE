@@ -90,6 +90,8 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 	sensors = rawSensorsPointer; // downcast
 
 	sensors->writeSensorStats();
+
+	sensors->doHeavyInit();
 /*
 	mentalImage = std::make_shared<DigitMentalImage>(currentAsteroidName,
 	                                                 datasetParser,
