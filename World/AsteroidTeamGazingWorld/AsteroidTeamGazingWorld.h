@@ -54,12 +54,13 @@ private:
 	std::vector<unsigned> brainsEvolvable;
 	std::vector<unsigned> brainsNumOutputs;
 	std::vector<unsigned> brainsNumHidden;
-	std::vector<unsigned> brainsInputCached; // format: 0 = do not cache, 1 = input to be cached, 2 = input cached
-	std::vector<std::unordered_map<std::string,StateTimeSeries>> brainsInputCache; // caching inputs prioritizes fast evolvable end point brains over the combintations of variable end point brains with constant components' outputs
-	bool cachingComplete;
 	std::vector<unsigned> exposedOutputs;
 	std::vector<unsigned> brainsConnectedToOculomotors;
 	unsigned numBrainsOutputs;
+
+	std::vector<unsigned> brainsOutputCached; // format: 0 = do not cache, 1 = to be cached, 2 = cached
+	std::vector<std::unordered_map<std::string,StateTimeSeries>> brainsOutputCache; // it turned out that concatenation is cheap, and sensors are caching their outputs already - no need to add another layer
+	bool cachingComplete;
 
 	bool resetAgentBetweenStates() override { std::cerr << "resetAgentBetweenStates() should not be called for AsteroidTeamGazingWorld" << std::endl; exit(EXIT_FAILURE); return true; };
 	int brainUpdatesPerWorldState() override { return brainUpdatesPerAsteroid; };
