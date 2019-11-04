@@ -20,9 +20,6 @@ std::shared_ptr<ParameterLink<int>> AsteroidTeamGazingWorld::brainUpdatesPerAste
 std::shared_ptr<ParameterLink<std::string>> AsteroidTeamGazingWorld::datasetPathPL =
   Parameters::register_parameter("WORLD_ASTEROID_TEAM_GAZING-datasetPath", (std::string) "./asteroids",
                                  "path to the folder containing the asteroids shapes and snapshots dataset");
-std::shared_ptr<ParameterLink<std::string>> AsteroidTeamGazingWorld::sensorTypePL =
-  Parameters::register_parameter("WORLD_ASTEROID_TEAM_GAZING-sensorType", (std::string) "absolute",
-                                 "type of sensors to use (either absolute or relative)");
 std::shared_ptr<ParameterLink<bool>> AsteroidTeamGazingWorld::integrateFitnessPL =
   Parameters::register_parameter("WORLD_ASTEROID_TEAM_GAZING-integrateFitness", true,
                                  "should the fitness be integrated over simulation time? (default: yes)");
@@ -73,49 +70,34 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 	// Localizing and validating settings
 	brainUpdatesPerAsteroid = brainUpdatesPerAsteroidPL->get(PT_);
 	datasetPath = datasetPathPL->get(PT_);
-	std::string sensorType = sensorTypePL->get(PT_);
 	bool randomizeInitialConditions = (numRandomInitialConditionsPL->get(PT_) > 0);
 	unsigned numRandomInitialConditions = static_cast<unsigned>(numRandomInitialConditionsPL->get(PT_));
-	if(randomizeInitialConditions && sensorType!="relative") {
-		std::cerr << "Sensors of type " << sensorType << " do not support initial conditions randomization" << std::endl;
-		exit(EXIT_FAILURE);
-	}
 
 	// Preparing the sensors and their environment
 	datasetParser = std::make_shared<AsteroidsDatasetParser>(datasetPath);
 	currentAsteroidName = std::make_shared<std::string>("");
 
-	if(sensorType=="absolute") {
-		sensors = std::make_shared<AbsoluteFocusingSaccadingEyesSensors>(currentAsteroidName, datasetParser, PT_);
-		stateSchedule = std::make_shared<ExhaustiveAsteroidGazingSchedule>(currentAsteroidName, datasetParser);
-	}
-	else if(sensorType=="relative") {
-		auto rawSensorsPointer = std::make_shared<PeripheralAndRelativeSaccadingEyesSensors>(currentAsteroidName, datasetParser, PT_);
-		if(!initialConditionsInitialized) {
-			if(randomizeInitialConditions) {
-				for(const auto& astName : datasetParser->getAsteroidsNames()) {
-					commonRelativeSensorsInitialConditions[astName] = {};
-					for(unsigned i=0; i<numRandomInitialConditions; i++)
-						commonRelativeSensorsInitialConditions[astName].push_back(rawSensorsPointer->generateRandomInitialState());
-				}
+	auto rawSensorsPointer = std::make_shared<PeripheralAndRelativeSaccadingEyesSensors>(currentAsteroidName, datasetParser, PT_);
+	if(!initialConditionsInitialized) {
+		if(randomizeInitialConditions) {
+			for(const auto& astName : datasetParser->getAsteroidsNames()) {
+				commonRelativeSensorsInitialConditions[astName] = {};
+				for(unsigned i=0; i<numRandomInitialConditions; i++)
+					commonRelativeSensorsInitialConditions[astName].push_back(rawSensorsPointer->generateRandomInitialState());
 			}
-			else {
-				for(const auto& astName : datasetParser->getAsteroidsNames())
-					commonRelativeSensorsInitialConditions[astName] = { rawSensorsPointer->generateDefaultInitialState() };
-			}
-			initialConditionsInitialized = 1;
 		}
-		stateSchedule = std::make_shared<ExhaustiveAsteroidGazingScheduleWithRelativeSensorInitialStates>(
-		                  currentAsteroidName,
-		                  datasetParser,
-		                  rawSensorsPointer->getPointerToInitialState(),
-		                  commonRelativeSensorsInitialConditions);
-		sensors = rawSensorsPointer; // downcast
+		else {
+			for(const auto& astName : datasetParser->getAsteroidsNames())
+				commonRelativeSensorsInitialConditions[astName] = { rawSensorsPointer->generateDefaultInitialState() };
+		}
+		initialConditionsInitialized = 1;
 	}
-	else {
-		std::cerr << "AsteroidTeamGazingWorld: Unsupported sensor type " << sensorType << std::endl;
-		exit(EXIT_FAILURE);
-	}
+	stateSchedule = std::make_shared<ExhaustiveAsteroidGazingScheduleWithRelativeSensorInitialStates>(
+	                  currentAsteroidName,
+	                  datasetParser,
+	                  rawSensorsPointer->getPointerToInitialState(),
+	                  commonRelativeSensorsInitialConditions);
+	sensors = rawSensorsPointer; // downcast
 
 	sensors->writeSensorStats();
 

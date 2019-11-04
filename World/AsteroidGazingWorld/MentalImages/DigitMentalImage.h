@@ -5,8 +5,8 @@
 
 #include "../../AbstractMentalImage.h"
 #include "../Utilities/AsteroidsDatasetParser.h"
-#include "../Sensors/AbsoluteFocusingSaccadingEyesSensors.h"
 #include "digitCommandLogger.h"
+#include "../../AbstractSensors.h"
 
 typedef std::tuple<unsigned> CommandType; // digit is determined by a single number
 typedef std::tuple<std::vector<unsigned>> CommandRangeType;

@@ -10,7 +10,6 @@
 
 #include "../AbstractSlideshowWorld.h"
 #include "../AsteroidGazingWorld/Utilities/AsteroidsDatasetParser.h"
-#include "../AsteroidGazingWorld/Sensors/AbsoluteFocusingSaccadingEyesSensors.h"
 #include "../AsteroidGazingWorld/Sensors/PeripheralAndRelativeSaccadingEyesSensors.h"
 
 #include "dag.h"
@@ -32,7 +31,6 @@ class AsteroidTeamGazingWorld : public AbstractSlideshowWorld {
 private:
 	static std::shared_ptr<ParameterLink<int>> brainUpdatesPerAsteroidPL; int brainUpdatesPerAsteroid;
 	static std::shared_ptr<ParameterLink<std::string>> datasetPathPL;     std::string datasetPath;
-	static std::shared_ptr<ParameterLink<std::string>> sensorTypePL;
 	static std::shared_ptr<ParameterLink<bool>> integrateFitnessPL;
 	static std::shared_ptr<ParameterLink<int>> numTriggerBitsPL;
 	static std::shared_ptr<ParameterLink<int>> numRandomInitialConditionsPL;
