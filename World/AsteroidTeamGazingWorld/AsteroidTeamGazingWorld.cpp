@@ -265,7 +265,7 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 			if(brainsConnectedToOculomotors.back())
 				numComponentOutputs += sensors->numInputs();
 
-			std::shared_ptr<AbstractBrain> component = DEMarkovBrain_brainFactory(numComponentInputs, numComponentOutputs, curPT);
+			std::shared_ptr<AbstractBrain> component = DEMarkovBrain_brainFactory(numComponentInputs, numComponentOutputs, curPT, false);
 
 			// deserializing the description file
 			if(brainJSON.count("loadFrom")==0) {

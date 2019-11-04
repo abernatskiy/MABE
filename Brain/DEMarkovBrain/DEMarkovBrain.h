@@ -54,10 +54,10 @@ public:
 	// Public methods
 	DEMarkovBrain() = delete;
 	DEMarkovBrain(int nrInNodes, int nrHidNodes, int nrOutNodes, std::shared_ptr<ParametersTable> PT); // basic constructor that provides an empty object
-	DEMarkovBrain(int ins, int outs, std::shared_ptr<ParametersTable> PT_) : // complete constructor that actually generates a working random brain
+	DEMarkovBrain(int ins, int outs, std::shared_ptr<ParametersTable> PT_, bool randomizeIt) : // complete constructor that actually generates a working random brain
 		DEMarkovBrain(ins, hiddenNodesPL->get(PT_), outs, PT_) {
 
-		randomize();
+		if(randomizeIt) randomize();
 		beginLogging();
 	};
 	~DEMarkovBrain() = default;
@@ -85,6 +85,6 @@ public:
 	void deserialize(std::shared_ptr<ParametersTable> PT, std::unordered_map<std::string,std::string>& orgData, std::string& name) override;
 };
 
-inline std::shared_ptr<AbstractBrain> DEMarkovBrain_brainFactory(int ins, int outs, std::shared_ptr<ParametersTable> PT) {
-	return std::make_shared<DEMarkovBrain>(ins, outs, PT);
+inline std::shared_ptr<AbstractBrain> DEMarkovBrain_brainFactory(int ins, int outs, std::shared_ptr<ParametersTable> PT, bool randomize = true) {
+	return std::make_shared<DEMarkovBrain>(ins, outs, PT, randomize);
 }
