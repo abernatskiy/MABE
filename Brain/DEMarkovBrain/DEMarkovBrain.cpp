@@ -39,6 +39,8 @@ shared_ptr<ParameterLink<double>> DEMarkovBrain::gateDuplicationProbabilityPL = 
 shared_ptr<ParameterLink<double>> DEMarkovBrain::connectionToTableChangeRatioPL = Parameters::register_parameter("BRAIN_DEMARKOV-connectionToTableChangeRatio", 1.0,
                                                                                                                  "if the brain experiences no insertion, deletions or duplictions, call to mutate() changes parameters of a randomly chosen gate. This parameters governs relative frequencies of such changes to connections and logic tables");
 shared_ptr<ParameterLink<int>> DEMarkovBrain::minGateCountPL = Parameters::register_parameter("BRAIN_DEMARKOV-minGateCount", 0, "number of gates that causes gate deletions to become impossible (mutation operator calls itself if the mutation happens to be a deletion)");
+shared_ptr<ParameterLink<bool>> DEMarkovBrain::readFromInputsOnlyPL = Parameters::register_parameter("BRAIN_DEMARKOV-readFromInputsOnly", false,
+                                                                                              "DOES NOT WORK! if set to true, gates will only read from input nodes; by default, they'll read from all nodes");
 
 /********** Public definitions **********/
 
@@ -47,9 +49,15 @@ DEMarkovBrain::DEMarkovBrain(int _nrInNodes, int _nrHidNodes, int _nrOutNodes, s
 	nrHiddenNodes(_nrHidNodes),
 	nrNodes(_nrInNodes+_nrOutNodes+_nrHidNodes),
 	minGates(minGateCountPL->get(PT_)),
+	readFromInputsOnly(false), // false is the default
 	visualize(Global::modePL->get() == "visualize"),
 	recordIOMap(recordIOMapPL->get(PT_)),
 	originationStory("primordial") {
+
+	gateInsStart = 0;
+	gateInsEnd = readFromInputsOnly ? nrInputValues-1 : nrNodes-1;
+	gateOutsStart = nrInputValues;
+	gateOutsEnd = nrNodes - 1;
 
 	nodes.resize(nrNodes, 0);
 	nextNodes.resize(nrNodes, 0);
@@ -180,7 +188,7 @@ void DEMarkovBrain::mutate() {
 			}
 			else {
 //				cout << " and a wiring mutation. Gate before the mutation:" << endl << gates[idx]->description();
-				gates[idx]->mutateConnections(0, nrNodes-1, nrInputValues, nrNodes-1);
+				gates[idx]->mutateConnections(gateInsStart, gateInsEnd, gateOutsStart, gateOutsEnd);
 //				cout << "Gate after the mutation:" << endl << gates[idx]->description() << endl;
 				originationStory = "mutation_rewiring";
 			}
@@ -296,9 +304,9 @@ shared_ptr<AbstractGate> DEMarkovBrain::getRandomGate(int gateID) {
 	const int nouts = Random::getInt(gateMinOuts, gateMaxOuts);
 	pair<vector<int>,vector<int>> conns;
 	for(unsigned i=0; i<nins; i++)
-		conns.first.push_back(Random::getInt(0, nrNodes-1));
+		conns.first.push_back(Random::getInt(gateInsStart, gateInsEnd));
 	for(unsigned j=0; j<nouts; j++)
-		conns.second.push_back(Random::getInt(nrInputValues, nrNodes-1));
+		conns.second.push_back(Random::getInt(gateOutsStart, gateOutsEnd));
 
 	const int tableRows = 1<<nins;
 	vector<vector<int>> table;

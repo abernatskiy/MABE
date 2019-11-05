@@ -30,6 +30,11 @@ private:
 	void randomize();
 	void beginLogging();
 
+	// Mutation-related stuff
+	// Localized mutation probabilities TBA
+	const bool readFromInputsOnly;
+	int gateInsStart, gateInsEnd, gateOutsStart, gateOutsEnd;
+
 	// Infrastructure
 	const bool visualize;
 	const bool recordIOMap;
@@ -49,6 +54,7 @@ private:
 	static std::shared_ptr<ParameterLink<double>> gateDuplicationProbabilityPL;
 	static std::shared_ptr<ParameterLink<double>> connectionToTableChangeRatioPL;
 	static std::shared_ptr<ParameterLink<int>> minGateCountPL;
+	static std::shared_ptr<ParameterLink<bool>> readFromInputsOnlyPL;
 
 public:
 	// Public methods

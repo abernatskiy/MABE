@@ -208,6 +208,7 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 			                                                "BRAIN_DEMARKOV-minGateCount" };
 			for(const auto& param : forwardedIntParamNames)
 				curPT->setParameter(param, PT_->lookupInt(param));
+			// curPT->setParameter("BRAIN_DEMARKOV-readFromOutputsOnly", PT_->lookupBool("BRAIN_DEMARKOV-readFromOutputsOnly"));
 			///// Parameter forwarding END /////
 
 			unsigned numComponentInputs = 0;
@@ -222,7 +223,9 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 			if(brainsConnectedToOculomotors.back())
 				numComponentOutputs += sensors->numInputs();
 
+			std::cout << "Constructing a constant brain component..." << std::flush;
 			std::shared_ptr<AbstractBrain> component = DEMarkovBrain_brainFactory(numComponentInputs, numComponentOutputs, curPT, false);
+			std::cout << "done" << std::endl << std::flush;
 
 			// deserializing the description file
 			if(brainJSON.count("loadFrom")==0) {
