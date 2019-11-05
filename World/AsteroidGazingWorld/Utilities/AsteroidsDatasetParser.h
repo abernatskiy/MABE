@@ -29,5 +29,8 @@ public:
 private:
 	fs::path fsDatasetPath;
 	std::map<std::string,std::vector<command_type>> descriptionCache;
+	std::set<std::string> asteroidsNamesCache;
+	bool asteroidsNamesCacheFull;
+
 	void checkIfRegularFile(std::string path);
 };

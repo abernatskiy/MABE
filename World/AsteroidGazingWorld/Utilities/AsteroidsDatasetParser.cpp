@@ -22,25 +22,47 @@ bool hasEnding(std::string const &fullString, std::string const &ending) {
 
 AsteroidsDatasetParser::AsteroidsDatasetParser(std::string datasetPath) :
 
-	fsDatasetPath(fs::system_complete(datasetPath)) {
+	fsDatasetPath(fs::system_complete(datasetPath)),
+	asteroidsNamesCacheFull(false) {
 	if( !fs::exists(fsDatasetPath) ) { std::cerr << "Dataset path " << fsDatasetPath.string() << " does not exist" << std::endl; exit(EXIT_FAILURE); }
 	if( !fs::is_directory(fsDatasetPath) ) { std::cerr << "Dataset path " << fsDatasetPath.string() << " is not a directory" << std::endl; exit(EXIT_FAILURE); }
 }
 
 std::set<std::string> AsteroidsDatasetParser::getAsteroidsNames() {
 
-	std::set<std::string> asteroidNames;
-	fs::directory_iterator end_iter;
-	for( fs::directory_iterator dir_itr(fsDatasetPath); dir_itr != end_iter; ++dir_itr ) {
-		try {
-			if( fs::is_directory(dir_itr->status()) )
-				asteroidNames.insert(dir_itr->path().filename().string());
-    } catch (const std::exception & ex) {
-      std::cerr << "Exception " << ex.what() << " occurred while trying to list dataset folder " << fsDatasetPath << std::endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-	return asteroidNames;
+	if(asteroidsNamesCacheFull)
+		return asteroidsNamesCache;
+
+	fs::path namesCachePath = fsDatasetPath / fs::path("names.cache");
+	if(fs::is_regular_file(namesCachePath)) {
+		std::ifstream namesCacheStream(namesCachePath.string());
+		std::string curName;
+		while(std::getline(namesCacheStream, curName))
+			asteroidsNamesCache.insert(curName);
+	}
+	else {
+		// list all subdirs of the dataset dir
+		fs::directory_iterator end_iter;
+		for( fs::directory_iterator dir_itr(fsDatasetPath); dir_itr != end_iter; ++dir_itr ) {
+			try {
+				if( fs::is_directory(dir_itr->status()) )
+					asteroidsNamesCache.insert(dir_itr->path().filename().string());
+			}
+			catch (const std::exception & ex) {
+				std::cerr << "Exception " << ex.what() << " occurred while trying to list dataset folder " << fsDatasetPath << std::endl;
+				exit(EXIT_FAILURE);
+			}
+		}
+
+		// and write about what we found out to the cache file
+		std::ofstream namesCacheOStream(namesCachePath.string());
+		for(std::string s : asteroidsNamesCache)
+			namesCacheOStream << s << std::endl;
+	}
+
+	asteroidsNamesCacheFull = true;
+
+	return asteroidsNamesCache;
 }
 
 std::string AsteroidsDatasetParser::getICQPath(std::string asteroidName) {
