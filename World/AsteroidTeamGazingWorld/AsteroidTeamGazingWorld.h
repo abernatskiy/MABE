@@ -64,6 +64,10 @@ private:
 	int brainUpdatesPerWorldState() override { return brainUpdatesPerAsteroid; };
 
 	StateTimeSeries executeBrainComponent(unsigned idx, int visualize);
+	void makeLightweightSensorsAndStateSchedule(std::shared_ptr<ParametersTable> PT_);
+	void saveCacheEntry(int componentIdx);
+	bool attemptToLoadCacheEntry(int componentIdx);
+	bool allComponentDependenciesCached(int componentIdx);
 
 public:
 	AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable> PT_);

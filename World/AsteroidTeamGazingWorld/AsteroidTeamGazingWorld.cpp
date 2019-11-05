@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <fstream>
 
 #include "AsteroidTeamGazingWorld.h"
 
@@ -70,38 +71,10 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 	// Localizing and validating settings
 	brainUpdatesPerAsteroid = brainUpdatesPerAsteroidPL->get(PT_);
 	datasetPath = datasetPathPL->get(PT_);
-	bool randomizeInitialConditions = (numRandomInitialConditionsPL->get(PT_) > 0);
-	unsigned numRandomInitialConditions = static_cast<unsigned>(numRandomInitialConditionsPL->get(PT_));
 
-	// Preparing the sensors and their environment
 	datasetParser = std::make_shared<AsteroidsDatasetParser>(datasetPath);
 	currentAsteroidName = std::make_shared<std::string>("");
-
-	auto rawSensorsPointer = std::make_shared<PeripheralAndRelativeSaccadingEyesSensors>(currentAsteroidName, datasetParser, PT_);
-	if(!initialConditionsInitialized) {
-		if(randomizeInitialConditions) {
-			for(const auto& astName : datasetParser->getAsteroidsNames()) {
-				commonRelativeSensorsInitialConditions[astName] = {};
-				for(unsigned i=0; i<numRandomInitialConditions; i++)
-					commonRelativeSensorsInitialConditions[astName].push_back(rawSensorsPointer->generateRandomInitialState());
-			}
-		}
-		else {
-			for(const auto& astName : datasetParser->getAsteroidsNames())
-				commonRelativeSensorsInitialConditions[astName] = { rawSensorsPointer->generateDefaultInitialState() };
-		}
-		initialConditionsInitialized = 1;
-	}
-	stateSchedule = std::make_shared<ExhaustiveAsteroidGazingScheduleWithRelativeSensorInitialStates>(
-	                  currentAsteroidName,
-	                  datasetParser,
-	                  rawSensorsPointer->getPointerToInitialState(),
-	                  commonRelativeSensorsInitialConditions);
-	sensors = rawSensorsPointer; // downcast
-
-	sensors->writeSensorStats();
-
-	sensors->doHeavyInit();
+	makeLightweightSensorsAndStateSchedule(PT_); // sensors only provide dimensions and stats at this point, all the heavy lifting is delayed till we know for sure that we need it
 
 	// Preparing the brain graph
 	std::ifstream brainsJSONStream(pathToBrainGraphJSONPL->get(PT_));
@@ -289,6 +262,30 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 		exit(EXIT_FAILURE);
 	}
 
+	// Attempting to load the previously serialized caches
+	bool allComponentsCached = true;
+	for(unsigned i=0; i<numBrains; i++)
+		if(brainsOutputCached[i]==1)
+			if(attemptToLoadCacheEntry(i))
+				brainsOutputCached[i] = 2;
+			else
+				allComponentsCached = false;
+	if(allComponentsCached) {
+		std::cout << "AsteroidTeamGazingWorld: all prescribed cache entries found on disk" << std::endl;
+		cachingComplete = true;
+	}
+
+	// Checking if we will actuially be using sensors; if we will, do their heavy init
+	bool sensorsWillBeUpdated = false;
+	for(unsigned expCompIdx : exposedOutputs)
+		if(!allComponentDependenciesCached(expCompIdx))
+			sensorsWillBeUpdated = true;
+
+	if(!sensorsWillBeUpdated)
+		std::cout << "AsteroidTeamGazingWorld: all dependencies of all exposed outputs loaded from persistent caches, sensor's heavy capabilities will not be required" << std::endl;
+	else
+		sensors->doHeavyInit();
+
 	// Preparing the mental Image and adding motors that will be shaping it
 	mentalImage = std::make_shared<CompressedMentalImage>(currentAsteroidName,
 	                                                      datasetParser,
@@ -312,6 +309,8 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 	printVector(brainsConnectedToOculomotors, "brainsConnectedToOculomotors");
 	std::cout << "Total exposed outputs: " << numBrainsOutputs << std::endl;
 	std::cout << "Brain graph:" << std::endl; brainsDiagram.printGraph();
+
+	std::cout << std::endl << std::flush;
 };
 
 void AsteroidTeamGazingWorld::resetWorld(int visualize) {
@@ -375,9 +374,12 @@ void AsteroidTeamGazingWorld::evaluateOnce(std::shared_ptr<Organism> org, unsign
 
 	if(!cachingComplete) {
 		cachingComplete = true;
-		for(unsigned i=0; i<numBrains; i++)
-			if(brainsOutputCached[i]==1)
+		for(unsigned i=0; i<numBrains; i++) {
+			if(brainsOutputCached[i]==1) {
 				brainsOutputCached[i] = 2;
+				saveCacheEntry(i);
+			}
+		}
 	}
 
 	if(assumeDeterministicEvaluations)
@@ -478,4 +480,88 @@ StateTimeSeries AsteroidTeamGazingWorld::executeBrainComponent(unsigned idx, int
 		brainsOutputCache[idx][stateID] = componentOutputTimeSeries;
 
 	return componentOutputTimeSeries;
+}
+
+void AsteroidTeamGazingWorld::makeLightweightSensorsAndStateSchedule(std::shared_ptr<ParametersTable> PT_) {
+
+	bool randomizeInitialConditions = (numRandomInitialConditionsPL->get(PT_) > 0);
+	unsigned numRandomInitialConditions = static_cast<unsigned>(numRandomInitialConditionsPL->get(PT_));
+
+	auto rawSensorsPointer = std::make_shared<PeripheralAndRelativeSaccadingEyesSensors>(currentAsteroidName, datasetParser, PT_);
+	if(!initialConditionsInitialized) {
+		if(randomizeInitialConditions) {
+			for(const auto& astName : datasetParser->getAsteroidsNames()) {
+				commonRelativeSensorsInitialConditions[astName] = {};
+				for(unsigned i=0; i<numRandomInitialConditions; i++)
+					commonRelativeSensorsInitialConditions[astName].push_back(rawSensorsPointer->generateRandomInitialState());
+			}
+		}
+		else {
+			for(const auto& astName : datasetParser->getAsteroidsNames())
+				commonRelativeSensorsInitialConditions[astName] = { rawSensorsPointer->generateDefaultInitialState() };
+		}
+		initialConditionsInitialized = 1;
+	}
+	stateSchedule = std::make_shared<ExhaustiveAsteroidGazingScheduleWithRelativeSensorInitialStates>(
+	                  currentAsteroidName,
+	                  datasetParser,
+	                  rawSensorsPointer->getPointerToInitialState(),
+	                  commonRelativeSensorsInitialConditions);
+	sensors = rawSensorsPointer; // downcast
+
+	sensors->writeSensorStats(); // must not require that the dataset is read
+}
+
+void AsteroidTeamGazingWorld::saveCacheEntry(int componentIdx) {
+	nlohmann::json cacheJSON = nlohmann::json::object();
+	for(const auto& statePair : brainsOutputCache[componentIdx]) {
+		nlohmann::json outputTimeSeries = nlohmann::json::array();
+		for(const auto& currentCachedOutput : statePair.second)
+			outputTimeSeries.push_back(nlohmann::json(currentCachedOutput));
+		cacheJSON[statePair.first] = outputTimeSeries;
+	}
+
+	std::ofstream cacheFile(brainsIDs[componentIdx] + ".cache.json");
+	if(!cacheFile.is_open()) {
+		std::cerr << "AsteroidTeamGazingWorld: cannot open persistent cache file " << (brainsIDs[componentIdx] + ".cache.json") << " for writing" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	cacheFile << cacheJSON << std::endl;
+}
+
+bool AsteroidTeamGazingWorld::attemptToLoadCacheEntry(int componentIdx) {
+	std::ifstream cacheFile(brainsIDs[componentIdx] + ".cache.json");
+	if(!cacheFile.is_open())
+		return false;
+
+	nlohmann::json cacheJSON;
+	cacheFile >> cacheJSON;
+
+	for(const auto& statePair : cacheJSON.items()) {
+		StateTimeSeries curTS;
+		for(unsigned t=0; t<brainUpdatesPerAsteroid; t++) {
+			std::vector<double> curState;
+			for(unsigned i=0; i<brainsNumOutputs[componentIdx]; i++)
+				curState.push_back(statePair.value()[t][i]);
+			curTS.push_back(curState);
+		}
+		brainsOutputCache[componentIdx][statePair.key()] = curTS;
+	}
+
+	std::cout << "AsteroidTeamGazingWorld: successfully loaded cache entry for component " << brainsIDs[componentIdx] << " from file " << (brainsIDs[componentIdx] + ".cache.json") << std::endl;
+
+	return true;
+}
+
+bool AsteroidTeamGazingWorld::allComponentDependenciesCached(int componentIdx) {
+
+	if(componentIdx==-1) return false; // Sensors do not cache outputs. Well, internally they do, but that's not what this function is concerned with.
+	if(brainsOutputCached[componentIdx]==2) return true; // value of 2 indicates that cache has been filled, via disk persistence or otherwise
+
+	bool answer = true;
+	for(int p : brainsDiagram.getParents(componentIdx))
+		if(!allComponentDependenciesCached(p))
+			answer = false;
+
+	return answer;
 }
