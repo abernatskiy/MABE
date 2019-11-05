@@ -90,6 +90,7 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 		                                                "BRAIN_DEMARKOV-minGateCount" };
 		for(const auto& param : forwardedIntParamNames)
 			curPT->setParameter(param, PT_->lookupInt(param));
+		curPT->setParameter("BRAIN_DEMARKOV-readFromInputsOnly", PT_->lookupBool("BRAIN_DEMARKOV-readFromInputsOnly"));
 		///// Parameter forwarding END /////
 
 		layers[i] = DEMarkovBrain_brainFactory(i==0 ? _nrInNodes : junctionSizes[i-1],

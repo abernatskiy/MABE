@@ -40,7 +40,7 @@ shared_ptr<ParameterLink<double>> DEMarkovBrain::connectionToTableChangeRatioPL 
                                                                                                                  "if the brain experiences no insertion, deletions or duplictions, call to mutate() changes parameters of a randomly chosen gate. This parameters governs relative frequencies of such changes to connections and logic tables");
 shared_ptr<ParameterLink<int>> DEMarkovBrain::minGateCountPL = Parameters::register_parameter("BRAIN_DEMARKOV-minGateCount", 0, "number of gates that causes gate deletions to become impossible (mutation operator calls itself if the mutation happens to be a deletion)");
 shared_ptr<ParameterLink<bool>> DEMarkovBrain::readFromInputsOnlyPL = Parameters::register_parameter("BRAIN_DEMARKOV-readFromInputsOnly", false,
-                                                                                              "DOES NOT WORK! if set to true, gates will only read from input nodes; by default, they'll read from all nodes");
+                                                                                              "if set to true, gates will only read from input nodes; by default, they'll read from all nodes");
 
 /********** Public definitions **********/
 
@@ -49,7 +49,7 @@ DEMarkovBrain::DEMarkovBrain(int _nrInNodes, int _nrHidNodes, int _nrOutNodes, s
 	nrHiddenNodes(_nrHidNodes),
 	nrNodes(_nrInNodes+_nrOutNodes+_nrHidNodes),
 	minGates(minGateCountPL->get(PT_)),
-	readFromInputsOnly(false), // false is the default
+	readFromInputsOnly(readFromInputsOnlyPL->get(PT_)),
 	visualize(Global::modePL->get() == "visualize"),
 	recordIOMap(recordIOMapPL->get(PT_)),
 	originationStory("primordial") {

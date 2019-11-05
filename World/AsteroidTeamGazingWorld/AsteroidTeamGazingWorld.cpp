@@ -208,7 +208,7 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 			                                                "BRAIN_DEMARKOV-minGateCount" };
 			for(const auto& param : forwardedIntParamNames)
 				curPT->setParameter(param, PT_->lookupInt(param));
-			// curPT->setParameter("BRAIN_DEMARKOV-readFromOutputsOnly", PT_->lookupBool("BRAIN_DEMARKOV-readFromOutputsOnly"));
+			curPT->setParameter("BRAIN_DEMARKOV-readFromInputsOnly", PT_->lookupBool("BRAIN_DEMARKOV-readFromInputsOnly"));
 			///// Parameter forwarding END /////
 
 			unsigned numComponentInputs = 0;
