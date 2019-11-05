@@ -8,6 +8,8 @@
 #include <regex>
 #include <vector>
 
+#include "../../../Utilities/nlohmann/json.hpp"
+
 // Auxiliary function definition, see https://stackoverflow.com/questions/874134
 
 bool hasEnding(std::string const &fullString, std::string const &ending) {
@@ -21,11 +23,62 @@ bool hasEnding(std::string const &fullString, std::string const &ending) {
 // AsteroidDatasetParser class definitions
 
 AsteroidsDatasetParser::AsteroidsDatasetParser(std::string datasetPath) :
-
 	fsDatasetPath(fs::system_complete(datasetPath)),
 	asteroidsNamesCacheFull(false) {
+
 	if( !fs::exists(fsDatasetPath) ) { std::cerr << "Dataset path " << fsDatasetPath.string() << " does not exist" << std::endl; exit(EXIT_FAILURE); }
 	if( !fs::is_directory(fsDatasetPath) ) { std::cerr << "Dataset path " << fsDatasetPath.string() << " is not a directory" << std::endl; exit(EXIT_FAILURE); }
+
+	// Checking if the persistent description cache is available; if not, creating it
+	fs::path descriptionCachePath = fsDatasetPath / fs::path("descriptions.cache.json");
+	if(fs::is_regular_file(descriptionCachePath)) {
+		std::cout << "Found a persistent description cache at " << descriptionCachePath << std::endl << std::flush;
+
+		std::ifstream descriptionCacheStream(descriptionCachePath.string()); nlohmann::json descriptionCacheJSON;
+		descriptionCacheStream >> descriptionCacheJSON;
+		for(const std::string& asteroidName : getAsteroidsNames()) {
+			std::vector<command_type> currentCacheEntry;
+			for(const auto& commandJSON : descriptionCacheJSON[asteroidName]) {
+				command_type currentCommand;
+				for(const auto& jsonField : commandJSON)
+					currentCommand.push_back(jsonField);
+				currentCacheEntry.push_back(currentCommand);
+			}
+			descriptionCache[asteroidName] = currentCacheEntry;
+		}
+	}
+	else {
+		std::cout << "Persistent cache not found, reading the descriptions" << std::endl << std::flush;
+
+		// Reading the descriptions from the standard dataset tree
+		for(const std::string& asteroidName : getAsteroidsNames()) {
+			std::string descPath = getDescriptionPath(asteroidName);
+			std::ifstream commandsFstream(descPath);
+			std::string cline;
+			std::vector<command_type> desc;
+			while(std::getline(commandsFstream, cline)) {
+				command_type com;
+				std::istringstream cstream(cline);
+				for(auto it=std::istream_iterator<command_field_type>(cstream); it!=std::istream_iterator<command_field_type>(); it++)
+					com.push_back(*it);
+				desc.push_back(com);
+			}
+			commandsFstream.close();
+			descriptionCache[asteroidName] = desc;
+		}
+
+		std::cout << "Writing the description cache to " << descriptionCachePath.string() << std::endl << std::flush;
+
+		// Writing what we just read to the persistent cache file
+		std::ofstream descriptionCacheStream(descriptionCachePath.string()); nlohmann::json descriptionCacheJSON;
+		for(const auto& cacheEntry : descriptionCache) {
+			nlohmann::json jsonCacheEntry = nlohmann::json::array();
+			for(const command_type& curCommand : cacheEntry.second)
+				jsonCacheEntry.push_back(nlohmann::json(curCommand));
+			descriptionCacheJSON[cacheEntry.first] = jsonCacheEntry;
+		}
+		descriptionCacheStream << descriptionCacheJSON;
+	}
 }
 
 std::set<std::string> AsteroidsDatasetParser::getAsteroidsNames() {
@@ -79,30 +132,7 @@ std::string AsteroidsDatasetParser::getDescriptionPath(std::string asteroidName)
 }
 
 const std::vector<command_type>& AsteroidsDatasetParser::cachingGetDescription(std::string asteroidName) {
-	auto itDesc = descriptionCache.find(asteroidName);
-	if(itDesc==descriptionCache.end()) {
-		std::string descPath = getDescriptionPath(asteroidName);
-		std::ifstream commandsFstream(descPath);
-		std::string cline;
-		std::vector<command_type> desc;
-		while( std::getline(commandsFstream, cline) ) {
-			command_type com;
-			std::istringstream cstream(cline);
-			for(auto it=std::istream_iterator<command_field_type>(cstream); it!=std::istream_iterator<command_field_type>(); it++)
-				com.push_back(*it);
-			desc.push_back(com);
-		}
-	  commandsFstream.close();
-		descriptionCache[asteroidName] = desc;
-//		for(const auto& com : desc) {
-//			for(const auto& f : com)
-//				std::cout << f << ' ';
-//			std::cout << std::endl;
-//		}
-		itDesc = descriptionCache.find(asteroidName); // I am sleepy. Minimizing the number of possible points of failure
-	}
-
-	return itDesc->second;
+	return descriptionCache.at(asteroidName);
 }
 
 std::set<std::string> AsteroidsDatasetParser::getAllPicturePaths(std::string asteroidName) {
