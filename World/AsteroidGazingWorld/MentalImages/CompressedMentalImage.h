@@ -41,6 +41,8 @@ private:
 
 	const unsigned numBits;
 
+	const bool computeFastRepellingPLInfo;
+
 	HammingNeighborhoodGenerator hngen;
 
 	LabeledHNNG neighborsdb;
@@ -61,6 +63,7 @@ public:
 	                      std::shared_ptr<AsteroidsDatasetParser> dsParser,
 	                      std::shared_ptr<AbstractSensors> sPtr,
 	                      unsigned numBits,
+	                      bool computeFastRepellingPLInfo,
 	                      unsigned patternChunkSize,
 	                      unsigned numNeighbors,
 	                      double leakBaseMultiplier,

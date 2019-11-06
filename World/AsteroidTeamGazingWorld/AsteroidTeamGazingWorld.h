@@ -34,6 +34,7 @@ private:
 	static std::shared_ptr<ParameterLink<bool>> integrateFitnessPL;
 	static std::shared_ptr<ParameterLink<int>> numTriggerBitsPL;
 	static std::shared_ptr<ParameterLink<int>> numRandomInitialConditionsPL;
+	static std::shared_ptr<ParameterLink<bool>> computeFastRepellingPLInfoPL;
 	static std::shared_ptr<ParameterLink<int>> fastRepellingPLInfoNumNeighborsPL;
 	static std::shared_ptr<ParameterLink<int>> mihPatternChunkSizeBitsPL;
 	static std::shared_ptr<ParameterLink<double>> leakBaseMultiplierPL;

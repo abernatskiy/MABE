@@ -242,6 +242,7 @@ CompressedMentalImage::CompressedMentalImage(std::shared_ptr<std::string> curAst
                                              std::shared_ptr<AsteroidsDatasetParser> dsParserPtr,
                                              std::shared_ptr<AbstractSensors> sPtr,
                                              unsigned nBits,
+                                             bool computeFRPLInfo,
                                              unsigned patternChunkSize,
                                              unsigned nNeighbors,
                                              double leakBaseMult,
@@ -251,6 +252,7 @@ CompressedMentalImage::CompressedMentalImage(std::shared_ptr<std::string> curAst
 	sensorsPtr(sPtr),
 	mVisualize(Global::modePL->get() == "visualize"),
 	numBits(nBits),
+	computeFastRepellingPLInfo(computeFRPLInfo),
 	hngen(nBits),
 	neighborsdb(nBits, patternChunkSize),
 	numNeighbors(nNeighbors),
@@ -367,7 +369,7 @@ void CompressedMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 	sampleScoresMap->append("lostStates", static_cast<double>(lostStates));
 	sampleScoresMap->append("lostLabels", static_cast<double>(lostLabels));
 
-	sampleScoresMap->append("fastRepellingPatternLabelInformation", computeFastRepellingSharedEntropy());
+	if(computeFastRepellingPLInfo) sampleScoresMap->append("fastRepellingPatternLabelInformation", computeFastRepellingSharedEntropy());
 //	sampleScoresMap->append("repellingPatternLabelInformation", computeRepellingSharedEntropy());
 //	sampleScoresMap->append("fuzzyPatternLabelInformation", computeFuzzySharedEntropy(jointCounts, patternCounts, labelCounts, numSamples, hngen));
 	sampleScoresMap->append("patternLabelInformation", computeSharedEntropy(jointCounts, patternCounts, labelCounts, numSamples));
@@ -404,7 +406,7 @@ void CompressedMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std:
 	org->dataMap.append("lostStates", sampleScoresMap->getAverage("lostStates"));
 	org->dataMap.append("lostLabels", sampleScoresMap->getAverage("lostLabels"));
 
-	org->dataMap.append("fastRepellingPatternLabelInformation", sampleScoresMap->getAverage("fastRepellingPatternLabelInformation"));
+	if(computeFastRepellingPLInfo) org->dataMap.append("fastRepellingPatternLabelInformation", sampleScoresMap->getAverage("fastRepellingPatternLabelInformation"));
 //	org->dataMap.append("repellingPatternLabelInformation", sampleScoresMap->getAverage("repellingPatternLabelInformation"));
 //	org->dataMap.append("fuzzyPatternLabelInformation", sampleScoresMap->getAverage("fuzzyPatternLabelInformation"));
 	org->dataMap.append("patternLabelInformation", sampleScoresMap->getAverage("patternLabelInformation"));

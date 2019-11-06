@@ -34,6 +34,9 @@ std::shared_ptr<ParameterLink<int>> AsteroidTeamGazingWorld::numRandomInitialCon
 	                               "Note: only relatve saccading sensors support this ATM. Non-positive values correspond to\n"
 	                               "one evaluation per view with default initial conditions (retina in the upper left corner for\n"
 	                               "relative saccading sensors). (default: -1)");
+std::shared_ptr<ParameterLink<bool>> AsteroidTeamGazingWorld::computeFastRepellingPLInfoPL =
+  Parameters::register_parameter("WORLD_ASTEROID_TEAM_GAZING-computeFastRepellingPLInfo", true,
+                                 "should the compressed mental image compute fast repelling pattern-label info? (default: yes)");
 std::shared_ptr<ParameterLink<int>> AsteroidTeamGazingWorld::fastRepellingPLInfoNumNeighborsPL =
   Parameters::register_parameter("WORLD_ASTEROID_TEAM_GAZING-fastRepellingPLInfoNumNeighbors", 10,
                                  "if CompressedMentalImage is used AND fastRepellingPatternLabelInformation is being computed,\n"
@@ -294,6 +297,7 @@ AsteroidTeamGazingWorld::AsteroidTeamGazingWorld(std::shared_ptr<ParametersTable
 	                                                      datasetParser,
 	                                                      sensors,
 	                                                      numBrainsOutputs,
+	                                                      computeFastRepellingPLInfoPL->get(PT_),
 	                                                      mihPatternChunkSizeBitsPL->get(PT_),
 	                                                      fastRepellingPLInfoNumNeighborsPL->get(PT_),
 	                                                      leakBaseMultiplierPL->get(PT_),
