@@ -368,7 +368,7 @@ void AsteroidTeamGazingWorld::evaluateOnce(std::shared_ptr<Organism> org, unsign
 			std::string stateLabel = std::string("state_") + stateSchedule->currentStateDescription();
 			void* sts; void* bts; void* mits; void* mts = nullptr;
 			sts = sensors->logTimeSeries(stateLabel);
-			bts = brain->logTimeSeries(stateLabel);
+			bts = org->brains[brainName]->logTimeSeries(stateLabel);
 			mits = mentalImage->logTimeSeries(stateLabel);
 			timeSeriesLogger->logData(stateLabel, sts, bts, mts, mits, visualize);
 		}
