@@ -368,6 +368,8 @@ void CompressedMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 	totSensoryActivity /= static_cast<double>(sensorActivityStateScores.size());
 	sampleScoresMap->append("lostStates", static_cast<double>(lostStates));
 	sampleScoresMap->append("lostLabels", static_cast<double>(lostLabels));
+	sampleScoresMap->append("numPatterns", static_cast<double>(stateStrings.size()));
+	sampleScoresMap->append("numLabeledPatterns", static_cast<double>(labeledStateStrings.size()));
 
 	if(computeFastRepellingPLInfo) sampleScoresMap->append("fastRepellingPatternLabelInformation", computeFastRepellingSharedEntropy());
 //	sampleScoresMap->append("repellingPatternLabelInformation", computeRepellingSharedEntropy());
@@ -405,6 +407,8 @@ void CompressedMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std:
 //	std::cout << "Writing evals for org " << org->ID << std::endl;
 	org->dataMap.append("lostStates", sampleScoresMap->getAverage("lostStates"));
 	org->dataMap.append("lostLabels", sampleScoresMap->getAverage("lostLabels"));
+	org->dataMap.append("numPatterns", sampleScoresMap->getAverage("numPatterns"));
+	org->dataMap.append("numLabeledPatterns", sampleScoresMap->getAverage("numLabeledPatterns"));
 
 	if(computeFastRepellingPLInfo) org->dataMap.append("fastRepellingPatternLabelInformation", sampleScoresMap->getAverage("fastRepellingPatternLabelInformation"));
 //	org->dataMap.append("repellingPatternLabelInformation", sampleScoresMap->getAverage("repellingPatternLabelInformation"));
