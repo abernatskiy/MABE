@@ -29,7 +29,9 @@ private:
 	std::map<int,std::vector<double>> sensoryMotorEntropyStateScores;
 
 	const unsigned mnistNumDigits = 10;
-	const unsigned mnistNumBits = 2*mnistNumDigits;
+//	const unsigned mnistNumBits = 2*mnistNumDigits;
+//	const unsigned mnistNumBits = 25;
+	const unsigned mnistNumBits = 32;
 
 	bool justReset;
 

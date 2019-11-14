@@ -45,6 +45,33 @@ std::tuple<double,bool> evaluateRange(const CommandRangeType& guessesRange, cons
 	return std::make_tuple(eval/1., preciseHit);
 }
 
+std::vector<unsigned> staticNNDecoder(std::vector<double>::iterator begin, std::vector<double>::iterator end) {
+//	const std::vector<unsigned> basePatterns { 0x01a7967a, 0x01a9b4ae, 0x019ce67b, 0x00b6edc8, 0x00f5cc4e,
+//	                                           0x016edb52, 0x00c95e2e, 0x012bcff3, 0x00fd2a9d, 0x008cabed }; // 25-dimensional
+	const std::vector<unsigned> basePatterns { 0x32e33069, 0xb19a5ec5, 0x3075d11c, 0x474418cf, 0x47c920ed,
+	                                           0x3ad5cc9a, 0xbc441fe4, 0x3a28d23b, 0x3fc1e129, 0x659183cc }; // 32-dimensional
+	unsigned pat = decodeSPUInt(begin, end);
+//	unsigned minDist = 26;
+	unsigned minDist = 33;
+	unsigned ans;
+	for(unsigned i=0; i<10; i++) {
+		uint32_t buffer = pat ^ basePatterns[i];
+
+		buffer = (buffer & 0x55555555) + ((buffer>>1) & 0x55555555);
+		buffer = (buffer & 0x33333333) + ((buffer>>2) & 0x33333333);
+		buffer = (buffer & 0x0f0f0f0f) + ((buffer>>4) & 0x0f0f0f0f);
+		buffer = (buffer & 0x00ff00ff) + ((buffer>>8) & 0x00ff00ff);
+		buffer = (buffer & 0x0000ffff) + ((buffer>>16) & 0x0000ffff);
+
+		if(buffer<minDist) {
+			minDist = buffer;
+			ans = i;
+		}
+	}
+
+	return {ans};
+}
+
 /***** Public DigitMentalImage class definitions *****/
 
 DigitMentalImage::DigitMentalImage(std::shared_ptr<std::string> curAstNamePtr,
@@ -108,7 +135,8 @@ void DigitMentalImage::updateWithInputs(std::vector<double> inputs) {
 
 	currentCommandRanges.clear();
 	auto it = inputs.begin();
-	auto digitRange = decodeMHVUInt(it, it+mnistNumBits);
+//	auto digitRange = decodeMHVUInt(it, it+mnistNumBits);
+	auto digitRange = staticNNDecoder(it, it+mnistNumBits);
 	currentCommandRanges.push_back(std::make_tuple(digitRange));
 
 	answerGiven = decodeTriggerBits(it+mnistNumBits, it+mnistNumBits+numTriggerBits);
