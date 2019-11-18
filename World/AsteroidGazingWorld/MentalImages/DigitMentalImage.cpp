@@ -48,26 +48,37 @@ std::tuple<double,bool> evaluateRange(const CommandRangeType& guessesRange, cons
 std::vector<unsigned> staticNNDecoder(std::vector<double>::iterator begin, std::vector<double>::iterator end, unsigned maxDist) {
 //	const std::vector<unsigned> basePatterns { 0x01a7967a, 0x01a9b4ae, 0x019ce67b, 0x00b6edc8, 0x00f5cc4e,
 //	                                           0x016edb52, 0x00c95e2e, 0x012bcff3, 0x00fd2a9d, 0x008cabed }; // 25-dimensional
-	const std::vector<unsigned> basePatterns { 0x32e33069, 0xb19a5ec5, 0x3075d11c, 0x474418cf, 0x47c920ed,
-	                                           0x3ad5cc9a, 0xbc441fe4, 0x3a28d23b, 0x3fc1e129, 0x659183cc }; // 32-dimensional
-	unsigned pat = decodeSPUInt(begin, end);
+//	const std::vector<unsigned> basePatterns { 0x32e33069, 0xb19a5ec5, 0x3075d11c, 0x474418cf, 0x47c920ed,
+//	                                           0x3ad5cc9a, 0xbc441fe4, 0x3a28d23b, 0x3fc1e129, 0x659183cc }; // 32-dimensional
+	const std::vector<uint64_t> basePatterns { 0xa0618d6c62a88db6, 0xcfb8e90672093cf7,
+	                                           0x314362a8387049ee, 0x83721db9bebc07c0,
+	                                           0x9b94f597707df13a, 0x94198ae488219993,
+	                                           0x2c5df57f0d40e203, 0x721b6e18dfd913a0,
+	                                           0x400b54806a488914, 0x0f1a310acd84c858 }; // 64-dimensional
+
+	uint64_t pat = decodeSPUInt(begin, end);
 	unsigned minDist = maxDist;
 	unsigned ans;
-	for(unsigned i=0; i<10; i++) {
-		uint32_t buffer = pat ^ basePatterns[i];
 
-		buffer = (buffer & 0x55555555) + ((buffer>>1) & 0x55555555);
-		buffer = (buffer & 0x33333333) + ((buffer>>2) & 0x33333333);
-		buffer = (buffer & 0x0f0f0f0f) + ((buffer>>4) & 0x0f0f0f0f);
-		buffer = (buffer & 0x00ff00ff) + ((buffer>>8) & 0x00ff00ff);
-		buffer = (buffer & 0x0000ffff) + ((buffer>>16) & 0x0000ffff);
+	//std::cout << "distances:";
+	for(unsigned i=0; i<10; i++) {
+		uint64_t buffer = pat ^ basePatterns[i];
+
+		buffer = (buffer & 0x5555555555555555) + ((buffer>>1) & 0x5555555555555555);
+		buffer = (buffer & 0x3333333333333333) + ((buffer>>2) & 0x3333333333333333);
+		buffer = (buffer & 0x0f0f0f0f0f0f0f0f) + ((buffer>>4) & 0x0f0f0f0f0f0f0f0f);
+		buffer = (buffer & 0x00ff00ff00ff00ff) + ((buffer>>8) & 0x00ff00ff00ff00ff);
+		buffer = (buffer & 0x0000ffff0000ffff) + ((buffer>>16) & 0x0000ffff0000ffff);
+		buffer = (buffer & 0x00000000ffffffff) + ((buffer>>32) & 0x00000000ffffffff);
+
+	//	std::cout << " " << buffer;
 
 		if(buffer<minDist) {
 			minDist = buffer;
 			ans = i;
 		}
 	}
-
+//	std::cout << std::endl << "Matched " << reinterpret_cast<int*>(pat) << " and " << reinterpret_cast<int*>(basePatterns[ans]) << ", distance " << minDist << std::endl;
 	return {ans};
 }
 

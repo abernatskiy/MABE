@@ -25,8 +25,8 @@ inline double decodeOHDouble(std::vector<double>::iterator begin, std::vector<do
 
 // Decoders based on the standard positional encoding
 
-inline unsigned decodeSPUInt(std::vector<double>::iterator begin, std::vector<double>::iterator end) {
-	unsigned retval = 0;
+inline uint64_t decodeSPUInt(std::vector<double>::iterator begin, std::vector<double>::iterator end) {
+	uint64_t retval = 0;
 	while(begin != end) {
 		retval <<= 1;
 		retval += static_cast<unsigned>(*begin > 0.5);

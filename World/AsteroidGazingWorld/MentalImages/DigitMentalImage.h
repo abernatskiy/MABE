@@ -31,7 +31,8 @@ private:
 	const unsigned mnistNumDigits = 10;
 //	const unsigned mnistNumBits = 2*mnistNumDigits;
 //	const unsigned mnistNumBits = 25;
-	const unsigned mnistNumBits = 32;
+//	const unsigned mnistNumBits = 32;
+	const unsigned mnistNumBits = 64;
 
 	bool justReset;
 
