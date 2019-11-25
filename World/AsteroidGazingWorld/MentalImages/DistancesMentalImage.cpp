@@ -17,6 +17,33 @@ void incrementMapField(std::map<KeyClass,NumType>& mymap, const KeyClass& key, N
 		mymap[key] += theIncrement;
 }
 
+std::string hexSubstrByBitRange(std::string fullString, unsigned bitsFrom, unsigned bitsTo) {
+	return fullString.substr(bitsFrom/4, (bitsTo-bitsFrom)/4);
+}
+
+double computeSharedEntropyOneMoreTime(const std::map<std::pair<std::string,std::string>,unsigned>& jointCounts,
+                            const std::map<std::string,unsigned>& patternCounts,
+                            const std::map<std::string,unsigned>& labelCounts,
+                            unsigned numSamples) {
+	std::map<std::string,double> labelDistribution;
+	for(const auto& lpair : labelCounts)
+		labelDistribution[lpair.first] = static_cast<double>(lpair.second)/static_cast<double>(numSamples);
+//	printMap(labelDistribution); std::cout << std::endl;
+	std::map<std::string,double> patternDistribution;
+	for(const auto& ppair : patternCounts)
+		patternDistribution[ppair.first] = static_cast<double>(ppair.second)/static_cast<double>(numSamples);
+//	printMap(patternDistribution); std::cout << std::endl;
+//	printMap(jointCounts); std::cout << std::endl;
+	double patternLabelInfo = 0.;
+	for(const auto& labpatpair : jointCounts) {
+		std::string label, pattern;
+		std::tie(label, pattern) = labpatpair.first;
+		double jp = static_cast<double>(labpatpair.second)/static_cast<double>(numSamples);
+		patternLabelInfo += jp*log10(jp/(labelDistribution[label]*patternDistribution[pattern]));
+	}
+	return patternLabelInfo;
+}
+
 /********************************************************************/
 /********** Public DistancesMentalImage class definitions **********/
 /********************************************************************/
@@ -28,14 +55,36 @@ DistancesMentalImage::DistancesMentalImage(std::shared_ptr<std::string> curAstNa
 	currentAsteroidNamePtr(curAstNamePtr),
 	datasetParserPtr(dsParserPtr),
 	sensorsPtr(sPtr),
+	infoRanges({ {0, 80}, {64, 80} }),
+	numSamples(0),
 	mVisualize(Global::modePL->get() == "visualize"),
-	numBits(nBits) {}
+	numBits(nBits) {
+
+	for(unsigned iri=0; iri<infoRanges.size(); iri++) {
+		if(infoRanges[iri].first%4 != 0) {
+			std::cerr << "DistancesMentalImage: info range " << iri << " has a left bound " << infoRanges[iri].first << " that is not a multiple of 4, exiting" << std::endl;
+			exit(EXIT_FAILURE);
+		}
+		if(infoRanges[iri].second%4 != 0) {
+			std::cerr << "DistancesMentalImage: info range " << iri << " has a right bound " << infoRanges[iri].second << " that is not a multiple of 4, exiting" << std::endl;
+			exit(EXIT_FAILURE);
+		}
+		rangesPatternCounts.push_back({});
+		rangesJointCounts.push_back({});
+	}
+}
 
 void DistancesMentalImage::reset(int visualize) { // called in the beginning of each evaluation cycle
 	stateStrings.clear();
 	labelStrings.clear();
 	//labeledStateStrings.clear();
 	sensorActivityStateScores.clear();
+	labelCounts.clear();
+	for(auto& rpc : rangesPatternCounts)
+		rpc.clear();
+	for(auto& rjc : rangesJointCounts)
+		rjc.clear();
+	numSamples = 0;
 }
 
 void DistancesMentalImage::resetAfterWorldStateChange(int visualize) { // called after each discrete world state change
@@ -60,10 +109,13 @@ void DistancesMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organi
 		labelStrings.push_back(curLabelString);
 		//labeledStateStrings.push_back(curStateString + curLabelString);
 
-		//incrementMapField(labelCounts, curLabelString);
-		//incrementMapField(patternCounts, curStateString);
-		//incrementMapField(jointCounts, std::make_pair(curLabelString, curStateString));
-		//numSamples++;
+		for(unsigned iri=0; iri<infoRanges.size(); iri++) {
+			std::string rangeSubstr = hexSubstrByBitRange(curStateString, infoRanges[iri].first, infoRanges[iri].second);
+			incrementMapField(rangesPatternCounts[iri], rangeSubstr);
+			incrementMapField(rangesJointCounts[iri], std::make_pair(curLabelString, rangeSubstr));
+		}
+		incrementMapField(labelCounts, curLabelString);
+		numSamples++;
 
 		sensorActivityStateScores.push_back(static_cast<double>(sensorsPtr->numSaccades())/static_cast<double>(statePeriod));
 	}
@@ -86,6 +138,12 @@ void DistancesMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 	sampleScoresMap->append("totalCrossLabelDistance", totalCrossLabelDistance);
 	sampleScoresMap->append("totalIntraLabelDistance", totalIntraLabelDistance);
 
+	for(unsigned iri=0; iri<infoRanges.size(); iri++) {
+		std::string infoName = "plInfo_range" + std::to_string(iri);
+		double info = computeSharedEntropyOneMoreTime(rangesJointCounts.at(iri), rangesPatternCounts.at(iri), labelCounts, numSamples);
+		sampleScoresMap->append(infoName, info);
+	}
+
 //	sampleScoresMap->append("patternLabelInformation", computeSharedEntropy(jointCounts, patternCounts, labelCounts, numSamples));
 
 }
@@ -94,6 +152,10 @@ void DistancesMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::
 //	std::cout << "Writing evals for org " << org->ID << std::endl;
 	org->dataMap.append("totalCrossLabelDistance", sampleScoresMap->getAverage("totalCrossLabelDistance"));
 	org->dataMap.append("totalIntraLabelDistance", sampleScoresMap->getAverage("totalIntraLabelDistance"));
+	for(unsigned iri=0; iri<infoRanges.size(); iri++) {
+		std::string infoName = "plInfo_range" + std::to_string(iri);
+		org->dataMap.append(infoName, sampleScoresMap->getAverage(infoName));
+	}
 	double sensorActivity = sampleScoresMap->getAverage("sensorActivity");
 	unsigned tieredSensorActivity = static_cast<unsigned>(sensorActivity*10);
 	org->dataMap.append("sensorActivity", sensorActivity);

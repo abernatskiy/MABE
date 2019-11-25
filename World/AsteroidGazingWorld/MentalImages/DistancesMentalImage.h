@@ -27,6 +27,13 @@ private:
 	double totalCrossLabelDistance;
 	double totalIntraLabelDistance;
 
+	// Parts for information-theoretic machinery
+	const std::vector<std::pair<unsigned,unsigned>> infoRanges;
+	std::map<std::string,unsigned> labelCounts;
+	std::vector<std::map<std::string,unsigned>> rangesPatternCounts;
+	std::vector<std::map<std::pair<std::string,std::string>,unsigned>> rangesJointCounts; // vector of (label, pattern) -> count
+	unsigned numSamples;
+
 	// Auxiliary parts
 	std::vector<double> sensorActivityStateScores;
 
