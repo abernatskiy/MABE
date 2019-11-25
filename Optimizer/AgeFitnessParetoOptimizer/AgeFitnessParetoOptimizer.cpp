@@ -417,8 +417,15 @@ void AgeFitnessParetoOptimizer::writeCompactParetoMessageToStdout() {
 		lineages.push_back(lid);
 	std::sort(lineages.begin(), lineages.end());
 
-	for(auto li=lineages.begin(); li!=lineages.end(); li++)
-		std::cout << (*li) << (li==lineages.end()-1 ? "" : ",") ;
+	unsigned numLineages = 0;
+	for(auto li=lineages.begin(); li!=lineages.end(); li++) {
+		if(numLineages>10) {
+			std::cout << "...";
+			break;
+		}
+		std::cout << (*li) << (li==lineages.end()-1 ? "" : ",");
+		numLineages++;
+	}
 	std::cout << std::flush;
 }
 
