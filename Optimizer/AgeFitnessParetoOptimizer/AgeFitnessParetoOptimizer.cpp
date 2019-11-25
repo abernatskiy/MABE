@@ -208,6 +208,11 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 		if(paretoRanks[i] == 0)
 			paretoFront.push_back(population[i]);
 
+	if(paretoFront.size()==0) {
+		std::cerr << "AgeFitnessParetoOptimizer: Pareto front is empty! Something is clearly wrong with the objectives, exiting" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
 	// Computing how many new lineages we should add
 	unsigned lineagesToAddNow = (Global::update % lineageAdditionPeriod == 0) ? lineagesPerAddition : 0;
 
