@@ -60,10 +60,10 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 //	const vector<double> constMutationRates { 1. };
 //	const vector<int> constHiddenNodes { 0 };
 
-	const vector<string> brainFileNames { "", "" };
+	const vector<string> brainFileNames { "", "", "", "", "" };
 	const vector<unsigned> junctionSizes { 64, 32, 16, 8 };
-	const vector<double> constMutationRates { 0.5, 0.5 };
-	const vector<int> constHiddenNodes { 0, 0 }; // seems like it's gonna get ignored because all layers are evolvable
+	const vector<double> constMutationRates { 0.2, 0.2, 0.2, 0.2, 0.2 };
+	const vector<int> constHiddenNodes { 0, 0, 0, 0, 0 }; // seems like it's gonna get ignored because all layers are evolvable
 
 	lastBrainOutputSize = _nrOutNodes;
 	for(const auto js : junctionSizes)
