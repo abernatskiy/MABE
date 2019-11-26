@@ -55,7 +55,7 @@ DistancesMentalImage::DistancesMentalImage(std::shared_ptr<std::string> curAstNa
 	currentAsteroidNamePtr(curAstNamePtr),
 	datasetParserPtr(dsParserPtr),
 	sensorsPtr(sPtr),
-	infoRanges({ {0, 80}, {64, 80} }),
+	infoRanges({ {0, 124}, {64, 124}, {96, 124}, {112, 124}, {120, 124} }),
 	numSamples(0),
 	mVisualize(Global::modePL->get() == "visualize"),
 	numBits(nBits) {
