@@ -55,10 +55,13 @@ DistancesMentalImage::DistancesMentalImage(std::shared_ptr<std::string> curAstNa
 	currentAsteroidNamePtr(curAstNamePtr),
 	datasetParserPtr(dsParserPtr),
 	sensorsPtr(sPtr),
-	infoRanges({ {0, 124}, {64, 124}, {96, 124}, {112, 124}, {120, 124} }),
+//	infoRanges({ {0, 124}, {64, 124}, {96, 124}, {112, 124}, {120, 124} }),
 	numSamples(0),
 	mVisualize(Global::modePL->get() == "visualize"),
 	numBits(nBits) {
+
+	for(unsigned rstart=0; rstart<124; rstart+=4)
+		infoRanges.push_back(std::make_pair(rstart, rstart+4));
 
 	for(unsigned iri=0; iri<infoRanges.size(); iri++) {
 		if(infoRanges[iri].first%4 != 0) {
@@ -152,10 +155,13 @@ void DistancesMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::
 //	std::cout << "Writing evals for org " << org->ID << std::endl;
 	org->dataMap.append("totalCrossLabelDistance", sampleScoresMap->getAverage("totalCrossLabelDistance"));
 	org->dataMap.append("totalIntraLabelDistance", sampleScoresMap->getAverage("totalIntraLabelDistance"));
+	double irs = 0.;
 	for(unsigned iri=0; iri<infoRanges.size(); iri++) {
 		std::string infoName = "plInfo_range" + std::to_string(iri);
 		org->dataMap.append(infoName, sampleScoresMap->getAverage(infoName));
+		irs += sampleScoresMap->getAverage(infoName);
 	}
+	org->dataMap.append("plInfo_allRanges", irs);
 	double sensorActivity = sampleScoresMap->getAverage("sensorActivity");
 	unsigned tieredSensorActivity = static_cast<unsigned>(sensorActivity*10);
 	org->dataMap.append("sensorActivity", sensorActivity);
@@ -182,6 +188,7 @@ void DistancesMentalImage::readLabel() {
 void DistancesMentalImage::updateDistanceStats() {
 	totalCrossLabelDistance = 0.;
 	totalIntraLabelDistance = 0.;
+/*
 	unsigned numStates = stateStrings.size();
 	for(unsigned i=0; i<numStates; i++) {
 		for(unsigned j=0; j<numStates; j++) {
@@ -193,4 +200,5 @@ void DistancesMentalImage::updateDistanceStats() {
 				totalCrossLabelDistance += hexStringHammingDistance(stateStrings[i], stateStrings[j]);
 		}
 	}
+*/
 }
