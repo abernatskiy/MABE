@@ -55,13 +55,13 @@ DistancesMentalImage::DistancesMentalImage(std::shared_ptr<std::string> curAstNa
 	currentAsteroidNamePtr(curAstNamePtr),
 	datasetParserPtr(dsParserPtr),
 	sensorsPtr(sPtr),
-//	infoRanges({ {0, 124}, {64, 124}, {96, 124}, {112, 124}, {120, 124} }),
+	infoRanges({ {0, 124}, {64, 124}, {96, 124}, {112, 124}, {120, 124} }),
 	numSamples(0),
 	mVisualize(Global::modePL->get() == "visualize"),
 	numBits(nBits) {
 
-	for(unsigned rstart=0; rstart<124; rstart+=4)
-		infoRanges.push_back(std::make_pair(rstart, rstart+4));
+//	for(unsigned rstart=0; rstart<124; rstart+=4)
+//		infoRanges.push_back(std::make_pair(rstart, rstart+4));
 
 	for(unsigned iri=0; iri<infoRanges.size(); iri++) {
 		if(infoRanges[iri].first%4 != 0) {
