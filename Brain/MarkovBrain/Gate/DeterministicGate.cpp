@@ -42,11 +42,11 @@ void DeterministicGate::update(vector<double> & nodes, vector<double> & nextNode
 
 shared_ptr<AbstractGate> DeterministicGate::makeCopy(shared_ptr<ParametersTable> _PT) {
 	if (_PT == nullptr) {
-		_PT = PT; 
+		_PT = PT;
 	}
-	auto newGate = make_shared<DeterministicGate>(_PT); 
-	newGate->table = table; 
-	newGate->ID = ID;	
+	auto newGate = make_shared<DeterministicGate>(_PT);
+	newGate->table = table;
+	newGate->ID = ID;
 	newGate->inputs = inputs;
 	newGate->outputs = outputs;
 	return newGate;
@@ -54,6 +54,21 @@ shared_ptr<AbstractGate> DeterministicGate::makeCopy(shared_ptr<ParametersTable>
 
 void DeterministicGate::mutateInternalStructure() {
 	int inPatIdx = Random::getInt(0, table.size()-1);
-	int outIdx = Random::getInt(0, table[0].size()-1);
-	table[inPatIdx][outIdx] = table[inPatIdx][outIdx] ? 0 : 1;
+
+	// True point mutation
+	// int outIdx = Random::getInt(0, table[0].size()-1);
+	// table[inPatIdx][outIdx] = table[inPatIdx][outIdx] ? 0 : 1;
+
+	// Randomize output pattern mutation
+	// It is supposed to make info landscape convex with an optimum at 1, but its empirical performance is questionable
+	size_t outPatternWidth = table[inPatIdx].size();
+	vector<int> newOutPattern(outPatternWidth);
+	while(1) {
+		for(size_t i=0; i<outPatternWidth; i++)
+			newOutPattern[i] = Random::getInt(0, 1);
+		if(table[inPatIdx]!=newOutPattern) {
+			table[inPatIdx] = newOutPattern;
+			break;
+		}
+	}
 }
