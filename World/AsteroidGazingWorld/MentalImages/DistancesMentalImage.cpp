@@ -44,6 +44,33 @@ double computeSharedEntropyOneMoreTime(const std::map<std::pair<std::string,std:
 	return patternLabelInfo;
 }
 
+std::map<std::string,double> computeLabelConditionalEntropyOneMoreTime(const std::map<std::pair<std::string,std::string>,unsigned>& jointCounts,
+                                                            const std::map<std::string,unsigned>& labelCounts) {
+	std::map<std::string,double> lcEntropy;
+	for(const auto& lcpair : labelCounts) {
+		std::map<std::string,unsigned> condPatternCounts;
+		for(const auto& jcpair : jointCounts)
+			if(jcpair.first.first==lcpair.first)
+				incrementMapField(condPatternCounts, jcpair.first.second, jcpair.second);
+		lcEntropy[lcpair.first] = 0.;
+		for(const auto& cpcpair : condPatternCounts) {
+			double patProbGivenLabel = static_cast<double>(cpcpair.second)/static_cast<double>(lcpair.second);
+			lcEntropy[lcpair.first] -= patProbGivenLabel*log10(patProbGivenLabel);
+		}
+	}
+	return lcEntropy;
+}
+
+double computeAverageLabelConditionalEntropyOneMoreTime(const std::map<std::pair<std::string,std::string>,unsigned>& jointCounts,
+                                          const std::map<std::string,unsigned>& labelCounts,
+                                          unsigned numSamples) {
+	std::map<std::string,double> labelConditionalEntropy = computeLabelConditionalEntropyOneMoreTime(jointCounts, labelCounts);
+	double fullLabelConditional = 0.;
+	for(const auto& lcpair : labelCounts)
+		fullLabelConditional += static_cast<double>(lcpair.second)*labelConditionalEntropy[lcpair.first]/static_cast<double>(numSamples);
+	return fullLabelConditional;
+}
+
 /********************************************************************/
 /********** Public DistancesMentalImage class definitions **********/
 /********************************************************************/
@@ -145,6 +172,10 @@ void DistancesMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 		std::string infoName = "plInfo_range" + std::to_string(iri);
 		double info = computeSharedEntropyOneMoreTime(rangesJointCounts.at(iri), rangesPatternCounts.at(iri), labelCounts, numSamples);
 		sampleScoresMap->append(infoName, info);
+
+		std::string entroName = "lcpe_range" + std::to_string(iri);
+		double entro = computeAverageLabelConditionalEntropyOneMoreTime(rangesJointCounts.at(iri), labelCounts, numSamples);
+		sampleScoresMap->append(entroName, entro);
 	}
 
 //	sampleScoresMap->append("patternLabelInformation", computeSharedEntropy(jointCounts, patternCounts, labelCounts, numSamples));
@@ -156,12 +187,18 @@ void DistancesMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::
 	org->dataMap.append("totalCrossLabelDistance", sampleScoresMap->getAverage("totalCrossLabelDistance"));
 	org->dataMap.append("totalIntraLabelDistance", sampleScoresMap->getAverage("totalIntraLabelDistance"));
 	double irs = 0.;
+	double ers = 0.;
 	for(unsigned iri=0; iri<infoRanges.size(); iri++) {
 		std::string infoName = "plInfo_range" + std::to_string(iri);
 		org->dataMap.append(infoName, sampleScoresMap->getAverage(infoName));
 		irs += sampleScoresMap->getAverage(infoName);
+
+		std::string entroName = "lcpe_range" + std::to_string(iri);
+		org->dataMap.append(entroName, sampleScoresMap->getAverage(entroName));
+		ers += sampleScoresMap->getAverage(entroName);
 	}
 	org->dataMap.append("plInfo_allRanges", irs);
+	org->dataMap.append("lcpe_allRanges", ers);
 	double sensorActivity = sampleScoresMap->getAverage("sensorActivity");
 	unsigned tieredSensorActivity = static_cast<unsigned>(sensorActivity*10);
 	org->dataMap.append("sensorActivity", sensorActivity);
