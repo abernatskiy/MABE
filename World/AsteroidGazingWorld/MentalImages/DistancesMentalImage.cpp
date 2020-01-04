@@ -82,7 +82,8 @@ DistancesMentalImage::DistancesMentalImage(std::shared_ptr<std::string> curAstNa
 	currentAsteroidNamePtr(curAstNamePtr),
 	datasetParserPtr(dsParserPtr),
 	sensorsPtr(sPtr),
-	infoRanges({ {0, 124}, {64, 124}, {96, 124}, {112, 124}, {120, 124} }),
+//	infoRanges({ {0, 124}, {64, 124}, {96, 124}, {112, 124}, {120, 124} }),
+	infoRanges({ {0, 64}, {64, 96}, {96, 112}, {112, 126}, {126, 138}, {138, 148}, {148, 156}, {156, 162}, {162, 167}, {167, 171} }),
 	numSamples(0),
 	mVisualize(Global::modePL->get() == "visualize"),
 	numBits(nBits) {
@@ -91,22 +92,14 @@ DistancesMentalImage::DistancesMentalImage(std::shared_ptr<std::string> curAstNa
 //		infoRanges.push_back(std::make_pair(rstart, rstart+4));
 
 	for(unsigned iri=0; iri<infoRanges.size(); iri++) {
-		if(infoRanges[iri].first%4 != 0) {
-			std::cerr << "DistancesMentalImage: info range " << iri << " has a left bound " << infoRanges[iri].first << " that is not a multiple of 4, exiting" << std::endl;
-			exit(EXIT_FAILURE);
-		}
-		if(infoRanges[iri].second%4 != 0) {
-			std::cerr << "DistancesMentalImage: info range " << iri << " has a right bound " << infoRanges[iri].second << " that is not a multiple of 4, exiting" << std::endl;
-			exit(EXIT_FAILURE);
-		}
 		rangesPatternCounts.push_back({});
 		rangesJointCounts.push_back({});
 	}
 }
 
 void DistancesMentalImage::reset(int visualize) { // called in the beginning of each evaluation cycle
-	stateStrings.clear();
-	labelStrings.clear();
+	//stateStrings.clear();
+	//labelStrings.clear();
 	//labeledStateStrings.clear();
 	sensorActivityStateScores.clear();
 	labelCounts.clear();
@@ -135,8 +128,8 @@ void DistancesMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organi
 	}
 
 	if(stateTime == statePeriod-1) {
-		stateStrings.push_back(curStateString);
-		labelStrings.push_back(curLabelString);
+		//stateStrings.push_back(curStateString);
+		//labelStrings.push_back(curLabelString);
 		//labeledStateStrings.push_back(curStateString + curLabelString);
 
 		for(unsigned iri=0; iri<infoRanges.size(); iri++) {

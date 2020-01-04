@@ -60,11 +60,15 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 //	const vector<double> constMutationRates { 1. };
 //	const vector<int> constHiddenNodes { 0 };
 
-	const vector<string> brainFileNames { "", "", "", "", "" };
-	const vector<unsigned> junctionSizes { 64, 32, 16, 8 };
-//	const vector<double> constMutationRates { 0.2, 0.2, 0.2, 0.2, 0.2 };
-	const vector<double> constMutationRates { 0., 0., 0., 0., 1.0 };
-	const vector<int> constHiddenNodes { 0, 0, 0, 0, 0 }; // seems like it's gonna get ignored because all layers are evolvable
+//	const vector<string> brainFileNames { "", "", "", "", "" };
+//	const vector<unsigned> junctionSizes { 64, 32, 16, 8 };
+//	const vector<double> constMutationRates { 0., 0., 0., 0., 1.0 };
+//	const vector<int> constHiddenNodes { 0, 0, 0, 0, 0 };
+
+	const vector<string> brainFileNames { "", "", "", "", "", "", "", "", "", "" };
+	const vector<unsigned> junctionSizes { 64, 32, 16, 14, 12, 10, 8, 6, 5 };
+	const vector<double> constMutationRates { 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1 };
+	const vector<int> constHiddenNodes { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; // seems like it's gonna get ignored because all layers are evolvable
 
 	lastBrainOutputSize = _nrOutNodes;
 	for(const auto js : junctionSizes)
