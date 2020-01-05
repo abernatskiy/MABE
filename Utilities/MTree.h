@@ -34,114 +34,10 @@
 
 #include "../Global.h"
 
-/*
-
-class EXAMPLE_MTree : public Abstract_MTree {
-public:
-
-        const vector<int> requiredBranches = { XXXX }; // set this value based
-on the needs of the function.
-// -x for variable number of branches >= x
-// empty vector = no requirement / any number of elements is fine
-
-        virtual string type() override {
-        return "EXAMPLE";				// SET TYPE NAME HERE //
-        }
-
-        EXAMPLE_MTree() = default;
-        EXAMPLE_MTree(vector<shared_ptr<Abstract_MTree>> _branches,
-shared_ptr<Abstract_MTree> _parent = nullptr) {
-                parent = _parent;
-                branches = _branches;
-                if (requiredBranches.size() != 0 &&
-find(requiredBranches.begin(), requiredBranches.end(), (int)branches.size()) ==
-requiredBranches.end()) {
-                        // now check for requiredBranches < 0
-                        bool OKay = false;
-                        for (auto r : requiredBranches) {
-                                if (r < 0) {
-                                        if (abs(r) <= branches.size()) {
-                                                OKay = true;
-                                        }
-                                }
-                        }
-                        if (!OKay) { // if no < 0 value passed
-                                cout << "  In " << type() <<
-"_MTree::constructor - branches does not contain a legal number of element(s)!"
-<< endl;
-                                cout << "    " << branches.size() << " elements
-were provided, but function requires : ";
-                                for (auto n : requiredBranches) {
-                                        cout << n;
-                                        if (n != requiredBranches.back()) {
-                                                cout << " or ";
-                                        }
-                                }
-                                cout << "  NOTE: values < 0 indicate requirement
-> abs(value)." << endl;
-                                exit(1);
-                        }
-                }
-        }
-
-        virtual ~EXAMPLE_MTree() = default;
-
-        virtual shared_ptr<Abstract_MTree>
-makeCopy(vector<shared_ptr<Abstract_MTree>> _branches = {}) override {
-        // make copy is needed to support brain (must perform a deep copy)
-        // copy any local data as well as all branches
-                if (_branches.size() == 0) {
-                        for (auto b : branches) {
-                                _branches.push_back(b->makeCopy());
-                        }
-                }
-                shared_ptr<Abstract_MTree> newTree =
-make_shared<EXAMPLE_MTree>(_branches);
-                return newTree;
-        }
-
-        virtual vector<double> eval(DataMap& dataMap,
-shared_ptr<ParametersTable> PT, const vector<vector<double>>& vectorData)
-override {
-                double returnValue = branches[0]->eval(dataMap, PT,
-vectorData)[0]; // this will get value in first branch. '[0]' at end is because
-MTrees return vector<int>
-                //////////////////
-                // DO MATH HERE //
-                //////////////////
-                return {returnValue}; // return vector with one element
-        }
-
-        virtual void show(int indent = 0) override {
-                cout << string(indent, '\t') << "** "<< type() << endl;
-                indent++;
-                for (auto b : branches) {
-                        b->show(indent);
-                }
-        }
-        virtual string getFormula() override {
-                string args = type()+"[";
-                for (auto b : branches) {
-                        args += b->getFormula();
-                        if (b != branches.back()){
-                                args += ",";
-                        }
-                }
-                args += "]";
-                return args;
-        }
-        virtual vector<int> numBranches() override {
-                return requiredBranches;
-        }
-};
-
-*/
-
 class Abstract_MTree {
 public:
   std::shared_ptr<ParametersTable> PT;
   std::vector<std::shared_ptr<Abstract_MTree>> branches;
-  std::shared_ptr<Abstract_MTree> parent;
 
   Abstract_MTree() = default;
   virtual ~Abstract_MTree() = default;
@@ -211,9 +107,7 @@ public:
   }
 
   MOD_MTree() = default;
-  MOD_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches,
-            std::shared_ptr<Abstract_MTree> _parent = nullptr) {
-    parent = _parent;
+  MOD_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches) {
     branches = _branches;
     if (requiredBranches.size() != 0 &&
         find(requiredBranches.begin(), requiredBranches.end(),
@@ -244,8 +138,6 @@ public:
       }
     }
   }
-
-  virtual ~MOD_MTree() = default;
 
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
@@ -305,9 +197,7 @@ public:
   }
 
   ABS_MTree() = default;
-  ABS_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches,
-            std::shared_ptr<Abstract_MTree> _parent = nullptr) {
-    parent = _parent;
+  ABS_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches) {
     branches = _branches;
     if (requiredBranches.size() != 0 &&
         find(requiredBranches.begin(), requiredBranches.end(),
@@ -338,8 +228,6 @@ public:
       }
     }
   }
-
-  virtual ~ABS_MTree() = default;
 
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
@@ -395,9 +283,7 @@ public:
   }
 
   IF_MTree() = default;
-  IF_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches,
-           std::shared_ptr<Abstract_MTree> _parent = nullptr) {
-    parent = _parent;
+  IF_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches) {
     branches = _branches;
     if (requiredBranches.size() != 0 &&
         find(requiredBranches.begin(), requiredBranches.end(),
@@ -417,7 +303,6 @@ public:
       exit(1);
     }
   }
-  virtual ~IF_MTree() = default;
 
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
@@ -472,9 +357,7 @@ public:
   }
 
   MIN_MTree() = default;
-  MIN_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches,
-            std::shared_ptr<Abstract_MTree> _parent = nullptr) {
-    parent = _parent;
+  MIN_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches) {
     branches = _branches;
     if (requiredBranches.size() != 0 &&
         find(requiredBranches.begin(), requiredBranches.end(),
@@ -505,7 +388,6 @@ public:
       }
     }
   }
-  virtual ~MIN_MTree() = default;
 
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
@@ -563,9 +445,7 @@ public:
   }
 
   MAX_MTree() = default;
-  MAX_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches,
-            std::shared_ptr<Abstract_MTree> _parent = nullptr) {
-    parent = _parent;
+  MAX_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches) {
     branches = _branches;
     if (requiredBranches.size() != 0 &&
         find(requiredBranches.begin(), requiredBranches.end(),
@@ -596,7 +476,6 @@ public:
       }
     }
   }
-  virtual ~MAX_MTree() = default;
 
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
@@ -660,9 +539,7 @@ public:
   }
 
   REMAP_MTree() = default;
-  REMAP_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches,
-              std::shared_ptr<Abstract_MTree> _parent = nullptr) {
-    parent = _parent;
+  REMAP_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches) {
     branches = _branches;
     if (requiredBranches.size() != 0 &&
         find(requiredBranches.begin(), requiredBranches.end(),
@@ -693,7 +570,6 @@ public:
       }
     }
   }
-  virtual ~REMAP_MTree() = default;
 
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
@@ -768,9 +644,7 @@ public:
   }
 
   SIGMOID_MTree() = default;
-  SIGMOID_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches,
-                std::shared_ptr<Abstract_MTree> _parent = nullptr) {
-    parent = _parent;
+  SIGMOID_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches) {
     branches = _branches;
     if (requiredBranches.size() != 0 &&
         find(requiredBranches.begin(), requiredBranches.end(),
@@ -801,7 +675,6 @@ public:
       }
     }
   }
-  virtual ~SIGMOID_MTree() = default;
 
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
@@ -860,12 +733,9 @@ public:
 class MANY_MTree : public Abstract_MTree {
 public:
   MANY_MTree() = default;
-  MANY_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches,
-             std::shared_ptr<Abstract_MTree> _parent = nullptr) {
-    parent = _parent;
+  MANY_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches) {
     branches = _branches;
   }
-  virtual ~MANY_MTree() = default;
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
     if (_branches.size() == 0) {
@@ -913,12 +783,10 @@ public:
   double value;
 
   CONST_MTree() { value = 0; }
-  CONST_MTree(double _value, std::shared_ptr<Abstract_MTree> _parent = nullptr) {
+  CONST_MTree(double _value) {
     value = _value;
-    parent = _parent;
     // std::cout << "made Const: " << value << std::endl;
   }
-  virtual ~CONST_MTree() = default;
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
     std::shared_ptr<Abstract_MTree> newTree = std::make_shared<CONST_MTree>(value);
@@ -944,11 +812,9 @@ class fromDataMapAve_MTree : public Abstract_MTree {
 public:
   std::string key;
 
-  fromDataMapAve_MTree(std::shared_ptr<Abstract_MTree> _parent = nullptr) {
-    parent = _parent;
+  fromDataMapAve_MTree() {
   }
   fromDataMapAve_MTree(std::string _key) : key(_key) {}
-  virtual ~fromDataMapAve_MTree() = default;
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
     std::shared_ptr<Abstract_MTree> newTree = std::make_shared<fromDataMapAve_MTree>(key);
@@ -975,11 +841,9 @@ class fromDataMapSum_MTree : public Abstract_MTree {
 public:
   std::string key;
 
-  fromDataMapSum_MTree(std::shared_ptr<Abstract_MTree> _parent = nullptr) {
-    parent = _parent;
+  fromDataMapSum_MTree() {
   }
   fromDataMapSum_MTree(std::string _key) : key(_key) {}
-  virtual ~fromDataMapSum_MTree() = default;
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
     std::shared_ptr<Abstract_MTree> newTree = std::make_shared<fromDataMapSum_MTree>(key);
@@ -1005,9 +869,7 @@ public:
 class SUM_MTree : public Abstract_MTree {
 public:
   SUM_MTree() = default;
-  SUM_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches,
-            std::shared_ptr<Abstract_MTree> _parent = nullptr) {
-    parent = _parent;
+  SUM_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches) {
     branches = _branches;
     if (branches.size() < 2) {
       std::cout << "  In SUM_MTree::constructor - branches does not contain at "
@@ -1016,7 +878,6 @@ public:
       exit(1);
     }
   }
-  virtual ~SUM_MTree() = default;
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
     if (_branches.size() == 0) {
@@ -1064,9 +925,7 @@ public:
 class MULT_MTree : public Abstract_MTree {
 public:
   MULT_MTree() = default;
-  MULT_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches,
-             std::shared_ptr<Abstract_MTree> _parent = nullptr) {
-    parent = _parent;
+  MULT_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches) {
     branches = _branches;
     if (branches.size() < 2) {
       std::cout << "  In MULT_MTree::constructor - branches does not contain at "
@@ -1075,7 +934,6 @@ public:
       exit(1);
     }
   }
-  virtual ~MULT_MTree() = default;
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
     if (_branches.size() == 0) {
@@ -1123,9 +981,7 @@ public:
 class SUBTRACT_MTree : public Abstract_MTree {
 public:
   SUBTRACT_MTree() = default;
-  SUBTRACT_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches,
-                 std::shared_ptr<Abstract_MTree> _parent = nullptr) {
-    parent = _parent;
+  SUBTRACT_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches) {
     branches = _branches;
     if (branches.size() != 2) {
       std::cout << "  In DIVIDE_MTree::constructor - branches does not contain 2 "
@@ -1134,7 +990,6 @@ public:
       exit(1);
     }
   }
-  virtual ~SUBTRACT_MTree() = default;
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
     if (_branches.size() == 0) {
@@ -1171,9 +1026,7 @@ public:
 class DIVIDE_MTree : public Abstract_MTree {
 public:
   DIVIDE_MTree() = default;
-  DIVIDE_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches,
-               std::shared_ptr<Abstract_MTree> _parent = nullptr) {
-    parent = _parent;
+  DIVIDE_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches) {
     branches = _branches;
     if (branches.size() != 2) {
       std::cout << "  In DIVIDE_MTree::constructor - branches does not contain 2 "
@@ -1182,7 +1035,6 @@ public:
       exit(1);
     }
   }
-  virtual ~DIVIDE_MTree() = default;
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
     if (_branches.size() == 0) {
@@ -1224,9 +1076,7 @@ public:
 class POW_MTree : public Abstract_MTree {
 public:
   POW_MTree() = default;
-  POW_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches,
-            std::shared_ptr<Abstract_MTree> _parent = nullptr) {
-    parent = _parent;
+  POW_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches) {
     branches = _branches;
     if (branches.size() != 2) {
       std::cout << "  In POW_MTree::constructor - branches does not contain 2 "
@@ -1235,7 +1085,6 @@ public:
       exit(1);
     }
   }
-  virtual ~POW_MTree() = default;
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
     if (_branches.size() == 0) {
@@ -1272,9 +1121,7 @@ public:
 class SIN_MTree : public Abstract_MTree {
 public:
   SIN_MTree() = default;
-  SIN_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches,
-            std::shared_ptr<Abstract_MTree> _parent = nullptr) {
-    parent = _parent;
+  SIN_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches) {
     branches = _branches;
     if (branches.size() != 1) {
       std::cout << "  In SIN_MTree::constructor - branches does not contain 1 "
@@ -1283,7 +1130,6 @@ public:
       exit(1);
     }
   }
-  virtual ~SIN_MTree() = default;
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
     if (_branches.size() == 0) {
@@ -1318,9 +1164,7 @@ public:
 class COS_MTree : public Abstract_MTree {
 public:
   COS_MTree() = default;
-  COS_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches,
-            std::shared_ptr<Abstract_MTree> _parent = nullptr) {
-    parent = _parent;
+  COS_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches) {
     branches = _branches;
     if (branches.size() != 1) {
       std::cout << "  In COS_MTree::constructor - branches does not contain 1 "
@@ -1329,7 +1173,6 @@ public:
       exit(1);
     }
   }
-  virtual ~COS_MTree() = default;
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
     if (_branches.size() == 0) {
@@ -1364,12 +1207,9 @@ public:
 class VECT_MTree : public Abstract_MTree {
 public:
   VECT_MTree() = default;
-  VECT_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches,
-             std::shared_ptr<Abstract_MTree> _parent = nullptr) {
-    parent = _parent;
+  VECT_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches) {
     branches = _branches;
   }
-  virtual ~VECT_MTree() = default;
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
     if (_branches.size() == 0) {
@@ -1386,20 +1226,8 @@ public:
     int whichVect =
         std::max(0, (int)((branches[0]->eval(dataMap, PT, vectorData))[0]) %
                    (int)vectorData.size());
-    // int whichVect = 99909;
     int whichVal = std::max(0, (int)branches[1]->eval(dataMap, PT, vectorData)[0] %
                               (int)vectorData[whichVect].size());
-    if (Global::update > 759) {
-      //	std::cout << "  In VECT::eval    whichVect: " << whichVect << "
-      //whichVal: " << whichVal << std::endl;
-      //	std::cout << "   ";
-      //	for (auto a : vectorData) {
-      //		for (auto b : a) {
-      //			std::cout << b << " ";
-      //		}
-      //		std::cout << std::endl;
-      //	}
-    }
     return {vectorData[whichVect][whichVal]};
   }
 
@@ -1427,9 +1255,7 @@ public:
 class RANDOM_MTree : public Abstract_MTree {
 public:
   RANDOM_MTree() = default;
-  RANDOM_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches,
-               std::shared_ptr<Abstract_MTree> _parent = nullptr) {
-    parent = _parent;
+  RANDOM_MTree(std::vector<std::shared_ptr<Abstract_MTree>> _branches) {
     branches = _branches;
     if (branches.size() != 2) {
       std::cout << "  In RANDOM_MTree::constructor - branches does not contain 2 "
@@ -1438,7 +1264,6 @@ public:
       exit(1);
     }
   }
-  virtual ~RANDOM_MTree() = default;
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
     if (_branches.size() == 0) {
@@ -1476,13 +1301,10 @@ public:
 
 class UPDATE_MTree : public Abstract_MTree {
 public:
-  UPDATE_MTree(std::shared_ptr<Abstract_MTree> _parent = nullptr) {
-    parent = _parent;
-  }
-  virtual ~UPDATE_MTree() = default;
+  UPDATE_MTree() {}
   virtual std::shared_ptr<Abstract_MTree>
   makeCopy(std::vector<std::shared_ptr<Abstract_MTree>> _branches = {}) override {
-    std::shared_ptr<Abstract_MTree> newTree = std::make_shared<RANDOM_MTree>();
+    std::shared_ptr<Abstract_MTree> newTree = std::make_shared<UPDATE_MTree>();
     return newTree;
   }
 
@@ -1507,7 +1329,7 @@ public:
 };
 
 inline std::shared_ptr<Abstract_MTree>
-stringToMTree(std::string formula, std::shared_ptr<Abstract_MTree> parent = nullptr) {
+stringToMTree(std::string formula) {
   // std::cout << "in MTree '" << formula << std::endl;
 
   std::shared_ptr<Abstract_MTree> newMTree;
@@ -1773,13 +1595,7 @@ stringToMTree(std::string formula, std::shared_ptr<Abstract_MTree> parent = null
             argsIndex++;
           }
           args.push_back(stringToMTree(arg));
-          // op->show();
           branches.push_back(op->makeCopy(args));
-          op->parent = parent;
-          for (auto b : op->branches) {
-            b->parent = op;
-          }
-          // index += testType.size() + argsString.size();
         }
       }
       if (!foundType) {
@@ -1801,38 +1617,23 @@ stringToMTree(std::string formula, std::shared_ptr<Abstract_MTree> parent = null
   } else { // there is an op, convert all args and make MTree for arg
     std::vector<std::shared_ptr<Abstract_MTree>> args;
     if (op == '+') {
-      auto oper = std::make_shared<SUM_MTree>(branches, parent);
-      for (auto b : oper->branches) {
-        b->parent = oper;
-      }
+      auto oper = std::make_shared<SUM_MTree>(branches);
       return oper;
     }
     if (op == '-') {
-      auto oper = std::make_shared<SUBTRACT_MTree>(branches, parent);
-      for (auto b : oper->branches) {
-        b->parent = oper;
-      }
+      auto oper = std::make_shared<SUBTRACT_MTree>(branches);
       return oper;
     }
     if (op == '*') {
-      auto oper = std::make_shared<MULT_MTree>(branches, parent);
-      for (auto b : oper->branches) {
-        b->parent = oper;
-      }
+      auto oper = std::make_shared<MULT_MTree>(branches);
       return oper;
     }
     if (op == '/') {
-      auto oper = std::make_shared<DIVIDE_MTree>(branches, parent);
-      for (auto b : oper->branches) {
-        b->parent = oper;
-      }
+      auto oper = std::make_shared<DIVIDE_MTree>(branches);
       return oper;
     }
     if (op == '^') {
-      auto oper = std::make_shared<POW_MTree>(branches, parent);
-      for (auto b : oper->branches) {
-        b->parent = oper;
-      }
+      auto oper = std::make_shared<POW_MTree>(branches);
       return oper;
     }
   }
