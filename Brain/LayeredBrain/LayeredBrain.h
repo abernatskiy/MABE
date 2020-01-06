@@ -7,6 +7,8 @@
 
 class LayeredBrain : public AbstractBrain {
 private:
+	static std::vector<std::shared_ptr<ParametersTable>> layerPTs;
+
 	// Major constants
 
 	// Major state vars

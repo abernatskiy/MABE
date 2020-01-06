@@ -36,6 +36,8 @@ shared_ptr<ParameterLink<int>> DEMarkovBrain::minGateCountPL = Parameters::regis
 /********** Public definitions **********/
 /****************************************/
 
+vector<shared_ptr<ParametersTable>> LayeredBrain::layerPTs;
+
 LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<ParametersTable> PT_) :
 	AbstractBrain(_nrInNodes, _nrOutNodes, PT_),
 	visualize(Global::modePL->get() == "visualize") {
@@ -85,35 +87,41 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 	}
 	layers.resize(numLayers);
 	layerEvolvable.resize(numLayers, true);
+	if(layerPTs.empty())
+		layerPTs.resize(numLayers, nullptr);
+//		for(unsigned i=0; i<numLayers; i++)
+//			layerPTs.push_back(make_shared<ParametersTable>("", nullptr));
 	for(unsigned i=0; i<numLayers; i++) {
-		shared_ptr<ParametersTable> curPT = make_shared<ParametersTable>("", nullptr);
+		if(layerPTs[i]==nullptr) {
+			layerPTs[i] = make_shared<ParametersTable>("", nullptr);
 
-		///// Layer-specific parameters /////
-		curPT->setParameter("BRAIN_DEMARKOV-hiddenNodes",
-		                    brainFileNames[i]=="" ? PT_->lookupInt("BRAIN_DEMARKOV-hiddenNodes") : constHiddenNodes[i] );
-		///// Layer-specific paramters END /////
+			///// Layer-specific parameters /////
+			layerPTs[i]->setParameter("BRAIN_DEMARKOV-hiddenNodes",
+			                    brainFileNames[i]=="" ? PT_->lookupInt("BRAIN_DEMARKOV-hiddenNodes") : constHiddenNodes[i] );
+			///// Layer-specific paramters END /////
 
-		///// Parameter forwarding /////
-		curPT->setParameter("BRAIN_DEMARKOV_ADVANCED-recordIOMap",
-		                    PT_->lookupBool("BRAIN_DEMARKOV_ADVANCED-recordIOMap"));
-		curPT->setParameter("BRAIN_MARKOV_GATES_DETERMINISTIC-IO_Ranges",
-		                    PT_->lookupString("BRAIN_MARKOV_GATES_DETERMINISTIC-IO_Ranges"));
-		const vector<string> forwardedDoubleParamNames = { "BRAIN_DEMARKOV-gateInsertionProbability",
-		                                                   "BRAIN_DEMARKOV-gateDuplicationProbability",
-		                                                   "BRAIN_DEMARKOV-gateDeletionProbability",
-		                                                   "BRAIN_DEMARKOV-connectionToTableChangeRatio" };
-		for(const auto& param : forwardedDoubleParamNames)
-			curPT->setParameter(param, PT_->lookupDouble(param));
-		const vector<string> forwardedIntParamNames = { "BRAIN_DEMARKOV-initialGateCount",
-		                                                "BRAIN_DEMARKOV-minGateCount" };
-		for(const auto& param : forwardedIntParamNames)
-			curPT->setParameter(param, PT_->lookupInt(param));
-		curPT->setParameter("BRAIN_DEMARKOV-readFromInputsOnly", PT_->lookupBool("BRAIN_DEMARKOV-readFromInputsOnly"));
-		///// Parameter forwarding END /////
+			///// Parameter forwarding /////
+			layerPTs[i]->setParameter("BRAIN_DEMARKOV_ADVANCED-recordIOMap",
+			                    PT_->lookupBool("BRAIN_DEMARKOV_ADVANCED-recordIOMap"));
+			layerPTs[i]->setParameter("BRAIN_MARKOV_GATES_DETERMINISTIC-IO_Ranges",
+			                    PT_->lookupString("BRAIN_MARKOV_GATES_DETERMINISTIC-IO_Ranges"));
+			const vector<string> forwardedDoubleParamNames = { "BRAIN_DEMARKOV-gateInsertionProbability",
+			                                                   "BRAIN_DEMARKOV-gateDuplicationProbability",
+			                                                   "BRAIN_DEMARKOV-gateDeletionProbability",
+			                                                   "BRAIN_DEMARKOV-connectionToTableChangeRatio" };
+			for(const auto& param : forwardedDoubleParamNames)
+				layerPTs[i]->setParameter(param, PT_->lookupDouble(param));
+			const vector<string> forwardedIntParamNames = { "BRAIN_DEMARKOV-initialGateCount",
+			                                                "BRAIN_DEMARKOV-minGateCount" };
+			for(const auto& param : forwardedIntParamNames)
+				layerPTs[i]->setParameter(param, PT_->lookupInt(param));
+			layerPTs[i]->setParameter("BRAIN_DEMARKOV-readFromInputsOnly", PT_->lookupBool("BRAIN_DEMARKOV-readFromInputsOnly"));
+			///// Parameter forwarding END /////
+		}
 
 		layers[i] = DEMarkovBrain_brainFactory(i==0 ? _nrInNodes : junctionSizes[i-1],
 		                                       i==numLayers-1 ? lastBrainOutputSize : junctionSizes[i],
-		                                       curPT); // all brains start randomized, then some are read from their files
+		                                       layerPTs[i]); // all brains start randomized, then some are read from their files
 //		cout << "constructed layer " << i << endl;
 		if(!brainFileNames[i].empty()) {
 //			cout << "file provided for current layer, deserializing..." << endl;
