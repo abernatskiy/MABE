@@ -4,6 +4,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <cmath>
+#include <algorithm>
 
 /*****************************************/
 /********** Auxiliary functions **********/
@@ -15,10 +16,6 @@ void incrementMapField(std::map<KeyClass,NumType>& mymap, const KeyClass& key, N
 		mymap[key] = theIncrement;
 	else
 		mymap[key] += theIncrement;
-}
-
-std::string hexSubstrByBitRange(std::string fullString, unsigned bitsFrom, unsigned bitsTo) {
-	return fullString.substr(bitsFrom/4, (bitsTo-bitsFrom)/4);
 }
 
 double computeSharedEntropyOneMoreTime(const std::map<std::pair<std::string,std::string>,unsigned>& jointCounts,
@@ -114,18 +111,13 @@ void DistancesMentalImage::resetAfterWorldStateChange(int visualize) { // called
 }
 
 void DistancesMentalImage::updateWithInputs(std::vector<double> inputs) {
-	curStateString = bitRangeToHexStr(inputs.begin(), inputs.size());
+	curBits = inputs;
+	//curStateString = bitRangeToHexStr(inputs.begin(), inputs.size());
 }
 
 void DistancesMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> org, int stateTime, int statePeriod) {
 	if(stateTime == 0)
 		readLabel();
-
-	// Debug "throws"
-	if(curStateString.empty()) {
-		std::cerr << "Mental image evaluator got an empty state string, exiting" << std::endl;
-		exit(EXIT_FAILURE);
-	}
 
 	if(stateTime == statePeriod-1) {
 		//stateStrings.push_back(curStateString);
@@ -133,7 +125,7 @@ void DistancesMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organi
 		//labeledStateStrings.push_back(curStateString + curLabelString);
 
 		for(unsigned iri=0; iri<infoRanges.size(); iri++) {
-			std::string rangeSubstr = hexSubstrByBitRange(curStateString, infoRanges[iri].first, infoRanges[iri].second);
+			std::string rangeSubstr = bitRangeToHexStr(curBits.begin()+infoRanges[iri].first, infoRanges[iri].second-infoRanges[iri].first);
 			incrementMapField(rangesPatternCounts[iri], rangeSubstr);
 			incrementMapField(rangesJointCounts[iri], std::make_pair(curLabelString, rangeSubstr));
 		}

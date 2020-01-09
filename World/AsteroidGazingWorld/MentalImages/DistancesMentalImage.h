@@ -17,12 +17,13 @@ private:
 	std::shared_ptr<AsteroidsDatasetParser> datasetParserPtr;
 	std::shared_ptr<AbstractSensors> sensorsPtr;
 
-	std::string curStateString;
+	std::vector<double> curBits;
+	//std::string curStateString;
 	std::string curLabelString;
 
 	// Parts for state counting
-	std::vector<std::string> stateStrings;
-	std::vector<std::string> labelStrings;
+	//std::vector<std::string> stateStrings;
+	//std::vector<std::string> labelStrings;
 	//std::vector<std::string> labeledStateStrings;
 	double totalCrossLabelDistance;
 	double totalIntraLabelDistance;
