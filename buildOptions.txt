@@ -1,15 +1,15 @@
 % World
   - Berry
   - Xor
-  * Test
-  + ComplexiPhi
-  + EdlundMaze
-	+ Mixture
-	+ TestIsolatedEmbodied
-	+ TestImagination
-	+ TestSlideshow
+  - Test
+  - ComplexiPhi
+  - EdlundMaze
+	- Mixture
+	- TestIsolatedEmbodied
+	- TestImagination
+	- TestSlideshow
 	+ AsteroidGazing
-	+ ParallelIsolatedEmbodied
+	* ParallelIsolatedEmbodied
 	+ AsteroidTeamGazing
 
 % Genome
@@ -36,5 +36,5 @@
 
 % Archivist
   * Default
-  + SSwD
-  + LODwAP
+  - SSwD
+  - LODwAP
