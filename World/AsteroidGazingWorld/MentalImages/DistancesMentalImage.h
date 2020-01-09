@@ -45,8 +45,7 @@ private:
 public:
 	DistancesMentalImage(std::shared_ptr<std::string> curAstName,
 	                      std::shared_ptr<AsteroidsDatasetParser> dsParser,
-	                      std::shared_ptr<AbstractSensors> sPtr,
-	                      unsigned numBits);
+	                      std::shared_ptr<AbstractSensors> sPtr);
 
 	void reset(int visualize) override;
 	void resetAfterWorldStateChange(int visualize) override;

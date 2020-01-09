@@ -1,14 +1,29 @@
 #include <fstream>
 #include <cstdlib>
 #include <sstream>
+#include <algorithm>
 #include "../../Utilities/nlohmann/json.hpp" // https://github.com/nlohmann/json/ v3.6.1
 
 #include "../DEMarkovBrain/DEMarkovBrain.h"
 #include "../../Utilities/Random.h"
 
 #include "LayeredBrain.h"
+#include "topology.h"
 
 using namespace std;
+
+/*******************************************/
+/********** Auxiliary definitions **********/
+/*******************************************/
+
+vector<double> getDefaultMutationRates(const vector<string>& componentFileNames) {
+	vector<double> mutRates(componentFileNames.size(), 0.);
+	double numEvolvableBrains = count(componentFileNames.begin(), componentFileNames.end(), "");
+	for(size_t i=0; i<componentFileNames.size(); i++)
+		if(componentFileNames[i]=="")
+			mutRates[i] = 1./numEvolvableBrains;
+	return mutRates;
+}
 
 /**************************************************/
 /********** Static variables definitions **********/
@@ -37,48 +52,34 @@ shared_ptr<ParameterLink<int>> DEMarkovBrain::minGateCountPL = Parameters::regis
 /****************************************/
 
 vector<shared_ptr<ParametersTable>> LayeredBrain::layerPTs;
+const vector<unsigned> junctionSizes BRAIN_COMPONENT_JUNCTION_SIZES;
 
 LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<ParametersTable> PT_) :
-	AbstractBrain(_nrInNodes, _nrOutNodes, PT_),
+	AbstractBrain(_nrInNodes, accumulate(junctionSizes.begin(), junctionSizes.end(), 0), PT_),
 	visualize(Global::modePL->get() == "visualize") {
 
-//	const vector<string> brainFileNames { "layer0.json", "layer1.json", "layer2.json", "" };
-//	const vector<unsigned> junctionSizes { 20, 15, 10 };
-//	const vector<double> constMutationRates { 0., 0., 0., 1. };
-//	const vector<int> constHiddenNodes { 0, 0, 0, 0 };
+#ifdef BRAIN_COMPONENT_FILE_NAMES
+	const vector<string> brainFileNames BRAIN_COMPONENT_FILE_NAMES;
+#else // BRAIN_COMPONENT_FILE_NAMES
+	const vector<string> brainFileNames(junctionSizes.size(), "");
+#endif // BRAIN_COMPONENT_FILE_NAMES
 
-//	const vector<string> brainFileNames { "layer0.json", "layer1.json", "" };
-//	const vector<unsigned> junctionSizes { 20, 15 };
-//	const vector<double> constMutationRates { 0., 0., 1. };
-//	const vector<int> constHiddenNodes { 0, 0, 0 };
+#ifdef BRAIN_COMPONENT_MUTATION_RATES
+	mutationRates = vector<double>(BRAIN_COMPONENT_MUTATION_RATES);
+#else // BRAIN_COMPONENT_MUTATION_RATES
+	mutationRates = getDefaultMutationRates(brainFileNames);
+#endif // BRAIN_COMPONENT_MUTATION_RATES
 
-//	const vector<string> brainFileNames { "layer0.json", "" };
-//	const vector<unsigned> junctionSizes { 20 };
-//	const vector<double> constMutationRates { 0., 1. };
-//	const vector<int> constHiddenNodes { 0, 0 };
+#ifdef BRAIN_COMPONENT_HIDDEN_NODES
+	const vector<int> hiddenNodes BRAIN_COMPONENT_HIDDEN_NODES;
+#else // BRAIN_COMPONENT_HIDDEN_NODES
+	const vector<int> hiddenNodes(brainFileNames.size(), 0);
+#endif // BRAIN_COMPONENT_HIDDEN_NODES
 
-//	const vector<string> brainFileNames { "" };
-//	const vector<unsigned> junctionSizes { };
-//	const vector<double> constMutationRates { 1. };
-//	const vector<int> constHiddenNodes { 0 };
-
-//	const vector<string> brainFileNames { "", "", "", "", "" };
-//	const vector<unsigned> junctionSizes { 64, 32, 16, 8 };
-//	const vector<double> constMutationRates { 0., 0., 0., 0., 1.0 };
-//	const vector<int> constHiddenNodes { 0, 0, 0, 0, 0 };
-
-	const vector<string> brainFileNames { "", "", "", "", "", "", "", "", "", "" };
-	const vector<unsigned> junctionSizes { 64, 32, 16, 14, 12, 10, 8, 6, 5 };
-	const vector<double> constMutationRates { 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1 };
-	const vector<int> constHiddenNodes { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; // seems like it's gonna get ignored because all layers are evolvable
-
-	lastBrainOutputSize = _nrOutNodes;
-	for(const auto js : junctionSizes)
-		lastBrainOutputSize -= js;
-	if(lastBrainOutputSize<0) {
-		std::cerr << "LayeredBrain: working in the full exposure mode and the number of outputs is less than the sum of junction sizes" << std::endl;
-		exit(EXIT_FAILURE);
-	}
+//	cout << "BFNs:"; for(auto s : brainFileNames) cout << ' ' << '"' << s << '"';
+//	cout << "\nJSs:"; for(auto js : junctionSizes) cout << " " << js;
+//	cout << "\nHNs:"; for(auto hn : hiddenNodes) cout << " " << hn;
+//	cout << "\nMRs:"; for(auto mr : mutationRates) cout << " " << mr; cout << endl;
 
 	numLayers = brainFileNames.size();
 	if( numLayers<1 ) {
@@ -89,15 +90,12 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 	layerEvolvable.resize(numLayers, true);
 	if(layerPTs.empty())
 		layerPTs.resize(numLayers, nullptr);
-//		for(unsigned i=0; i<numLayers; i++)
-//			layerPTs.push_back(make_shared<ParametersTable>("", nullptr));
 	for(unsigned i=0; i<numLayers; i++) {
 		if(layerPTs[i]==nullptr) {
 			layerPTs[i] = make_shared<ParametersTable>("", nullptr);
 
 			///// Layer-specific parameters /////
-			layerPTs[i]->setParameter("BRAIN_DEMARKOV-hiddenNodes",
-			                    brainFileNames[i]=="" ? PT_->lookupInt("BRAIN_DEMARKOV-hiddenNodes") : constHiddenNodes[i] );
+			layerPTs[i]->setParameter("BRAIN_DEMARKOV-hiddenNodes", hiddenNodes[i] );
 			///// Layer-specific paramters END /////
 
 			///// Parameter forwarding /////
@@ -120,11 +118,10 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 		}
 
 		layers[i] = DEMarkovBrain_brainFactory(i==0 ? _nrInNodes : junctionSizes[i-1],
-		                                       i==numLayers-1 ? lastBrainOutputSize : junctionSizes[i],
+		                                       junctionSizes[i],
 		                                       layerPTs[i]); // all brains start randomized, then some are read from their files
-//		cout << "constructed layer " << i << endl;
 		if(!brainFileNames[i].empty()) {
-//			cout << "file provided for current layer, deserializing..." << endl;
+			// file provided for the current layer, deserializing...
 			ifstream brainFile(brainFileNames[i]);
 			string layerJSONStr;
 			getline(brainFile, layerJSONStr);
@@ -136,8 +133,6 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 			layerEvolvable[i] = false;
 		}
 	}
-//	cout << "done constructing layers" << endl;
-	mutationRates = constMutationRates;
 
 	// columns to be added to ave file
 	popFileColumns.clear();
@@ -146,16 +141,12 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 }
 
 void LayeredBrain::update() {
-//	cout << "Updating layer 0 of brain " << this << endl;
-
 	for(int i=0; i<nrInputValues; i++)
 		layers[0]->setInput(i, inputValues[i]);
 	layers[0]->update();
 
 	unsigned shift = 0;
-
 	for(unsigned l=1; l<numLayers; l++) {
-//		cout << "Updating layer " << l << " of brain " << this << endl;
 		for(int i=0; i<(layers[l]->nrInputValues); i++) {
 			outputValues[shift+i] = layers[l-1]->readOutput(i);
 			layers[l]->setInput(i, layers[l-1]->readOutput(i));
@@ -164,12 +155,11 @@ void LayeredBrain::update() {
 		shift += layers[l]->nrInputValues;
 	}
 
-	for(int i=0; i<lastBrainOutputSize; i++)
+	for(int i=0; i<layers.back()->nrOutputValues; i++)
 		outputValues[shift+i] = layers[numLayers-1]->readOutput(i);
 }
 
 shared_ptr<AbstractBrain> LayeredBrain::makeCopy(shared_ptr<ParametersTable> PT_) {
-//	cout << "MakeCopy called" << endl;
 	auto newBrain = make_shared<LayeredBrain>(nrInputValues, nrOutputValues, PT);
 	for(unsigned l=0; l<numLayers; l++)
 		newBrain->layers[l] = layers[l]->makeCopy(PT_);
@@ -198,8 +188,6 @@ void LayeredBrain::mutate() {
 	for(l=0; l<numLayers; l++)
 		if(r<mutationThresholds[l])
 			break;
-
-//	cout << "LayeredBrain is mutating. Rolled " << r << ", choosing " << l << "th brain to mutate" << endl;
 
 	layers[l]->mutate();
 }
@@ -230,10 +218,6 @@ DataMap LayeredBrain::getStats(string& prefix) {
 	}
 
 	dataMap.set("markovBrainGates", totGates);
-
-//	cout << "getStats called with prefix " << prefix << ", resulting DataMap:" << endl;
-//	cout << dataMap.getTextualRepresentation() << endl;
-
 	return dataMap;
 }
 

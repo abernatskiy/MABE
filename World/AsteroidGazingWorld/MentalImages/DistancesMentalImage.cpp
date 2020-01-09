@@ -1,5 +1,6 @@
 #include "DistancesMentalImage.h"
 #include "decoders.h"
+#include "../../../Brain/LayeredBrain/topology.h"
 
 #include <fstream>
 #include <cstdlib>
@@ -68,25 +69,44 @@ double computeAverageLabelConditionalEntropyOneMoreTime(const std::map<std::pair
 	return fullLabelConditional;
 }
 
+std::vector<std::pair<unsigned,unsigned>> layerByLayerRanges() {
+	std::vector<std::pair<unsigned,unsigned>> infoRanges;
+	unsigned curpos = 0;
+	for(auto js : BRAIN_COMPONENT_JUNCTION_SIZES) {
+		infoRanges.push_back(std::make_pair(curpos, curpos+js));
+		curpos += js;
+	}
+
+  // Ranges for the phi-like info
+//	for(unsigned rstart=0; rstart<124; rstart+=4)
+//		infoRanges.push_back(std::make_pair(rstart, rstart+4));
+	return infoRanges;
+}
+
+unsigned totalInputs() {
+	unsigned out = 0;
+	for(auto js : BRAIN_COMPONENT_JUNCTION_SIZES)
+		out += js;
+	return out;
+}
+
 /********************************************************************/
 /********** Public DistancesMentalImage class definitions **********/
 /********************************************************************/
 
 DistancesMentalImage::DistancesMentalImage(std::shared_ptr<std::string> curAstNamePtr,
                                              std::shared_ptr<AsteroidsDatasetParser> dsParserPtr,
-                                             std::shared_ptr<AbstractSensors> sPtr,
-                                             unsigned nBits):
+                                             std::shared_ptr<AbstractSensors> sPtr):
 	currentAsteroidNamePtr(curAstNamePtr),
 	datasetParserPtr(dsParserPtr),
 	sensorsPtr(sPtr),
-//	infoRanges({ {0, 124}, {64, 124}, {96, 124}, {112, 124}, {120, 124} }),
-	infoRanges({ {0, 64}, {64, 96}, {96, 112}, {112, 126}, {126, 138}, {138, 148}, {148, 156}, {156, 162}, {162, 167}, {167, 171} }),
+	infoRanges(layerByLayerRanges()),
 	numSamples(0),
 	mVisualize(Global::modePL->get() == "visualize"),
-	numBits(nBits) {
+	numBits(totalInputs()) {
 
-//	for(unsigned rstart=0; rstart<124; rstart+=4)
-//		infoRanges.push_back(std::make_pair(rstart, rstart+4));
+	// std::cout << "Total inputs: " << numBits << std::endl;
+	// std::cout << "Information processing ranges:"; for(auto ipr : infoRanges) { unsigned st, en; std::tie(st, en) = ipr; std::cout << " (" << st << "," << en << ")"; }; std::cout << std::endl;
 
 	for(unsigned iri=0; iri<infoRanges.size(); iri++) {
 		rangesPatternCounts.push_back({});

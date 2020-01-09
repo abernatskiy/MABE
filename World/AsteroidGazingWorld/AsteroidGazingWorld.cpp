@@ -111,7 +111,6 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 */
 	mentalImage = std::make_shared<DistancesMentalImage>(currentAsteroidName,
 	                                                     datasetParser,
-	                                                     sensors,
-	                                                     compressToBitsPL->get(PT_));
+	                                                     sensors); // gets the number of output nodes data from Brain/LayeredBrain/topology.h
 	makeMotors();
 };

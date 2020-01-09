@@ -16,7 +16,6 @@ private:
 	std::vector<std::shared_ptr<AbstractBrain>> layers;
 	std::vector<bool> layerEvolvable;
 	std::vector<double> mutationRates;
-	int lastBrainOutputSize;
 
 	// Private methods
 
