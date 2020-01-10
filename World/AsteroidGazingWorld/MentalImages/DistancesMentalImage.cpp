@@ -19,6 +19,49 @@ void incrementMapField(std::map<KeyClass,NumType>& mymap, const KeyClass& key, N
 		mymap[key] += theIncrement;
 }
 
+template<class NumType>
+void printMap(const std::map<std::string,NumType>& mymap) {
+	unsigned st = 0;
+	for(const auto& mpair : mymap)
+		std::cout << (st++==0?"":" ") << mpair.first << ":" << mpair.second;
+	std::cout << std::endl;
+}
+
+template<class NumType>
+void printMap(const std::map<std::pair<std::string,std::string>,NumType>& mymap) {
+	unsigned st = 0;
+	for(const auto& mpair : mymap)
+		std::cout << (st++==0?"(":" (") << mpair.first.first << "," << mpair.first.second << "):" << mpair.second;
+	std::cout << std::endl;
+}
+
+template<class NumType>
+void printPatternConditionals(const std::map<std::pair<std::string,std::string>,NumType>& joint) {
+	std::map<std::string,std::map<std::string,NumType>> patternConditionals;
+	for(const auto& mpair : joint) {
+		std::string pattern = mpair.first.second;
+		auto itCurConditional = patternConditionals.find(pattern);
+		if(itCurConditional==patternConditionals.end()) {
+			patternConditionals[pattern] = {};
+			itCurConditional = patternConditionals.find(pattern);
+		}
+		std::string label = mpair.first.first;
+		auto itCurField = itCurConditional->second.find(label);
+		if(itCurField==itCurConditional->second.end()) {
+			itCurConditional->second.emplace(label, 0);
+			itCurField = itCurConditional->second.find(label);
+		}
+		itCurField->second += mpair.second;
+	}
+
+	for(const auto& patpair : patternConditionals) {
+		std::cout << patpair.first << ":";
+		for(const auto& labpair : patpair.second)
+			std::cout << " " << labpair.first << "-" << labpair.second;
+		std::cout << std::endl;
+	}
+}
+
 double computeSharedEntropyOneMoreTime(const std::map<std::pair<std::string,std::string>,unsigned>& jointCounts,
                             const std::map<std::string,unsigned>& patternCounts,
                             const std::map<std::string,unsigned>& labelCounts,
@@ -147,7 +190,7 @@ void DistancesMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organi
 		for(unsigned iri=0; iri<infoRanges.size(); iri++) {
 			std::string rangeSubstr = bitRangeToHexStr(curBits.begin()+infoRanges[iri].first, infoRanges[iri].second-infoRanges[iri].first);
 			incrementMapField(rangesPatternCounts[iri], rangeSubstr);
-			incrementMapField(rangesJointCounts[iri], std::make_pair(curLabelString, rangeSubstr));
+			incrementMapField(rangesJointCounts[iri], std::make_pair(curLabelString, rangeSubstr)); // note that the convention is inverted compared to CompressedMentalImage
 		}
 		incrementMapField(labelCounts, curLabelString);
 		numSamples++;
@@ -179,6 +222,8 @@ void DistancesMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 		sampleScoresMap->append(infoName, info);
 
 		std::string entroName = "lcpe_range" + std::to_string(iri);
+		//std::cout << "Computing lcpe for layer " << iri << std::endl;
+		//printPatternConditionals(rangesJointCounts.at(iri));
 		double entro = computeAverageLabelConditionalEntropyOneMoreTime(rangesJointCounts.at(iri), labelCounts, numSamples);
 		sampleScoresMap->append(entroName, entro);
 	}
