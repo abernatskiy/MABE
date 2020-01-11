@@ -143,7 +143,7 @@ void PeripheralAndRelativeSaccadingEyesSensors::doHeavyInit() {
 	resetFoveaPosition();
 	controls.assign(numMotors, false);
 
-	analyzeDataset();
+	// analyzeDataset();
 }
 
 void* PeripheralAndRelativeSaccadingEyesSensors::logTimeSeries(const string& label) {

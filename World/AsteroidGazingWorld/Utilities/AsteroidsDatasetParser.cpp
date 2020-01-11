@@ -32,7 +32,7 @@ AsteroidsDatasetParser::AsteroidsDatasetParser(std::string datasetPath) :
 	// Checking if the persistent description cache is available; if not, creating it
 	fs::path descriptionCachePath = fsDatasetPath / fs::path("descriptions.cache.json");
 	if(fs::is_regular_file(descriptionCachePath)) {
-		std::cout << "Found a persistent description cache at " << descriptionCachePath << std::endl << std::flush;
+		// std::cout << "Found a persistent description cache at " << descriptionCachePath << std::endl << std::flush;
 
 		std::ifstream descriptionCacheStream(descriptionCachePath.string()); nlohmann::json descriptionCacheJSON;
 		descriptionCacheStream >> descriptionCacheJSON;
