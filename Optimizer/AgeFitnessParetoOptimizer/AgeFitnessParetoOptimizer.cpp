@@ -29,7 +29,7 @@ Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-logLineages",
 std::shared_ptr<ParameterLink<bool>> AgeFitnessParetoOptimizer::logMutationStatsPL =
 Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-logMutationStats",
 	false,
-	"set to true to log the statistics of mutations, default: false");
+	"if on DEMarkovBrains, set to true to log the statistics of mutations, default: false");
 
 std::shared_ptr<ParameterLink<double>> AgeFitnessParetoOptimizer::lineageAdditionPeriodPL =
 Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-lineageAdditionPeriod",
@@ -46,6 +46,11 @@ std::shared_ptr<ParameterLink<int>> AgeFitnessParetoOptimizer::tournamentSizePL 
 Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-tournamentSize",
 	2,
 	"size of the tournament if tournament selection is used, default: 2");
+
+std::shared_ptr<ParameterLink<bool>> AgeFitnessParetoOptimizer::disableSelectionByAgePL =
+Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-disableSelectionByAge",
+	false,
+	"if set to true, Pareto-optimization for age will be disabled; it will still be available for use in compound objectives as minimizeValue_age");
 
 /***** Auxiliary functions *****/
 
@@ -90,7 +95,8 @@ AgeFitnessParetoOptimizer::AgeFitnessParetoOptimizer(std::shared_ptr<ParametersT
 	logLineagesLvl(logLineagesPL->get(PT_)),
 	logMutationStats(logMutationStatsPL->get(PT_)),
 	useTournamentSelection(useTournamentSelectionPL->get(PT_)),
-	tournamentSize(tournamentSizePL->get(PT_)) {
+	tournamentSize(tournamentSizePL->get(PT_)),
+	selectByAge(!disableSelectionByAgePL->get(PT_)) {
 
 	// MTree formulas support inherited with minimal modifications from LexicaseOptimizer
 	std::vector<std::string> optimizeFormulasStrings;
@@ -108,7 +114,8 @@ AgeFitnessParetoOptimizer::AgeFitnessParetoOptimizer(std::shared_ptr<ParametersT
 		// user has defined names, use those
 		convertCSVListToVector(optimizeFormulaNamesPL->get(PT), scoreNames);
 	}
-	scoreNames.push_back("minimizeValue_age");
+	if(selectByAge)
+		scoreNames.push_back("minimizeValue_age");
 
 	popFileColumns.clear();
 	for (auto &name : scoreNames)
@@ -380,9 +387,11 @@ void AgeFitnessParetoOptimizer::writeCompactParetoMessageToStdout() {
 	// Compact messages : a line per generation
 	std::map<std::string,double> minValues;
 	std::map<std::string,int> minValueCarriers;
-	for(auto it=scoreNames.begin(); it!=scoreNames.end()-1; it++) { // exclude "minimizeValue_age"
-		minValues[*it] = std::numeric_limits<double>::max();
-		minValueCarriers[*it] = -1;
+	for(auto it=scoreNames.begin(); it!=scoreNames.end(); it++) {
+		if((*it)!="minimizeValue_age") {
+			minValues[*it] = std::numeric_limits<double>::max();
+			minValueCarriers[*it] = -1;
+		}
 	}
 	double maxAge = 0;
 	int oldestOrganism = -1;
@@ -404,7 +413,7 @@ void AgeFitnessParetoOptimizer::writeCompactParetoMessageToStdout() {
 	}
 
 	std::cout << "pareto_size=" << paretoFront.size();
-	std::cout << " max_age=" << maxAge << "@" << oldestOrganism;
+	if(selectByAge) std::cout << " max_age=" << maxAge << "@" << oldestOrganism;
 	for(const auto& mvtuple : minValues)
 		std::cout << " " << mvtuple.first << "=" << mvtuple.second << "@" << minValueCarriers[mvtuple.first];
 	std::cout << " extant_lineages=";

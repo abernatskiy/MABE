@@ -16,6 +16,7 @@ public:
 	static std::shared_ptr<ParameterLink<double>> lineageAdditionPeriodPL;
 	static std::shared_ptr<ParameterLink<bool>> useTournamentSelectionPL;
 	static std::shared_ptr<ParameterLink<int>> tournamentSizePL;
+	static std::shared_ptr<ParameterLink<bool>> disableSelectionByAgePL;
 
 	std::vector<std::vector<double>> scores;
 	std::vector<std::string> scoreNames;
@@ -40,6 +41,7 @@ private:
 	bool disableLineageAddition;
 	bool useTournamentSelection;
 	unsigned tournamentSize;
+	bool selectByAge;
 	std::shared_ptr<Organism> templateOrganism;
 	std::set<unsigned> survivorIds;
 	std::map<std::string,std::map<std::string,std::vector<double>>> mutationStatistics; // first index is mutation type, second is
