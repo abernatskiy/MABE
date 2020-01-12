@@ -199,16 +199,7 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 		}
 	}
 
-	// Computing Pareto ranks
-	paretoRanks.resize(population.size());
-	std::fill(paretoRanks.begin(), paretoRanks.end(), 0);
-	if(useTournamentSelection) {
-		unsigned currentRank = 0;
-		while(!updateParetoRanks(population, currentRank))
-			currentRank++;
-	}
-	else
-		updateParetoRanks(population, 0);
+	updateParetoRanks(population);
 
 	paretoFront.clear();
 	for(unsigned i=0; i<population.size(); i++)
@@ -340,23 +331,40 @@ void AgeFitnessParetoOptimizer::cleanup(std::vector<std::shared_ptr<Organism>>& 
 
 /************* Private methods *************/
 
-bool AgeFitnessParetoOptimizer::updateParetoRanks(std::vector<std::shared_ptr<Organism>>& population, unsigned currentLevel) {
-	std::vector<unsigned> currentRanksIndexes;
-	for(unsigned i=0; i<population.size(); i++)
-		if(paretoRanks[i]==currentLevel)
-			currentRanksIndexes.push_back(i);
+void AgeFitnessParetoOptimizer::updateParetoRanks(std::vector<std::shared_ptr<Organism>>& population) {
 
-	bool wholeRankIsNondominated = true;
-	for(unsigned i : currentRanksIndexes)
-		for(unsigned j : currentRanksIndexes) {
-			if(firstOrganismIsDominatedBySecond(population[i], population[j], scoreNames)) {
-				paretoRanks[i]++;
-				wholeRankIsNondominated = false;
-				break;
+	// NSGA-II-style Pareto rank sorting
+
+	std::vector<size_t> dominationCount(population.size(), 0); // number of solutions that dominate population[i]
+	std::vector<std::vector<size_t>> indivsDominatedBy(population.size()); // set of solution dominated by population[i]
+
+	for(size_t i=0; i<population.size(); i++) {
+		for(size_t j=0; j<population.size(); j++) {
+			if(i!=j && firstOrganismIsDominatedBySecond(population[i], population[j], scoreNames)) {
+				dominationCount[i]++;
+				indivsDominatedBy[j].push_back(i);
 			}
 		}
+	}
 
-	return wholeRankIsNondominated;
+	paretoRanks.resize(population.size());
+	std::fill(paretoRanks.begin(), paretoRanks.end(), -1);
+	int currentParetoRank = 0;
+	bool populationIsRanked = false;
+	while(!populationIsRanked) {
+		populationIsRanked = true;
+		for(size_t i=0; i<population.size(); i++)
+			if(paretoRanks[i]==-1 && dominationCount[i]==0)
+				paretoRanks[i] = currentParetoRank;
+		for(size_t i=0; i<population.size(); i++)
+			if(paretoRanks[i]==currentParetoRank) {
+				for(size_t j : indivsDominatedBy[i]) {
+					dominationCount[j]--;
+					populationIsRanked = false;
+				}
+			}
+		currentParetoRank++;
+	}
 }
 
 std::shared_ptr<Organism> AgeFitnessParetoOptimizer::makeNewOrganism() {

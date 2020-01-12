@@ -22,7 +22,7 @@ public:
 	std::vector<std::string> scoreNames;
 
 	std::vector<std::shared_ptr<Organism>> newPopulation;
-	std::vector<unsigned> paretoRanks;
+	std::vector<int> paretoRanks;
 	std::vector<std::shared_ptr<Organism>> paretoFront;
 
 	std::vector<std::shared_ptr<Abstract_MTree>> optimizeFormulasMTs;
@@ -47,7 +47,7 @@ private:
 	std::map<std::string,std::map<std::string,std::vector<double>>> mutationStatistics; // first index is mutation type, second is
 	                                                                                    // evaluation name (including deltas)
 
-	bool updateParetoRanks(std::vector<std::shared_ptr<Organism>>& population, unsigned currentLevel);
+	void updateParetoRanks(std::vector<std::shared_ptr<Organism>>& population);
 	std::shared_ptr<Organism> makeNewOrganism();
 	unsigned getNewLineageID();
 	void writeCompactParetoMessageToStdout();
