@@ -37,15 +37,17 @@ Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-lineageAdditionPeriod
 	"how frequently new lineages should be added (p>1 - a lineage added once every floor(p) gens,\n"
 	"0<p<1 - floor(1/p) lineages added every generation, p<0 - no lineages added except to the initial population), default: 1.0");
 
-std::shared_ptr<ParameterLink<bool>> AgeFitnessParetoOptimizer::useTournamentSelectionPL =
-Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-useTournamentSelection",
-	false,
-	"use rank selection based on Pareto rank instead of selecting the top Pareto front and its offspring, default: false");
+std::shared_ptr<ParameterLink<int>> AgeFitnessParetoOptimizer::selectionTypePL =
+Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-selectionType",
+	0,
+	"selection type, new population will be composed of: 0 (default, AFPO-style) - top-1 Pareto front + its offspring, "
+	"1 (rank tournament) - results of popsize/tournsize tournaments where the losers get replaced by the winner's children, "
+	"2 (NSGAII-style) - population gets collapsed twofold elitistically, then expanded with tournaments");
 
 std::shared_ptr<ParameterLink<int>> AgeFitnessParetoOptimizer::tournamentSizePL =
 Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-tournamentSize",
 	2,
-	"size of the tournament if tournament selection is used, default: 2");
+	"size of the tournament if tournament or nsgaii-style selection is used, default: 2");
 
 std::shared_ptr<ParameterLink<bool>> AgeFitnessParetoOptimizer::disableSelectionByAgePL =
 Parameters::register_parameter("OPTIMIZER_AGEFITNESSPARETO-disableSelectionByAge",
@@ -94,10 +96,10 @@ AgeFitnessParetoOptimizer::AgeFitnessParetoOptimizer(std::shared_ptr<ParametersT
 	searchIsStuck(false),
 	logLineagesLvl(logLineagesPL->get(PT_)),
 	logMutationStats(logMutationStatsPL->get(PT_)),
-	useTournamentSelection(useTournamentSelectionPL->get(PT_)),
+	selectionType(selectionTypePL->get(PT_)),
 	tournamentSize(tournamentSizePL->get(PT_)),
 	selectByAge(!disableSelectionByAgePL->get(PT_)),
-	maxParetoRank(-1) {
+	maxParetoRank(-1), numEvals(0) {
 
 	// MTree formulas support inherited with minimal modifications from LexicaseOptimizer
 	std::vector<std::string> optimizeFormulasStrings;
@@ -122,7 +124,7 @@ AgeFitnessParetoOptimizer::AgeFitnessParetoOptimizer(std::shared_ptr<ParametersT
 	for (auto &name : scoreNames)
 		popFileColumns.push_back(name);
 
-	optimizeFormula = stringToMTree(maxFileFormulaPL->get(PT));
+	optimizeFormula = stringToMTree(maxFileFormulaPL->get(PT)); // from the parent class
 
 	double dLineageAdditionPeriod = lineageAdditionPeriodPL->get(PT);
 	if(dLineageAdditionPeriod <= 0.) {
@@ -141,7 +143,7 @@ AgeFitnessParetoOptimizer::AgeFitnessParetoOptimizer(std::shared_ptr<ParametersT
 		lineagesPerAddition = static_cast<unsigned>(floor(1./dLineageAdditionPeriod));
 	}
 
-	// initializing the mutation statistic storage
+	// initializing the mutation statistics storage
 	for(std::string mutName : {"mutation_insertion", "mutation_deletion", "mutation_duplication", "mutation_table", "mutation_rewiring"}) {
 		mutationStatistics[mutName] = {};
 		for(const std::string& scName : scoreNames) {
@@ -155,12 +157,12 @@ AgeFitnessParetoOptimizer::AgeFitnessParetoOptimizer(std::shared_ptr<ParametersT
 
 void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>& population) {
 	// Don't waste our time if we know things are bad
-	if(searchIsStuck) {
-		population.swap(newPopulation);
-		return;
-	}
+	if(searchIsStuck) return;
 
-	// Assigning age to all initial organisms
+	// Assigning age to all initial organisms, and
+	// preserving a copy of one of the progenitors
+	// to serve as a template for progenitors of new lineages, and
+	// increasing the number of evaluations by the initial population size
 	if(firstGenIsNow) {
 		if(population.size()==0) {
 			std::cerr << "Age-fitness Pareto optimizer does not support initially empty populations, and it was applied to one" << std::endl << std::flush;
@@ -172,6 +174,9 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 			population[i]->dataMap.set("minimizeValue_age", 0.);
 			population[i]->dataMap.set("lineageID", (int) getNewLineageID());
 		}
+
+		numEvals += population.size();
+
 		firstGenIsNow = false;
 	}
 
@@ -214,73 +219,20 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 
 	// Computing how many new lineages we should add
 	unsigned lineagesToAddNow = (Global::update % lineageAdditionPeriod == 0) ? lineagesPerAddition : 0;
-
-	// Checking if the new population will fit into the size of the old one
-	if(paretoFront.size()+lineagesToAddNow >= population.size())
-		std::cout << "WARNING: Pareto front is large enough so that there is not enough space for variation and/or new lineages" << std::endl;
-	if(paretoFront.size() == population.size())
-		searchIsStuck = true;
-
 	survivorIds.clear();
 
-	if(useTournamentSelection) { // for tournament selection, the population is formed in trials
-
-		while(newPopulation.size() < population.size()-lineagesToAddNow) {
-			// finding the champion
-			unsigned championIdx = Random::getIndex(population.size());
-			std::vector<unsigned> participants = { championIdx };
-			for(unsigned i=0; i<tournamentSize-1; i++) {
-				unsigned challengerIdx = championIdx;
-				while( std::find(participants.begin(), participants.end(), challengerIdx)!=participants.end() )
-					challengerIdx = Random::getIndex(population.size());
-				participants.push_back(challengerIdx);
-
-				if(paretoRanks[championIdx]>=paretoRanks[challengerIdx])
-					championIdx = challengerIdx;
-			}
-
-			// then copying it and its offspring into the next population
-			std::shared_ptr<Organism> champion = population[championIdx];
-			newPopulation.push_back(champion);
-			survivorIds.insert(champion->ID);
-//			std::cout << "added orgs " << champion->ID;
-			for(unsigned i=0; i<tournamentSize-1; i++) {
-				std::shared_ptr<Organism> child = champion->makeMutatedOffspringFrom(champion);
-				child->dataMap.set("minimizeValue_age", champion->dataMap.getDouble("minimizeValue_age")); // it is very important to know how farback your ancestry goes
-				child->dataMap.set("lineageID", champion->dataMap.getInt("lineageID")); // turns out knowing your surname also helps
-				for(const auto& sn : scoreNames)
-					child->dataMap.set(std::string("parents_") + sn, champion->dataMap.getDouble(sn));
-				newPopulation.push_back(child);
-//				std::cout << "," << child->ID;
-			}
-//			std::cout << " to the new population" << std::endl;
-		}
-
-		// If the space available in the new population does not divide evenly into tournament-sized chunks,
-		// then the procedure above generates more individuals than can fit into the new population.
-		// The line below resizes the new population to the right size and destroys the surplus.
-		newPopulation.resize(population.size()-lineagesToAddNow);
+	if(selectionType==0)
+		doAFPOStyleSelection(population, population.size()-lineagesToAddNow);
+	else if(selectionType==1)
+		doAFPOStyleTournament(population, population.size()-lineagesToAddNow);
+	else if(selectionType==2)
+		doNSGAIIStyleSelection(population, population.size()-lineagesToAddNow);
+	else {
+		std::cerr << "AgeFitnessParetoOptimizer: unrecognized section type " << selectionType << std::endl;
+		exit(EXIT_FAILURE);
 	}
-	else { // in elite selection, a new population is built in four steps
 
-		// Copying the Pareto front to it - all of it is the elite
-		newPopulation.insert(newPopulation.end(), paretoFront.begin(), paretoFront.end());
-		for(unsigned i=0; i<paretoRanks.size(); i++)
-			if(paretoRanks[i]==0)
-				survivorIds.insert(population[i]->ID);
-
-		// Adding the offspring of the Pareto front organisms to the population
-		// until it reaches the projected size of the population minus one
-		while(newPopulation.size() < population.size()-lineagesToAddNow) {
-			std::shared_ptr<Organism> parent = paretoFront[Random::getIndex(paretoFront.size())];
-			std::shared_ptr<Organism> child = parent->makeMutatedOffspringFrom(parent);
-			child->dataMap.set("minimizeValue_age", parent->dataMap.getDouble("minimizeValue_age")); // it is very important to know how farback your ancestry goes
-			child->dataMap.set("lineageID", parent->dataMap.getInt("lineageID")); // turns out knowing your surname also helps
-			for(const auto& sn : scoreNames)
-				child->dataMap.set(std::string("parents_") + sn, parent->dataMap.getDouble(sn));
-			newPopulation.push_back(child);
-		}
-	}
+	/**********************************************/
 
 	// Printing a summary of what we just done
 	writeCompactParetoMessageToStdout();
@@ -321,16 +273,84 @@ void AgeFitnessParetoOptimizer::cleanup(std::vector<std::shared_ptr<Organism>>& 
 //	for(auto sid : survivorIds)
 //		std::cout << sid << ", ";
 //	std::cout << "survivors were" << std::endl;
-	for(unsigned i=0; i<population.size(); i++)
-		if(survivorIds.find(population[i]->ID)==survivorIds.end() && population[i]->alive) {
-//			std::cout << "killing organism " << population[i]->ID << std::endl;
-			population[i]->kill();
+	if(!searchIsStuck) {
+		for(unsigned i=0; i<population.size(); i++) {
+			if(survivorIds.find(population[i]->ID)==survivorIds.end() && population[i]->alive) {
+//				std::cout << "killing organism " << population[i]->ID << std::endl;
+				population[i]->kill();
+			}
 		}
+	}
 	population.swap(newPopulation);
 	newPopulation.clear();
 }
 
 /************* Private methods *************/
+
+void AgeFitnessParetoOptimizer::doAFPOStyleSelection(std::vector<std::shared_ptr<Organism>>& population, unsigned newPopSize) {
+	// Checking if the new population will fit into the size of the old one
+	if(paretoFront.size() >= newPopSize)
+		std::cout << "WARNING: Pareto elite is so large that there is not enough space for variation" << std::endl;
+	if(paretoFront.size() == population.size())
+		searchIsStuck = true;
+
+	// Copying the Pareto front to it - all of it is the elite
+	newPopulation.insert(newPopulation.end(), paretoFront.begin(), paretoFront.end());
+	for(unsigned i=0; i<paretoRanks.size(); i++)
+		if(paretoRanks[i]==0)
+			survivorIds.insert(population[i]->ID);
+
+	// Adding the offspring of the Pareto front organisms to the population
+	// until it reaches the projected size of the population minus one
+	while(newPopulation.size() < newPopSize) {
+		std::shared_ptr<Organism> parent = paretoFront[Random::getIndex(paretoFront.size())];
+		newPopulation.push_back(makeMutatedOffspringFrom(parent));
+	}
+}
+
+void AgeFitnessParetoOptimizer::doAFPOStyleTournament(std::vector<std::shared_ptr<Organism>>& population, unsigned newPopSize) {
+
+	while(newPopulation.size() < newPopSize) {
+		// finding the champion
+		unsigned championIdx = Random::getIndex(population.size());
+		std::vector<unsigned> participants = { championIdx };
+		for(unsigned i=0; i<tournamentSize-1; i++) {
+			unsigned challengerIdx = championIdx;
+			while( std::find(participants.begin(), participants.end(), challengerIdx)!=participants.end() )
+			challengerIdx = Random::getIndex(population.size());
+			participants.push_back(challengerIdx);
+
+			if(paretoRanks[championIdx]>=paretoRanks[challengerIdx]) // no tie-breaking - the newbie takes the champion's place if it has the same rank
+				championIdx = challengerIdx;
+		}
+
+		// then copying it and its offspring into the next population
+		std::shared_ptr<Organism> champion = population[championIdx];
+		newPopulation.push_back(champion); // FIXME champion can be inserted into the new population multiple times, no idea how it [bw]orked
+		survivorIds.insert(champion->ID);
+
+		for(unsigned i=0; i<tournamentSize-1; i++) {
+			if(newPopulation.size()==newPopSize)
+				break;
+			newPopulation.push_back(makeMutatedOffspringFrom(champion));
+		}
+	}
+}
+
+void AgeFitnessParetoOptimizer::doNSGAIIStyleSelection(std::vector<std::shared_ptr<Organism>>& population, unsigned newPopSize) {
+
+	std::cerr << "NSGAII not implemented yet" << std::endl;
+	exit(EXIT_FAILURE);
+}
+
+std::shared_ptr<Organism> AgeFitnessParetoOptimizer::makeMutatedOffspringFrom(std::shared_ptr<Organism> parent) {
+	std::shared_ptr<Organism> child = parent->makeMutatedOffspringFrom(parent);
+	child->dataMap.set("minimizeValue_age", parent->dataMap.getDouble("minimizeValue_age")); // it is very important to know how farback your ancestry goes
+	child->dataMap.set("lineageID", parent->dataMap.getInt("lineageID")); // turns out knowing your surname also helps
+	for(const auto& sn : scoreNames)
+		child->dataMap.set(std::string("parents_") + sn, parent->dataMap.getDouble(sn));
+	return child;
+}
 
 void AgeFitnessParetoOptimizer::updateParetoRanks(std::vector<std::shared_ptr<Organism>>& population) {
 

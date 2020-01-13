@@ -14,7 +14,7 @@ public:
 	static std::shared_ptr<ParameterLink<int>> logLineagesPL;
 	static std::shared_ptr<ParameterLink<bool>> logMutationStatsPL;
 	static std::shared_ptr<ParameterLink<double>> lineageAdditionPeriodPL;
-	static std::shared_ptr<ParameterLink<bool>> useTournamentSelectionPL;
+	static std::shared_ptr<ParameterLink<int>> selectionTypePL;
 	static std::shared_ptr<ParameterLink<int>> tournamentSizePL;
 	static std::shared_ptr<ParameterLink<bool>> disableSelectionByAgePL;
 
@@ -24,8 +24,6 @@ public:
 	std::vector<std::shared_ptr<Organism>> newPopulation;
 	std::vector<int> paretoRanks;
 	std::vector<std::shared_ptr<Organism>> paretoFront;
-
-	int maxParetoRank;
 
 	std::vector<std::shared_ptr<Abstract_MTree>> optimizeFormulasMTs;
 
@@ -41,14 +39,22 @@ private:
 	unsigned lineageAdditionPeriod;
 	unsigned lineagesPerAddition;
 	bool disableLineageAddition;
-	bool useTournamentSelection;
+	unsigned selectionType; // 0 - AFPO-style elite, 1 - Pareto-rank tournament, 2 - NSGA-II-style elite
 	unsigned tournamentSize;
 	bool selectByAge;
+
+	int maxParetoRank;
+	unsigned long long numEvals;
+
 	std::shared_ptr<Organism> templateOrganism;
 	std::set<unsigned> survivorIds;
 	std::map<std::string,std::map<std::string,std::vector<double>>> mutationStatistics; // first index is mutation type, second is
 	                                                                                    // evaluation name (including deltas)
 
+	void doAFPOStyleSelection(std::vector<std::shared_ptr<Organism>>& population, unsigned newPopSize);
+	void doAFPOStyleTournament(std::vector<std::shared_ptr<Organism>>& population, unsigned newPopSize);
+	void doNSGAIIStyleSelection(std::vector<std::shared_ptr<Organism>>& population, unsigned newPopSize);
+	std::shared_ptr<Organism> makeMutatedOffspringFrom(std::shared_ptr<Organism> parent); // can't use the Organism built-in since there are a few edits to the dataMap that need to be made
 	void updateParetoRanks(std::vector<std::shared_ptr<Organism>>& population);
 	std::shared_ptr<Organism> makeNewOrganism();
 	unsigned getNewLineageID();
