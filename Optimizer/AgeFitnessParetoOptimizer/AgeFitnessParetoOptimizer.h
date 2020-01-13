@@ -25,6 +25,8 @@ public:
 	std::vector<int> paretoRanks;
 	std::vector<std::shared_ptr<Organism>> paretoFront;
 
+	int maxParetoRank;
+
 	std::vector<std::shared_ptr<Abstract_MTree>> optimizeFormulasMTs;
 
 	AgeFitnessParetoOptimizer(std::shared_ptr<ParametersTable> PT_);

@@ -96,7 +96,8 @@ AgeFitnessParetoOptimizer::AgeFitnessParetoOptimizer(std::shared_ptr<ParametersT
 	logMutationStats(logMutationStatsPL->get(PT_)),
 	useTournamentSelection(useTournamentSelectionPL->get(PT_)),
 	tournamentSize(tournamentSizePL->get(PT_)),
-	selectByAge(!disableSelectionByAgePL->get(PT_)) {
+	selectByAge(!disableSelectionByAgePL->get(PT_)),
+	maxParetoRank(-1) {
 
 	// MTree formulas support inherited with minimal modifications from LexicaseOptimizer
 	std::vector<std::string> optimizeFormulasStrings;
@@ -365,6 +366,7 @@ void AgeFitnessParetoOptimizer::updateParetoRanks(std::vector<std::shared_ptr<Or
 			}
 		currentParetoRank++;
 	}
+	maxParetoRank = currentParetoRank - 1;
 }
 
 std::shared_ptr<Organism> AgeFitnessParetoOptimizer::makeNewOrganism() {
@@ -421,6 +423,7 @@ void AgeFitnessParetoOptimizer::writeCompactParetoMessageToStdout() {
 	}
 
 	std::cout << "pareto_size=" << paretoFront.size();
+	std::cout << " max_rank=" << maxParetoRank;
 	if(selectByAge) std::cout << " max_age=" << maxAge << "@" << oldestOrganism;
 	for(const auto& mvtuple : minValues)
 		std::cout << " " << mvtuple.first << "=" << mvtuple.second << "@" << minValueCarriers[mvtuple.first];
@@ -489,7 +492,7 @@ void AgeFitnessParetoOptimizer::logParetoFrontSize(const std::vector<std::shared
 	}
 
 	pflog.open(logpath, std::ios::app);
-	pflog << paretoFront.size() << std::endl;
+	pflog << paretoFront.size() << " " << maxParetoRank << std::endl;
 	pflog.close();
 }
 
