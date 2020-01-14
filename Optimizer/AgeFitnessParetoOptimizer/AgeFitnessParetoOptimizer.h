@@ -45,6 +45,7 @@ private:
 	bool selectByAge;
 
 	int maxParetoRank;
+	int cutoffParetoRank;
 	unsigned long long numEvals;
 
 	std::shared_ptr<Organism> templateOrganism;
@@ -64,4 +65,5 @@ private:
 	void logParetoStats();
 	void logLineages(const std::vector<std::shared_ptr<Organism>>& population);
 	void logMutationStatistics();
+	void logNSGAIIData(std::vector<std::shared_ptr<Organism>>& population);
 };

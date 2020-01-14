@@ -100,7 +100,7 @@ AgeFitnessParetoOptimizer::AgeFitnessParetoOptimizer(std::shared_ptr<ParametersT
 	selectionType(selectionTypePL->get(PT_)),
 	tournamentSize(tournamentSizePL->get(PT_)),
 	selectByAge(!disableSelectionByAgePL->get(PT_)),
-	maxParetoRank(-1), numEvals(0) {
+	maxParetoRank(-1), cutoffParetoRank(-1), numEvals(0) {
 
 	// MTree formulas support inherited with minimal modifications from LexicaseOptimizer
 	std::vector<std::string> optimizeFormulasStrings;
@@ -226,18 +226,19 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 	// 1. newPopulation
 	// 2. survivorIDs - a vector of IDs of all the individuals in the old population that should not be killed by cleanup()
 	// 3. an appropriate increment of numEvals
+	// 4. cutoffParetoRank of the elite
 	if(selectionType==0)
 		doAFPOStyleSelection(population, population.size()-lineagesToAddNow);
 	else if(selectionType==1)
 		doAFPOStyleTournament(population, population.size()-lineagesToAddNow);
-	else if(selectionType==2)
+	else if(selectionType==2) {
 		doNSGAIIStyleSelection(population, population.size()-lineagesToAddNow);
+		// logNSGAIIData(population);
+	}
 	else {
 		std::cerr << "AgeFitnessParetoOptimizer: unrecognized section type " << selectionType << std::endl;
 		exit(EXIT_FAILURE);
 	}
-
-	/**********************************************/
 
 	// Printing a summary of what we just done
 	writeCompactParetoMessageToStdout();
@@ -314,6 +315,8 @@ void AgeFitnessParetoOptimizer::doAFPOStyleSelection(std::vector<std::shared_ptr
 		newPopulation.push_back(makeMutatedOffspringFrom(parent));
 		numEvals++;
 	}
+
+	cutoffParetoRank = 0;
 }
 
 void AgeFitnessParetoOptimizer::doAFPOStyleTournament(std::vector<std::shared_ptr<Organism>>& population, unsigned newPopSize) {
@@ -343,6 +346,8 @@ void AgeFitnessParetoOptimizer::doAFPOStyleTournament(std::vector<std::shared_pt
 			numEvals++;
 		}
 	}
+
+	cutoffParetoRank = -1; // meaning that NO ONE IS SAFE
 }
 
 void AgeFitnessParetoOptimizer::doNSGAIIStyleSelection(std::vector<std::shared_ptr<Organism>>& population, unsigned newPopSize) {
@@ -377,6 +382,7 @@ void AgeFitnessParetoOptimizer::doNSGAIIStyleSelection(std::vector<std::shared_p
 	unsigned eliteSize = population.size() / 2;
 	std::vector<size_t> eliteIndexes;
 	for(unsigned r=0; r<=maxParetoRank && newPopulation.size()<eliteSize; r++) {
+		cutoffParetoRank = r;
 		std::sort(ranks[r].begin(), ranks[r].end(), [this](size_t l, size_t r){ return crowdingMeasure[l] > crowdingMeasure[r]; });
 		for(size_t i : ranks[r]) {
 			newPopulation.push_back(population[i]);
@@ -517,6 +523,7 @@ void AgeFitnessParetoOptimizer::writeCompactParetoMessageToStdout() {
 
 	std::cout << "pareto_size=" << paretoFront.size();
 	std::cout << " max_rank=" << maxParetoRank;
+	std::cout << " cutoff_rank=" << cutoffParetoRank;
 	if(selectByAge) std::cout << " max_age=" << maxAge << "@" << oldestOrganism;
 	for(const auto& mvtuple : minValues)
 		std::cout << " " << mvtuple.first << "=" << mvtuple.second << "@" << minValueCarriers[mvtuple.first];
@@ -580,12 +587,13 @@ void AgeFitnessParetoOptimizer::logParetoStats() {
 	static bool firstRun = true;
 	if(firstRun) {
 		pflog.open(logpath, std::ios::out);
+		pflog << "# main_pareto_front_size max_pareto_rank cutoff_pareto_rank num_evals" << std::endl;
 		pflog.close();
 		firstRun = false;
 	}
 
 	pflog.open(logpath, std::ios::app);
-	pflog << paretoFront.size() << " " << maxParetoRank << " " << numEvals << std::endl;
+	pflog << paretoFront.size() << " " << maxParetoRank << " " << cutoffParetoRank << " " << numEvals << std::endl;
 	pflog.close();
 }
 
@@ -646,5 +654,22 @@ void AgeFitnessParetoOptimizer::logMutationStatistics() {
 		}
 
 		mutlog.close();
+	}
+}
+
+void AgeFitnessParetoOptimizer::logNSGAIIData(std::vector<std::shared_ptr<Organism>>& population) {
+	std::ofstream nsgaiilog(Global::outputPrefixPL->get(PT) + "nsgaii_gen" + std::to_string(Global::update) + ".ssv", std::ios::out);
+
+	nsgaiilog << "# ID";
+	for(const std::string& scname : scoreNames)
+		nsgaiilog << " " << scname;
+	nsgaiilog << " pareto_rank crowding_measure" << std::endl;
+
+	for(size_t i=0; i<population.size(); i++) {
+		nsgaiilog << population[i]->ID;
+		for(const std::string& scname : scoreNames)
+			nsgaiilog << " " << population[i]->dataMap.getDouble(scname);
+		nsgaiilog << " " << paretoRanks[i];
+		nsgaiilog << " " << crowdingMeasure[i] << std::endl;
 	}
 }
