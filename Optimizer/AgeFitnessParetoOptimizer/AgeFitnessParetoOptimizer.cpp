@@ -1,4 +1,5 @@
 #include <limits>
+#include <math.h>
 #include "../../Utilities/nlohmann/json.hpp"
 
 #include "AgeFitnessParetoOptimizer.h"
@@ -221,6 +222,10 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 	unsigned lineagesToAddNow = (Global::update % lineageAdditionPeriod == 0) ? lineagesPerAddition : 0;
 	survivorIds.clear();
 
+	// Each of these functions must provide:
+	// 1. newPopulation
+	// 2. survivorIDs - a vector of IDs of all the individuals in the old population that should not be killed by cleanup()
+	// 3. an appropriate increment of numEvals
 	if(selectionType==0)
 		doAFPOStyleSelection(population, population.size()-lineagesToAddNow);
 	else if(selectionType==1)
@@ -240,7 +245,6 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 	if(logMutationStats && Global::update == Global::updatesPL->get(PT))
 		logMutationStatistics();
 
-	logParetoFrontSize(paretoFront);
 	if(logLineagesLvl)
 		logLineages(population);
 
@@ -261,7 +265,10 @@ void AgeFitnessParetoOptimizer::optimize(std::vector<std::shared_ptr<Organism>>&
 		newOrg->dataMap.set("minimizeValue_age", 0.);
 		newOrg->dataMap.set("lineageID", (int) getNewLineageID());
 		newPopulation.push_back(newOrg);
+		numEvals++;
 	}
+
+	logParetoStats(); // here because it logs numEvals
 
 	if(newPopulation.size()!=population.size()) {
 		std::cerr << "AFPO population sizes alighnment error: old size " << population.size() << ", new size: " << newPopulation.size() << std::endl;
@@ -305,11 +312,11 @@ void AgeFitnessParetoOptimizer::doAFPOStyleSelection(std::vector<std::shared_ptr
 	while(newPopulation.size() < newPopSize) {
 		std::shared_ptr<Organism> parent = paretoFront[Random::getIndex(paretoFront.size())];
 		newPopulation.push_back(makeMutatedOffspringFrom(parent));
+		numEvals++;
 	}
 }
 
 void AgeFitnessParetoOptimizer::doAFPOStyleTournament(std::vector<std::shared_ptr<Organism>>& population, unsigned newPopSize) {
-
 	while(newPopulation.size() < newPopSize) {
 		// finding the champion
 		unsigned championIdx = Random::getIndex(population.size());
@@ -317,7 +324,7 @@ void AgeFitnessParetoOptimizer::doAFPOStyleTournament(std::vector<std::shared_pt
 		for(unsigned i=0; i<tournamentSize-1; i++) {
 			unsigned challengerIdx = championIdx;
 			while( std::find(participants.begin(), participants.end(), challengerIdx)!=participants.end() )
-			challengerIdx = Random::getIndex(population.size());
+				challengerIdx = Random::getIndex(population.size());
 			participants.push_back(challengerIdx);
 
 			if(paretoRanks[championIdx]>=paretoRanks[challengerIdx]) // no tie-breaking - the newbie takes the champion's place if it has the same rank
@@ -326,21 +333,87 @@ void AgeFitnessParetoOptimizer::doAFPOStyleTournament(std::vector<std::shared_pt
 
 		// then copying it and its offspring into the next population
 		std::shared_ptr<Organism> champion = population[championIdx];
-		newPopulation.push_back(champion); // FIXME champion can be inserted into the new population multiple times, no idea how it [bw]orked
+		newPopulation.push_back(champion); // champion can be inserted into the new population multiple times: a potential for infinite Pareto rank growth (~ to the size of the neutral networks)
 		survivorIds.insert(champion->ID);
 
 		for(unsigned i=0; i<tournamentSize-1; i++) {
 			if(newPopulation.size()==newPopSize)
 				break;
 			newPopulation.push_back(makeMutatedOffspringFrom(champion));
+			numEvals++;
 		}
 	}
 }
 
 void AgeFitnessParetoOptimizer::doNSGAIIStyleSelection(std::vector<std::shared_ptr<Organism>>& population, unsigned newPopSize) {
 
-	std::cerr << "NSGAII not implemented yet" << std::endl;
-	exit(EXIT_FAILURE);
+	// first we need to explicitly parse the population into Pareto ranks
+	std::vector<std::vector<size_t>> ranks(maxParetoRank+1);
+	for(unsigned i=0; i<population.size(); i++)
+		ranks[paretoRanks[i]].push_back(i);
+
+	// then, for each objective, we need to sort each rank according to the objective value and measure the cuboid side
+	// the sum of cuboid sides is the crowding measure
+	crowdingMeasure.resize(population.size());
+	std::fill(crowdingMeasure.begin(), crowdingMeasure.end(), std::numeric_limits<double>::infinity());
+	for(const auto& attrname : scoreNames) {
+		auto attrcompfun = [attrname, population] (size_t lefti, size_t righti) {
+			return population[lefti]->dataMap.getDouble(attrname) == population[righti]->dataMap.getDouble(attrname) ?
+			       population[lefti]->ID > population[righti]->ID :
+			       population[lefti]->dataMap.getDouble(attrname) < population[righti]->dataMap.getDouble(attrname);
+		};
+		for(unsigned r=0; r<=maxParetoRank; r++) {
+			std::sort(ranks[r].begin(), ranks[r].end(), attrcompfun);
+			double range = population[ranks[r].back()]->dataMap.getDouble(attrname) - population[ranks[r].front()]->dataMap.getDouble(attrname);
+			for(unsigned ri=1; ri<ranks[r].size()-1; ri++) {
+				double side = population[ranks[r][ri+1]]->dataMap.getDouble(attrname) - population[ranks[r][ri-1]]->dataMap.getDouble(attrname);
+				side = side==0 ? 0 : side/range;
+				crowdingMeasure[ranks[r][ri]] = isinf(crowdingMeasure[ranks[r][ri]]) ? side : crowdingMeasure[ranks[r][ri]]+side;
+			}
+		}
+	}
+
+	// we then sort each rank according to the crowding measure and fill up 1/2 of the population with our newly acquired elite
+	unsigned eliteSize = population.size() / 2;
+	std::vector<size_t> eliteIndexes;
+	for(unsigned r=0; r<=maxParetoRank && newPopulation.size()<eliteSize; r++) {
+		std::sort(ranks[r].begin(), ranks[r].end(), [this](size_t l, size_t r){ return crowdingMeasure[l] > crowdingMeasure[r]; });
+		for(size_t i : ranks[r]) {
+			newPopulation.push_back(population[i]);
+			survivorIds.insert(population[i]->ID);
+			eliteIndexes.push_back(i);
+			if(newPopulation.size()>=eliteSize)
+				break;
+		}
+	}
+
+	// finally, we fill up the rest of the population with offspring of the elite members selected through tournament
+	while(newPopulation.size()<newPopSize) {
+
+		// finding the champion
+		unsigned championIdx = Random::getIndex(eliteSize);
+		std::vector<unsigned> participants = { championIdx };
+		for(unsigned i=0; i<tournamentSize-1; i++) {
+			unsigned challengerIdx = championIdx;
+			while( std::find(participants.begin(), participants.end(), challengerIdx)!=participants.end() )
+				challengerIdx = Random::getIndex(eliteSize);
+			participants.push_back(challengerIdx);
+
+			if(paretoRanks[eliteIndexes[championIdx]]>paretoRanks[eliteIndexes[challengerIdx]] ||
+			   (paretoRanks[eliteIndexes[championIdx]]==paretoRanks[eliteIndexes[challengerIdx]] &&
+			    crowdingMeasure[eliteIndexes[championIdx]]<crowdingMeasure[eliteIndexes[challengerIdx]]))
+				championIdx = challengerIdx;
+		}
+
+		// then copying its offspring into the next population
+		std::shared_ptr<Organism> champion = population[eliteIndexes[championIdx]];
+		for(unsigned i=0; i<tournamentSize; i++) {
+			newPopulation.push_back(makeMutatedOffspringFrom(champion));
+			numEvals++;
+			if(newPopulation.size()==newPopSize)
+				break;
+		}
+	}
 }
 
 std::shared_ptr<Organism> AgeFitnessParetoOptimizer::makeMutatedOffspringFrom(std::shared_ptr<Organism> parent) {
@@ -500,7 +573,7 @@ void AgeFitnessParetoOptimizer::writeDetailedParetoMessageToStdout(std::vector<s
 	}
 }
 
-void AgeFitnessParetoOptimizer::logParetoFrontSize(const std::vector<std::shared_ptr<Organism>>& paretoFront) {
+void AgeFitnessParetoOptimizer::logParetoStats() {
 	std::string logpath = Global::outputPrefixPL->get() + "paretoFront.log";
 	std::ofstream pflog;
 
@@ -512,7 +585,7 @@ void AgeFitnessParetoOptimizer::logParetoFrontSize(const std::vector<std::shared
 	}
 
 	pflog.open(logpath, std::ios::app);
-	pflog << paretoFront.size() << " " << maxParetoRank << std::endl;
+	pflog << paretoFront.size() << " " << maxParetoRank << " " << numEvals << std::endl;
 	pflog.close();
 }
 

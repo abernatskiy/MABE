@@ -23,7 +23,8 @@ public:
 
 	std::vector<std::shared_ptr<Organism>> newPopulation;
 	std::vector<int> paretoRanks;
-	std::vector<std::shared_ptr<Organism>> paretoFront;
+	std::vector<double> crowdingMeasure; // within each rank: never compare it without checking for rank sameness first!
+	std::vector<std::shared_ptr<Organism>> paretoFront; // the first one is kept separately for convenience
 
 	std::vector<std::shared_ptr<Abstract_MTree>> optimizeFormulasMTs;
 
@@ -60,7 +61,7 @@ private:
 	unsigned getNewLineageID();
 	void writeCompactParetoMessageToStdout();
 	void writeDetailedParetoMessageToStdout(std::vector<std::shared_ptr<Organism>>& population);
-	void logParetoFrontSize(const std::vector<std::shared_ptr<Organism>>& paretoFront);
+	void logParetoStats();
 	void logLineages(const std::vector<std::shared_ptr<Organism>>& population);
 	void logMutationStatistics();
 };
