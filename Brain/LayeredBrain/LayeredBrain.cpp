@@ -55,8 +55,9 @@ vector<shared_ptr<ParametersTable>> LayeredBrain::layerPTs;
 const vector<unsigned> junctionSizes BRAIN_COMPONENT_JUNCTION_SIZES;
 
 LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<ParametersTable> PT_) :
-	AbstractBrain(_nrInNodes, accumulate(junctionSizes.begin(), junctionSizes.end(), 0), PT_),
-	visualize(Global::modePL->get() == "visualize") {
+	AbstractBrain(_nrInNodes, _nrOutNodes, PT_),
+	visualize(Global::modePL->get() == "visualize"),
+	numSensorControls(_nrOutNodes-accumulate(junctionSizes.begin(), junctionSizes.end(), 0)) {
 
 #ifdef BRAIN_COMPONENT_FILE_NAMES
 	const vector<string> brainFileNames BRAIN_COMPONENT_FILE_NAMES;
@@ -118,7 +119,7 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 		}
 
 		layers[i] = DEMarkovBrain_brainFactory(i==0 ? _nrInNodes : junctionSizes[i-1],
-		                                       junctionSizes[i],
+		                                       i==0 ? junctionSizes[i]+numSensorControls : junctionSizes[i],
 		                                       layerPTs[i]); // all brains start randomized, then some are read from their files
 		if(!brainFileNames[i].empty()) {
 			// file provided for the current layer, deserializing...
@@ -146,13 +147,20 @@ void LayeredBrain::update() {
 	layers[0]->update();
 
 	unsigned shift = 0;
-	for(unsigned l=1; l<numLayers; l++) {
-		for(int i=0; i<(layers[l]->nrInputValues); i++) {
-			outputValues[shift+i] = layers[l-1]->readOutput(i);
-			layers[l]->setInput(i, layers[l-1]->readOutput(i));
+	for(unsigned l=0; l<numLayers-1; l++) {
+		for(int i=0; i<(layers[l]->nrOutputValues); i++) {
+			outputValues[shift+i] = layers[l]->readOutput(i);
+			if(l==0) {
+				if(i<numSensorControls)
+					continue;
+				else
+					layers[l+1]->setInput(i-numSensorControls, layers[l]->readOutput(i));
+			}
+			else
+				layers[l+1]->setInput(i, layers[l]->readOutput(i));
 		}
-		layers[l]->update();
-		shift += layers[l]->nrInputValues;
+		layers[l+1]->update();
+		shift += layers[l]->nrOutputValues;
 	}
 
 	for(int i=0; i<layers.back()->nrOutputValues; i++)

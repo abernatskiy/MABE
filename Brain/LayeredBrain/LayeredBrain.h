@@ -17,6 +17,8 @@ private:
 	std::vector<bool> layerEvolvable;
 	std::vector<double> mutationRates;
 
+	unsigned numSensorControls;
+
 	// Private methods
 
 	// Infrastructure
