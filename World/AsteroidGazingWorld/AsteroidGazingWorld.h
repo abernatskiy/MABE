@@ -32,6 +32,7 @@ private:
 
 	static int initialConditionsInitialized;
 	static std::map<std::string,std::vector<Range2d>> commonRelativeSensorsInitialConditions;
+	static int schedulesRandomSeed;
 
 public:
 	AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_);

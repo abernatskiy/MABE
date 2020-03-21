@@ -1,5 +1,8 @@
 #include "AsteroidGazingWorld.h"
 
+#include <limits>
+#include "../../Utilities/Random.h"
+
 #include "MentalImages/DistancesMentalImage.h"
 //#include "MentalImages/CompressedMentalImage.h"
 //#include "MentalImages/DigitMentalImage.h"
@@ -55,6 +58,7 @@ std::shared_ptr<ParameterLink<double>> AsteroidGazingWorld::leakDecayRadiusPL =
 
 int AsteroidGazingWorld::initialConditionsInitialized = 0;
 std::map<std::string,std::vector<Range2d>> AsteroidGazingWorld::commonRelativeSensorsInitialConditions;
+int AsteroidGazingWorld::schedulesRandomSeed = -1;
 
 AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) : AbstractSlideshowWorld(PT_) {
 
@@ -83,11 +87,26 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 		}
 		initialConditionsInitialized = 1;
 	}
+	if(schedulesRandomSeed == -1) {
+		schedulesRandomSeed = Random::getInt(std::numeric_limits<int>::max());
+		std::cout << "Made a common random seed for schedules: " << schedulesRandomSeed << std::endl << std::flush;
+	}
+/*
 	stateSchedule = std::make_shared<ExhaustiveAsteroidGazingScheduleWithRelativeSensorInitialStates>(
 	                  currentAsteroidName,
 	                  datasetParser,
 	                  rawSensorsPointer->getPointerToInitialState(),
 	                  commonRelativeSensorsInitialConditions);
+*/
+	stateSchedule = std::make_shared<MinibatchAsteroidGazingScheduleWithRelativeSensorInitialStates>(
+	                  currentAsteroidName,
+	                  datasetParser,
+	                  rawSensorsPointer->getPointerToInitialState(),
+	                  commonRelativeSensorsInitialConditions,
+	                  5,
+	                  schedulesRandomSeed);
+
+
 	sensors = rawSensorsPointer; // downcast
 
 	sensors->writeSensorStats();
