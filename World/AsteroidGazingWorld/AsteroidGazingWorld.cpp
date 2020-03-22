@@ -55,6 +55,10 @@ std::shared_ptr<ParameterLink<double>> AsteroidGazingWorld::leakDecayRadiusPL =
                                  "if CompressedMentalImage is used AND any kind of repelling mutual information is being computed,\n"
 	                               "the leaks between pattern-label pairs will be computed as b*exp(-d/a), where d is the Hammming\n"
 	                               "distance from the neighbor of the point. What the value of a should be? Cannot be zero. (default: 1.)");
+std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::minibatchSizePL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING-minibatchSize", 0,
+                                 "if nonzero, this many datapoints will be selected from the dataset at every generation for\n"
+	                               "evaluation purposes (default: 0)");
 
 int AsteroidGazingWorld::initialConditionsInitialized = 0;
 std::map<std::string,std::vector<Range2d>> AsteroidGazingWorld::commonRelativeSensorsInitialConditions;
@@ -91,21 +95,24 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 		schedulesRandomSeed = Random::getInt(std::numeric_limits<int>::max());
 		std::cout << "Made a common random seed for schedules: " << schedulesRandomSeed << std::endl << std::flush;
 	}
-/*
-	stateSchedule = std::make_shared<ExhaustiveAsteroidGazingScheduleWithRelativeSensorInitialStates>(
-	                  currentAsteroidName,
-	                  datasetParser,
-	                  rawSensorsPointer->getPointerToInitialState(),
-	                  commonRelativeSensorsInitialConditions);
-*/
-	stateSchedule = std::make_shared<MinibatchAsteroidGazingScheduleWithRelativeSensorInitialStates>(
-	                  currentAsteroidName,
-	                  datasetParser,
-	                  rawSensorsPointer->getPointerToInitialState(),
-	                  commonRelativeSensorsInitialConditions,
-	                  5,
-	                  schedulesRandomSeed);
 
+	int minibatchSize = minibatchSizePL->get(PT_);
+	if(minibatchSize == 0) {
+		stateSchedule = std::make_shared<ExhaustiveAsteroidGazingScheduleWithRelativeSensorInitialStates>(
+		                  currentAsteroidName,
+		                  datasetParser,
+		                  rawSensorsPointer->getPointerToInitialState(),
+		                  commonRelativeSensorsInitialConditions);
+	}
+	else {
+		stateSchedule = std::make_shared<MinibatchAsteroidGazingScheduleWithRelativeSensorInitialStates>(
+		                  currentAsteroidName,
+		                  datasetParser,
+		                  rawSensorsPointer->getPointerToInitialState(),
+		                  commonRelativeSensorsInitialConditions,
+		                  minibatchSize,
+		                  schedulesRandomSeed);
+	}
 
 	sensors = rawSensorsPointer; // downcast
 

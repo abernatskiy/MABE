@@ -22,6 +22,7 @@ private:
 	static std::shared_ptr<ParameterLink<int>> mihPatternChunkSizeBitsPL;
 	static std::shared_ptr<ParameterLink<double>> leakBaseMultiplierPL;
 	static std::shared_ptr<ParameterLink<double>> leakDecayRadiusPL;
+	static std::shared_ptr<ParameterLink<int>> minibatchSizePL;
 
 	std::shared_ptr<AsteroidsDatasetParser> datasetParser;
 
