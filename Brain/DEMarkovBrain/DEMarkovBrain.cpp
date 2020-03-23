@@ -41,7 +41,8 @@ shared_ptr<ParameterLink<double>> DEMarkovBrain::connectionToTableChangeRatioPL 
 shared_ptr<ParameterLink<int>> DEMarkovBrain::minGateCountPL = Parameters::register_parameter("BRAIN_DEMARKOV-minGateCount", 0, "number of gates that causes gate deletions to become impossible (mutation operator calls itself if the mutation happens to be a deletion)");
 shared_ptr<ParameterLink<bool>> DEMarkovBrain::readFromInputsOnlyPL = Parameters::register_parameter("BRAIN_DEMARKOV-readFromInputsOnly", false,
                                                                                               "if set to true, gates will only read from input nodes; by default, they'll read from all nodes");
-
+shared_ptr<ParameterLink<double>> DEMarkovBrain::structurewideMutationProbabilityPL = Parameters::register_parameter("BRAIN_DEMARKOV-structurewideMutationProbability", 0.0,
+                                                                                                                 "probability of mutation of each brain component upon reproduction");
 /********** Public definitions **********/
 
 DEMarkovBrain::DEMarkovBrain(int _nrInNodes, int _nrHidNodes, int _nrOutNodes, shared_ptr<ParametersTable> PT_) :
@@ -52,7 +53,8 @@ DEMarkovBrain::DEMarkovBrain(int _nrInNodes, int _nrHidNodes, int _nrOutNodes, s
 	readFromInputsOnly(readFromInputsOnlyPL->get(PT_)),
 	visualize(Global::modePL->get() == "visualize"),
 	recordIOMap(recordIOMapPL->get(PT_)),
-	originationStory("primordial") {
+	originationStory("primordial"),
+	structurewideMutationProbability(structurewideMutationProbabilityPL->get(PT_)) {
 
 	gateInsStart = 0;
 	gateInsEnd = readFromInputsOnly ? nrInputValues-1 : nrNodes-1;
@@ -136,64 +138,11 @@ shared_ptr<AbstractBrain> DEMarkovBrain::makeBrainFromMany(vector<shared_ptr<Abs
 }
 
 void DEMarkovBrain::mutate() {
-	double r = Random::getDouble(1.);
-//	cout << "DEMarkovBrain is mutating. Rolled " << r;
-	if(r < gateInsertionProbabilityPL->get(PT)) {
-//		cout << ", chose insertion. Had " << gates.size() << " gates, ";
-		gates.push_back(getRandomGate(getLowestAvailableGateID()));
-//		cout << " now it's " << gates.size() << endl;
-		originationStory = "mutation_insertion";
-	}
-	else {
-		if(gates.size()==0) {
-			if(gateInsertionProbabilityPL->get(PT) > 0)
-				mutate();
-			else {
-				cerr << "DEMarkovBrain: mutation() that cannot insert gates called on a zero gates Markov brain, exiting" << endl;
-				exit(EXIT_FAILURE);
-			}
-			return;
-		}
+//	std::cout << "mutate() called on brain " << this << std::endl;
 
-		if(r < gateInsertionProbabilityPL->get(PT) + gateDeletionProbabilityPL->get(PT)) {
-			if(gates.size()<=minGates) {
-				mutate();
-				return;
-			}
-//			cout << ", chose deletion. Had " << gates.size() << " gates, ";
-			int idx = Random::getIndex(gates.size());
-			gates.erase(gates.begin()+idx);
-//			cout << ", removed " << idx << "th one, now it's " << gates.size() << endl;
-			originationStory = "mutation_deletion";
-		}
-		else if(r < gateInsertionProbabilityPL->get(PT) + gateDeletionProbabilityPL->get(PT) + gateDuplicationProbabilityPL->get(PT)) {
-//			cout << ", chose duplication. Had " << gates.size() << " gates, ";
-			int idx = Random::getIndex(gates.size());
-			auto newGate = gates[idx]->makeCopy();
-			newGate->ID = getLowestAvailableGateID();
-			gates.push_back(newGate);
-//			cout << ", duplicated " << idx << "th one, now it's " << gates.size() << endl;
-			originationStory = "mutation_duplication";
-		}
-		else {
-			int idx = Random::getIndex(gates.size());
-//			cout << ", chose intra-gate mutation. Chose gate " << idx;
-			double spentProb = gateInsertionProbabilityPL->get(PT) + gateDeletionProbabilityPL->get(PT) + gateDuplicationProbabilityPL->get(PT);
-			double tableChangeThr = spentProb + (1.-spentProb)/(1.+connectionToTableChangeRatioPL->get(PT));
-			if(r < tableChangeThr) {
-//				cout << " and a table mutation. Gate before the mutation:" << endl << gates[idx]->description() << endl;
-				gates[idx]->mutateInternalStructure();
-//				cout << "Gate after the mutation:" << endl << gates[idx]->description() << endl;
-				originationStory = "mutation_table";
-			}
-			else {
-//				cout << " and a wiring mutation. Gate before the mutation:" << endl << gates[idx]->description();
-				gates[idx]->mutateConnections(gateInsStart, gateInsEnd, gateOutsStart, gateOutsEnd);
-//				cout << "Gate after the mutation:" << endl << gates[idx]->description() << endl;
-				originationStory = "mutation_rewiring";
-			}
-		}
-	}
+	mainMutate();
+	if(structurewideMutationProbability!=0)
+		mutateStructurewide();
 }
 
 void DEMarkovBrain::resetBrain() {
@@ -290,6 +239,97 @@ string DEMarkovBrain::description() {
 }
 
 /********** Private definitions **********/
+
+void DEMarkovBrain::mainMutate() {
+	double r = Random::getDouble(1.);
+//	cout << "DEMarkovBrain " << this << " is mutating. Rolled " << r;
+	if(r < gateInsertionProbabilityPL->get(PT)) {
+//		cout << ", chose insertion. Had " << gates.size() << " gates, ";
+		gates.push_back(getRandomGate(getLowestAvailableGateID()));
+//		cout << " now it's " << gates.size() << endl;
+		originationStory = "mutation_insertion";
+	}
+	else {
+		if(gates.size()==0) {
+			if(gateInsertionProbabilityPL->get(PT) > 0)
+				mainMutate();
+			else {
+//				cerr << "DEMarkovBrain: mutation() that cannot insert gates called on a zero gates Markov brain, exiting" << endl;
+				exit(EXIT_FAILURE);
+			}
+			return;
+		}
+
+		if(r < gateInsertionProbabilityPL->get(PT) + gateDeletionProbabilityPL->get(PT)) {
+			if(gates.size()<=minGates) {
+				mainMutate();
+				return;
+			}
+//			cout << ", chose deletion. Had " << gates.size() << " gates, ";
+			int idx = Random::getIndex(gates.size());
+			gates.erase(gates.begin()+idx);
+//			cout << ", removed " << idx << "th one, now it's " << gates.size() << endl;
+			originationStory = "mutation_deletion";
+		}
+		else if(r < gateInsertionProbabilityPL->get(PT) + gateDeletionProbabilityPL->get(PT) + gateDuplicationProbabilityPL->get(PT)) {
+//			cout << ", chose duplication. Had " << gates.size() << " gates, ";
+			int idx = Random::getIndex(gates.size());
+			auto newGate = gates[idx]->makeCopy();
+			newGate->ID = getLowestAvailableGateID();
+			gates.push_back(newGate);
+//			cout << ", duplicated " << idx << "th one, now it's " << gates.size() << endl;
+			originationStory = "mutation_duplication";
+		}
+		else {
+			int idx = Random::getIndex(gates.size());
+//			cout << ", chose intra-gate mutation. Chose gate " << idx;
+			double spentProb = gateInsertionProbabilityPL->get(PT) + gateDeletionProbabilityPL->get(PT) + gateDuplicationProbabilityPL->get(PT);
+			double tableChangeThr = spentProb + (1.-spentProb)/(1.+connectionToTableChangeRatioPL->get(PT));
+			if(r < tableChangeThr) {
+//				cout << " and a table mutation. Gate before the mutation:" << endl << gates[idx]->description() << endl;
+				gates[idx]->mutateInternalStructure();
+//				cout << "Gate after the mutation:" << endl << gates[idx]->description() << endl;
+				originationStory = "mutation_table";
+			}
+			else {
+//				cout << " and a wiring mutation. Gate before the mutation:" << endl << gates[idx]->description();
+				gates[idx]->mutateConnections(gateInsStart, gateInsEnd, gateOutsStart, gateOutsEnd);
+//				cout << "Gate after the mutation:" << endl << gates[idx]->description() << endl;
+				originationStory = "mutation_rewiring";
+			}
+		}
+	}
+}
+
+void DEMarkovBrain::mutateStructurewide() {
+//	unsigned internalChanges = 0;
+//	unsigned connectionsChanges = 0;
+
+//	cout << "Gates before the structurewide mutation:" << std::endl;
+//	for(const auto& gate : gates)
+//		cout << gate->description() << endl;
+
+	for(auto& gate : gates) {
+		if(Random::getDouble(1.)<structurewideMutationProbability) {
+			gate->mutateInternalStructure();
+//			internalChanges++;
+		}
+		if(Random::getDouble(1.)<structurewideMutationProbability) {
+			gate->mutateConnections(gateInsStart, gateInsEnd, gateOutsStart, gateOutsEnd);
+//			connectionsChanges++;
+		}
+	}
+
+//	std::cout << "Structurewide mutation operator finished, made "
+//	          << internalChanges << " table changes and "
+//	          << connectionsChanges << " changes to connections in a brain with "
+//	          << gates.size() << " gates" << std::endl;
+
+//	cout << "Gates after the structurewide mutation:" << std::endl;
+//	for(const auto& gate : gates)
+//		cout << gate->description() << endl;
+
+}
 
 void DEMarkovBrain::randomize() {
 	gates.clear();

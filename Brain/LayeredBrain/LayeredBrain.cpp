@@ -107,7 +107,8 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 			const vector<string> forwardedDoubleParamNames = { "BRAIN_DEMARKOV-gateInsertionProbability",
 			                                                   "BRAIN_DEMARKOV-gateDuplicationProbability",
 			                                                   "BRAIN_DEMARKOV-gateDeletionProbability",
-			                                                   "BRAIN_DEMARKOV-connectionToTableChangeRatio" };
+			                                                   "BRAIN_DEMARKOV-connectionToTableChangeRatio",
+			                                                   "BRAIN_DEMARKOV-structurewideMutationProbability" };
 			for(const auto& param : forwardedDoubleParamNames)
 				layerPTs[i]->setParameter(param, PT_->lookupDouble(param));
 			const vector<string> forwardedIntParamNames = { "BRAIN_DEMARKOV-initialGateCount",

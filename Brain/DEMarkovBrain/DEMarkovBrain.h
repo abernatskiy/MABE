@@ -26,6 +26,8 @@ private:
 	std::vector<double> nextNodes;
 
 	// Private methods
+	void mainMutate();
+	void mutateStructurewide();
 	std::shared_ptr<AbstractGate> getRandomGate(int gateID);
 	void randomize();
 	void beginLogging();
@@ -55,6 +57,7 @@ private:
 	static std::shared_ptr<ParameterLink<double>> connectionToTableChangeRatioPL;
 	static std::shared_ptr<ParameterLink<int>> minGateCountPL;
 	static std::shared_ptr<ParameterLink<bool>> readFromInputsOnlyPL;
+	static std::shared_ptr<ParameterLink<double>> structurewideMutationProbabilityPL; double structurewideMutationProbability;
 
 public:
 	// Public methods
