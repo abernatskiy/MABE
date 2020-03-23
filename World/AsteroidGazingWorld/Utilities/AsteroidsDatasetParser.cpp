@@ -20,6 +20,20 @@ bool hasEnding(std::string const &fullString, std::string const &ending) {
 		return false;
 }
 
+// Auxiliary function from the header
+
+std::string asteroidsDescriptionToString(const std::vector<command_type>& desc) {
+	std::stringstream ss;
+	ss << "{";
+	for(const command_type& command : desc) {
+		for(const command_field_type& cf : command)
+			ss << cf << ",";
+		ss << ";";
+	}
+	ss << "}";
+	return ss.str();
+}
+
 // AsteroidDatasetParser class definitions
 
 AsteroidsDatasetParser::AsteroidsDatasetParser(std::string datasetPath) :
@@ -133,6 +147,18 @@ std::string AsteroidsDatasetParser::getDescriptionPath(std::string asteroidName)
 
 const std::vector<command_type>& AsteroidsDatasetParser::cachingGetDescription(std::string asteroidName) {
 	return descriptionCache.at(asteroidName);
+}
+
+std::map<std::vector<command_type>,unsigned> AsteroidsDatasetParser::getDescriptionStatistics() {
+	std::map<std::vector<command_type>,unsigned> out;
+	for(const auto& descpair : descriptionCache) {
+		auto desc = descpair.second;
+		if(out.find(desc)==out.end())
+			out[desc] = 0;
+		else
+			out[desc]++;
+	}
+	return out;
 }
 
 std::set<std::string> AsteroidsDatasetParser::getAllPicturePaths(std::string asteroidName) {

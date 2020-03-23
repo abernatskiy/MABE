@@ -59,6 +59,9 @@ std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::minibatchSizePL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING-minibatchSize", 0,
                                  "if nonzero, this many datapoints will be selected from the dataset at every generation for\n"
 	                               "evaluation purposes (default: 0)");
+std::shared_ptr<ParameterLink<bool>> AsteroidGazingWorld::balanceMinibatchesPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING-balanceMinibatches", true,
+                                 "should the minibatches be balanced wrt labels? (default: yes)");
 
 int AsteroidGazingWorld::initialConditionsInitialized = 0;
 std::map<std::string,std::vector<Range2d>> AsteroidGazingWorld::commonRelativeSensorsInitialConditions;
@@ -111,6 +114,7 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 		                  rawSensorsPointer->getPointerToInitialState(),
 		                  commonRelativeSensorsInitialConditions,
 		                  minibatchSize,
+		                  balanceMinibatchesPL->get(PT_),
 		                  schedulesRandomSeed);
 	}
 

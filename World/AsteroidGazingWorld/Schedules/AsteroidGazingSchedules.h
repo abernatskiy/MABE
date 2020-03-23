@@ -15,6 +15,8 @@
 class AbstractAsteroidGazingSchedule : public AbstractStateSchedule {
 
 protected:
+	std::shared_ptr<AsteroidsDatasetParser> datasetParser;
+
 	std::shared_ptr<std::string> currentAsteroidName;
 
 	std::string asteroidsDatasetPath;
@@ -23,6 +25,7 @@ protected:
 
 public:
 	AbstractAsteroidGazingSchedule(std::shared_ptr<std::string> curAsteroidName, std::shared_ptr<AsteroidsDatasetParser> dsParser) :
+		datasetParser(dsParser),
 		currentAsteroidName(curAsteroidName) {
 		std::set<std::string> asteroidNamesSet = dsParser->getAsteroidsNames();
 		std::copy(asteroidNamesSet.begin(), asteroidNamesSet.end(), std::back_inserter(asteroidNames));
@@ -114,39 +117,79 @@ protected:
 	std::mt19937 rng;
 	std::vector<unsigned> minibatchIndices;
 	unsigned batchSize;
+	bool balanceBatches;
 
 	int curUpdate;
 
 	void updateMinibatchIndices() {
 		minibatchIndices.clear();
-		while(minibatchIndices.size()<batchSize) {
-			unsigned idxcan = std::uniform_int_distribution<int>(0, numAsteroids-1)(rng);
-			if(std::find(minibatchIndices.begin(), minibatchIndices.end(), idxcan) == minibatchIndices.end())
+		if(balanceBatches) {
+			std::map<std::vector<command_type>,unsigned> descstats = datasetParser->getDescriptionStatistics();
+			unsigned maxPpl = batchSize / descstats.size();
+			std::map<std::vector<command_type>,unsigned> pointsPerLabel;
+			for(const auto& stpair : descstats)
+				pointsPerLabel[stpair.first] = 0;
+			while(minibatchIndices.size()<batchSize) {
+				unsigned idxcan = std::uniform_int_distribution<int>(0, numAsteroids-1)(rng);
+				if(std::find(minibatchIndices.begin(), minibatchIndices.end(), idxcan) != minibatchIndices.end())
+					continue;
+
+				std::vector<command_type> curDesc = datasetParser->cachingGetDescription(asteroidNames[idxcan]);
+				if(pointsPerLabel[curDesc]>=maxPpl)
+					continue;
+
+				pointsPerLabel[curDesc]++;
 				minibatchIndices.push_back(idxcan);
+			}
 		}
+		else {
+			while(minibatchIndices.size()<batchSize) {
+				unsigned idxcan = std::uniform_int_distribution<int>(0, numAsteroids-1)(rng);
+				if(std::find(minibatchIndices.begin(), minibatchIndices.end(), idxcan) == minibatchIndices.end())
+					minibatchIndices.push_back(idxcan);
+			}
+		}
+
+//		std::cout << "Schedule " << this << " generated the following minibatch:" << std::endl;
+//		for(unsigned mbi : minibatchIndices) {
+//			std::cout << "ast " << mbi << " named " << asteroidNames[mbi] << " and labeled "
+//			          << asteroidsDescriptionToString(datasetParser->cachingGetDescription(asteroidNames[mbi])) << std::endl;
+//		}
 	};
 
 public:
 	MinibatchAsteroidGazingSchedule(std::shared_ptr<std::string> curAsteroidName,
 	                                 std::shared_ptr<AsteroidsDatasetParser> dsParser,
 	                                 unsigned bSize,
+	                                 bool balBatches,
 	                                 unsigned seed) :
 		AbstractAsteroidGazingSchedule(curAsteroidName, dsParser),
 		currentAsteroidIndex(0),
 		terminalState(false),
 		batchSize(bSize),
+		balanceBatches(balBatches),
 		rng(seed) {
-
-		*currentAsteroidName = asteroidNames[currentAsteroidIndex];
-
-		curUpdate = Global::update;
-		updateMinibatchIndices();
 
 		if(batchSize > numAsteroids/2) {
 			std::cerr << "MinibatchAsteroidGazingSchedule: requested a batch size " << batchSize << " that is more than a half of the number of asteroids " << numAsteroids << std::endl;
 			std::cerr << "This schedule is ill-adapted to batches this big, exiting to prevent hanging" << std::endl;
 			exit(EXIT_FAILURE);
 		}
+
+		if(balanceBatches) {
+			std::map<std::vector<command_type>,unsigned> descstats = dsParser->getDescriptionStatistics();
+			unsigned numLabels = descstats.size();
+			if(batchSize==0 || batchSize%numLabels!=0) {
+				std::cerr << "MinibatchAsteroidGazingSchedule: batch size must be a multiple of the number of labels (it is "
+				          << batchSize << ", number of labels is " << numLabels << ")" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+		}
+
+		*currentAsteroidName = asteroidNames[currentAsteroidIndex];
+
+		curUpdate = Global::update;
+		updateMinibatchIndices();
 	};
 
 	virtual void reset(int visualize) override {
@@ -188,8 +231,9 @@ public:
                                                                  std::shared_ptr<Range2d> senInitialState,
 	                                                               std::map<std::string,std::vector<Range2d>> relSensorsInitialStates,
 	                                                               unsigned bSize,
+	                                                               bool balanceBatches,
 	                                                               unsigned seed) :
-		MinibatchAsteroidGazingSchedule(curAsteroidName, dsParser, bSize, seed),
+		MinibatchAsteroidGazingSchedule(curAsteroidName, dsParser, bSize, balanceBatches, seed),
     sensorInitialState(senInitialState),
 		relativeSensorsInitialStates(relSensorsInitialStates),
 		currentInitialConditionIdx(0) {};
