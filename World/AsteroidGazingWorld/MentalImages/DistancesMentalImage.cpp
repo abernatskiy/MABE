@@ -138,15 +138,17 @@ unsigned totalInputs() {
 /********************************************************************/
 
 DistancesMentalImage::DistancesMentalImage(std::shared_ptr<std::string> curAstNamePtr,
-                                             std::shared_ptr<AsteroidsDatasetParser> dsParserPtr,
-                                             std::shared_ptr<AbstractSensors> sPtr):
+                                           std::shared_ptr<AsteroidsDatasetParser> dsParserPtr,
+                                           std::shared_ptr<AbstractSensors> sPtr,
+                                           bool overwriteEvals):
 	currentAsteroidNamePtr(curAstNamePtr),
 	datasetParserPtr(dsParserPtr),
 	sensorsPtr(sPtr),
 	infoRanges(layerByLayerRanges()),
 	numSamples(0),
 	mVisualize(Global::modePL->get() == "visualize"),
-	numBits(totalInputs()) {
+	numBits(totalInputs()),
+	overwriteEvaluations(overwriteEvals) {
 
 	// std::cout << "Total inputs: " << numBits << std::endl;
 	// std::cout << "Information processing ranges:"; for(auto ipr : infoRanges) { unsigned st, en; std::tie(st, en) = ipr; std::cout << " (" << st << "," << en << ")"; }; std::cout << std::endl;
@@ -234,25 +236,25 @@ void DistancesMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 
 void DistancesMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) {
 //	std::cout << "Writing evals for org " << org->ID << std::endl;
-	org->dataMap.append("totalCrossLabelDistance", sampleScoresMap->getAverage("totalCrossLabelDistance"));
-	org->dataMap.append("totalIntraLabelDistance", sampleScoresMap->getAverage("totalIntraLabelDistance"));
+	updateOrgDatamap(org, "totalCrossLabelDistance", sampleScoresMap->getAverage("totalCrossLabelDistance"));
+	updateOrgDatamap(org, "totalIntraLabelDistance", sampleScoresMap->getAverage("totalIntraLabelDistance"));
 	double irs = 0.;
 	double ers = 0.;
 	for(unsigned iri=0; iri<infoRanges.size(); iri++) {
 		std::string infoName = "plInfo_range" + std::to_string(iri);
-		org->dataMap.append(infoName, sampleScoresMap->getAverage(infoName));
+		updateOrgDatamap(org, infoName, sampleScoresMap->getAverage(infoName));
 		irs += sampleScoresMap->getAverage(infoName);
 
 		std::string entroName = "lcpe_range" + std::to_string(iri);
-		org->dataMap.append(entroName, sampleScoresMap->getAverage(entroName));
+		updateOrgDatamap(org, entroName, sampleScoresMap->getAverage(entroName));
 		ers += sampleScoresMap->getAverage(entroName);
 	}
-	org->dataMap.append("plInfo_allRanges", irs);
-	org->dataMap.append("lcpe_allRanges", ers);
+	updateOrgDatamap(org, "plInfo_allRanges", irs);
+	updateOrgDatamap(org, "lcpe_allRanges", ers);
 	double sensorActivity = sampleScoresMap->getAverage("sensorActivity");
 	unsigned tieredSensorActivity = static_cast<unsigned>(sensorActivity*10);
-	org->dataMap.append("sensorActivity", sensorActivity);
-	org->dataMap.append("tieredSensorActivity", static_cast<double>(tieredSensorActivity));
+	updateOrgDatamap(org, "sensorActivity", sensorActivity);
+	updateOrgDatamap(org, "tieredSensorActivity", static_cast<double>(tieredSensorActivity));
 }
 
 int DistancesMentalImage::numInputs() { return numBits; }
@@ -288,4 +290,11 @@ void DistancesMentalImage::updateDistanceStats() {
 		}
 	}
 */
+}
+
+void DistancesMentalImage::updateOrgDatamap(std::shared_ptr<Organism> org, std::string entryName, double entryValue) {
+	if(overwriteEvaluations)
+		org->dataMap.set(entryName, std::vector<double>({entryValue}));
+	else
+		org->dataMap.append(entryName, entryValue);
 }

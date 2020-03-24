@@ -62,6 +62,9 @@ std::shared_ptr<ParameterLink<int>> AsteroidGazingWorld::minibatchSizePL =
 std::shared_ptr<ParameterLink<bool>> AsteroidGazingWorld::balanceMinibatchesPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING-balanceMinibatches", true,
                                  "should the minibatches be balanced wrt labels? (default: yes)");
+std::shared_ptr<ParameterLink<bool>> AsteroidGazingWorld::overwriteEvaluationsPL =
+  Parameters::register_parameter("WORLD_ASTEROID_GAZING-overwriteEvaluations", true,
+                                 "should the world overwrite evaluations (as opposed to appending new ones) in the organism's datamap? (default: yes)");
 
 int AsteroidGazingWorld::initialConditionsInitialized = 0;
 std::map<std::string,std::vector<Range2d>> AsteroidGazingWorld::commonRelativeSensorsInitialConditions;
@@ -141,6 +144,7 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 */
 	mentalImage = std::make_shared<DistancesMentalImage>(currentAsteroidName,
 	                                                     datasetParser,
-	                                                     sensors); // gets the number of output nodes data from Brain/LayeredBrain/topology.h
+	                                                     sensors, // gets the number of output nodes data from Brain/LayeredBrain/topology.h
+	                                                     overwriteEvaluationsPL->get(PT_));
 	makeMotors();
 };

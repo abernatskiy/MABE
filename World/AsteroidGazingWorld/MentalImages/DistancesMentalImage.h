@@ -42,10 +42,14 @@ private:
 
 	const unsigned numBits;
 
+	const bool overwriteEvaluations;
+	void updateOrgDatamap(std::shared_ptr<Organism> org, std::string entryName, double entryValue);
+
 public:
 	DistancesMentalImage(std::shared_ptr<std::string> curAstName,
-	                      std::shared_ptr<AsteroidsDatasetParser> dsParser,
-	                      std::shared_ptr<AbstractSensors> sPtr);
+	                     std::shared_ptr<AsteroidsDatasetParser> dsParser,
+	                     std::shared_ptr<AbstractSensors> sPtr,
+	                     bool overwriteEvaluations);
 
 	void reset(int visualize) override;
 	void resetAfterWorldStateChange(int visualize) override;
