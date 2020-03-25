@@ -160,9 +160,9 @@ DistancesMentalImage::DistancesMentalImage(std::shared_ptr<std::string> curAstNa
 }
 
 void DistancesMentalImage::reset(int visualize) { // called in the beginning of each evaluation cycle
-	//stateStrings.clear();
-	//labelStrings.clear();
-	//labeledStateStrings.clear();
+	stateStrings.clear();
+	labelStrings.clear();
+	labeledStateStrings.clear();
 	sensorActivityStateScores.clear();
 	labelCounts.clear();
 	for(auto& rpc : rangesPatternCounts)
@@ -177,7 +177,7 @@ void DistancesMentalImage::resetAfterWorldStateChange(int visualize) { // called
 
 void DistancesMentalImage::updateWithInputs(std::vector<double> inputs) {
 	curBits = inputs;
-	//curStateString = bitRangeToHexStr(inputs.begin(), inputs.size());
+	curStateString = bitRangeToHexStr(inputs.begin(), inputs.size());
 }
 
 void DistancesMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> org, int stateTime, int statePeriod) {
@@ -185,9 +185,9 @@ void DistancesMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organi
 		readLabel();
 
 	if(stateTime == statePeriod-1) {
-		//stateStrings.push_back(curStateString);
-		//labelStrings.push_back(curLabelString);
-		//labeledStateStrings.push_back(curStateString + curLabelString);
+		stateStrings.push_back(curStateString);
+		labelStrings.push_back(curLabelString);
+		labeledStateStrings.push_back(curStateString + curLabelString);
 
 		for(unsigned iri=0; iri<infoRanges.size(); iri++) {
 			std::string rangeSubstr = bitRangeToHexStr(curBits.begin()+infoRanges[iri].first, infoRanges[iri].second-infoRanges[iri].first);
@@ -277,7 +277,7 @@ void DistancesMentalImage::readLabel() {
 void DistancesMentalImage::updateDistanceStats() {
 	totalCrossLabelDistance = 0.;
 	totalIntraLabelDistance = 0.;
-/*
+
 	unsigned numStates = stateStrings.size();
 	for(unsigned i=0; i<numStates; i++) {
 		for(unsigned j=0; j<numStates; j++) {
@@ -289,7 +289,6 @@ void DistancesMentalImage::updateDistanceStats() {
 				totalCrossLabelDistance += hexStringHammingDistance(stateStrings[i], stateStrings[j]);
 		}
 	}
-*/
 }
 
 void DistancesMentalImage::updateOrgDatamap(std::shared_ptr<Organism> org, std::string entryName, double entryValue) {
