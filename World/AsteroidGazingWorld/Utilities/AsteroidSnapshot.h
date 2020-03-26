@@ -22,6 +22,7 @@ public:
 
 	AsteroidSnapshot(std::string filePath, std::uint8_t binThreshold);
 	AsteroidSnapshot() : width(0), height(0), binarizationThreshold(127) {};
+	AsteroidSnapshot(char* addr); // from a flat memory region
 
 	inline pixel_value_type get(std::uint32_t x, std::uint32_t y) const {
 //		if( x >= height || y >= width ) {
@@ -47,6 +48,10 @@ public:
 	std::string getPrintedBinary(bool shades=true) const;
 	unsigned countBinaryOnes() const;
 	std::uint8_t getBestThreshold(unsigned resolution, unsigned numLevels) const; // returns the threshold that results in the highest entropy of the output (that is, the one that makes the output the closest to 50% ones, 50% zeros)
+
+	size_t getSerializedSizeInBytes() const;
+	void serializeToRAM(char*) const;
+	bool operator==(const AsteroidSnapshot&) const;
 
 private:
 	texture_type texture;

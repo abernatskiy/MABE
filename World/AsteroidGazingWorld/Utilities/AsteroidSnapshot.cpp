@@ -9,6 +9,42 @@
 AsteroidSnapshot::AsteroidSnapshot(std::string filePath, std::uint8_t binThreshold) :
 	AsteroidSnapshot(png::image<pixel_value_type>(filePath), binThreshold) {}
 
+AsteroidSnapshot::AsteroidSnapshot(char* addr) :
+	width( (static_cast<std::uint32_t>(addr[0]) << 24) |
+	        (static_cast<std::uint32_t>(addr[1]) << 16) |
+	        (static_cast<std::uint32_t>(addr[2]) << 8) |
+	        static_cast<std::uint32_t>(addr[3]) ),
+	height( (static_cast<std::uint32_t>(addr[4]) << 24) |
+	         (static_cast<std::uint32_t>(addr[5]) << 16) |
+	         (static_cast<std::uint32_t>(addr[6]) << 8) |
+	         static_cast<std::uint32_t>(addr[7]) ),
+	texture( boost::extents[width][height] ),
+	binarizationThreshold( addr[8] ),
+	binaryTexture( boost::extents[width][height] ) {
+
+	size_t pos = 9;
+
+	for(std::uint32_t i=0; i<width; i++) {
+		for(std::uint32_t j=0; j<height; j++) {
+			texture[i][j] = addr[pos];
+			pos++;
+		}
+	}
+	allocatedPixels += height*width;
+
+	if( allocatedPixels > maxPixels) {
+		std::cerr << "Too much memory allocated for asteroid snaphots, exiting to avoid running out" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
+	if(binThreshold > 255) {
+		std::cerr << "Binarization threshold cannot exceed 255 (requested " << binThreshold << ")" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
+	fillBinaryTexture();
+}
+
 AsteroidSnapshot AsteroidSnapshot::resampleArea(std::uint32_t x0, std::uint32_t y0,
                                                 std::uint32_t x1, std::uint32_t y1,
                                                 std::uint32_t newWidth, std::uint32_t newHeight,
@@ -133,6 +169,46 @@ std::uint8_t AsteroidSnapshot::getBestThreshold(unsigned resolution, unsigned nu
 		}
 	}
 	return bestThreshold;
+}
+
+size_t AsteroidSnapshot::getSerializedSizeInBytes() const {
+	return 4*2 + 1 + width*height;
+}
+
+void AsteroidSnapshot::serializeToRAM(char* addr) const {
+
+	addr[0] = (width >> 24) & 0xFF;
+	addr[1] = (width >> 16) & 0xFF;
+	addr[2] = (width >> 8) & 0xFF;
+	addr[3] = width & 0xFF;
+
+	addr[4] = (height >> 24) & 0xFF;
+	addr[5] = (height >> 16) & 0xFF;
+	addr[6] = (height >> 8) & 0xFF;
+	addr[7] = height & 0xFF;
+
+	addr[8] = binarizationThreshold;
+
+	size_t pos = 9;
+
+	for(std::uint32_t i=0; i<width; i++) {
+		for(std::uint32_t j=0; j<height; j++) {
+			addr[pos] = texture[i][j];
+			pos++;
+		}
+	}
+}
+
+bool AsteroidSnapshot::operator==(const AsteroidSnapshot& other) {
+	if(width!=other.width || height!=other.height || binarizationThreshold!=other.binarizationThreshold)
+		return false;
+	for(std::uint32_t i=0; i<width; i++) {
+		for(std::uint32_t j=0; j<height; j++) {
+			if(texture[i][j]!=other.texture[i][j])
+				return false;
+		}
+	}
+	return true;
 }
 
 // Private member definitions

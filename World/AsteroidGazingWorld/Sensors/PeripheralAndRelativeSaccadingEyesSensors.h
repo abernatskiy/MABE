@@ -3,6 +3,7 @@
 #include "../../AbstractSensors.h"
 #include "../Utilities/AsteroidsDatasetParser.h"
 #include "../Utilities/AsteroidSnapshot.h"
+#include "../../../Utilities/serializeableArray.h"
 #include "rangeDecoders.h"
 
 #include <map>
@@ -87,4 +88,8 @@ private:
 	static std::shared_ptr<ParameterLink<int>> jumpTypePL;
 	static std::shared_ptr<ParameterLink<int>> jumpGradationsPL;
 	static std::shared_ptr<ParameterLink<bool>> forbidRestPL;
+
+	static SerializeableArray<std::uint8_t> snapshotsCache;
+	void readSnapshotsIntoCache();
+	void loadSnapshotsFromCache();
 };

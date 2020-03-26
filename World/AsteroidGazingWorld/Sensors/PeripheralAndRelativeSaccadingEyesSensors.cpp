@@ -30,6 +30,8 @@ std::shared_ptr<ParameterLink<bool>> PeripheralAndRelativeSaccadingEyesSensors::
   Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-forbidRest", false,
                                  "if this is set to one sensors will move fovea at every time step with any input, with direction and magnitude of the move determined as usual. WARNING: ignored by all sensors but Chris's at the moment (default: 0)");
 
+SerializeableArray<std::uint8_t> PeripheralAndRelativeSaccadingEyesSensors::snapshotsCache;
+
 PeripheralAndRelativeSaccadingEyesSensors::PeripheralAndRelativeSaccadingEyesSensors(shared_ptr<string> curAstName,
                                                                                      shared_ptr<AsteroidsDatasetParser> dsParser,
                                                                                      shared_ptr<ParametersTable> PT_) :
@@ -303,4 +305,41 @@ string PeripheralAndRelativeSaccadingEyesSensors::getSensorStateDescription() {
 		}
 	}
 	return stateJSON.dump();
+}
+
+void PeripheralAndRelativeSaccadingEyesSensors::readSnapshotsIntoCache() {
+	set<string> asteroidNames = datasetParser->getAsteroidsNames();
+	size_t cacheSize = 0;
+	vector<AsteroidSnapshot> tmpsnaps;
+	for(const string& an : asteroidNames) {
+		map<string,set<unsigned>> parameterValuesSets = datasetParser->getAllParameterValues(an);
+		for(const auto& pvs : parameterValuesSets) {
+			if(pvs.second.size()!=1) {
+				cerr << "PeripheralAndRelativeSaccadingEyesSensors: Only asteroids with single available snapshot are supported at this moment" << endl;
+				exit(EXIT_FAILURE);
+			}
+		}
+		unsigned condition = *(parameterValuesSets["condition"].begin());
+		unsigned distance = *(parameterValuesSets["distance"].begin());
+		unsigned phase = *(parameterValuesSets["phase"].begin());
+		string snapshotPath = datasetParser->getPicturePath(an, condition, distance, phase);
+		tmpsnaps.emplace_back(snapshotPath, baseThreshold);
+		cacheSize += tmpsnaps.back().getSerializedSizeInBytes();
+	}
+	snapshotsCache.reserve(cacheSize);
+	size_t cachePos = 0;
+	for(const auto& snap : tmpsnaps) {
+		snap.serializeToRAM(snapshotsCache.elements+cachePos);
+		cachePos += snap.getSerializedSizeInBytes();
+	}
+}
+
+void PeripheralAndRelativeSaccadingEyesSensors::loadSnapshotsFromCache() {
+	set<string> asteroidNames = datasetParser->getAsteroidsNames();
+	size_t cachePos = 0
+	for(const string& an : asteroidNames) {
+		asteroidSnapshots.emplace(pair<AsteroidViewParameters,AsteroidSnapshot>(make_tuple(an),
+		                                                                        AsteroidSnapshot(snapshotsCache.elements+cachePos)));
+		cachePos += asteroidSnapshots[make_tuple(an)].getSerializedSizeInBytes();
+	}
 }
