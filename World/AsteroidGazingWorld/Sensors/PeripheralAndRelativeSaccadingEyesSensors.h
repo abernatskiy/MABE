@@ -89,7 +89,7 @@ private:
 	static std::shared_ptr<ParameterLink<int>> jumpGradationsPL;
 	static std::shared_ptr<ParameterLink<bool>> forbidRestPL;
 
-	static SerializeableArray<std::uint8_t> snapshotsCache;
+	static SerializeableArray<char> snapshotsCache;
 	void readSnapshotsIntoCache();
 	void loadSnapshotsFromCache();
 };

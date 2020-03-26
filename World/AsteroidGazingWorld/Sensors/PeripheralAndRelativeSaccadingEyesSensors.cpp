@@ -5,32 +5,32 @@
 
 using namespace std;
 
-std::shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::frameResolutionPL =
+shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::frameResolutionPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-frameResolution", 16,
                                  "resolution of the frame over which the eye saccades (default: 16)");
-std::shared_ptr<ParameterLink<bool>> PeripheralAndRelativeSaccadingEyesSensors::usePeripheralFOVPL =
+shared_ptr<ParameterLink<bool>> PeripheralAndRelativeSaccadingEyesSensors::usePeripheralFOVPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-usePeripheralFOV", true,
                                  "boolean value indicating whether the peripheral field of view should be used (default: 1)");
-std::shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::peripheralFOVResolutionPL =
+shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::peripheralFOVResolutionPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-peripheralFOVResolution", 4,
                                  "resolution of the thumbnail preview that's shown alongside the retina picture (default: 4)");
-std::shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::peripheralFOVNumThresholdsToTryPL =
+shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::peripheralFOVNumThresholdsToTryPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-peripheralFOVNumThresholdsToTry", 7,
                                  "number of threshold levels that peripheral FOV entropy maximizer should try, non-positives meaning skip this step and use 127 as the threshold (default: 7)");
-std::shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::foveaResolutionPL =
+shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::foveaResolutionPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-foveaResolution", 2,
                                  "resolution of the fovea (default: 2)");
-std::shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::jumpTypePL =
+shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::jumpTypePL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-jumpType", 0,
                                  "type of the saccading jump (0 - linear scale, 1 - sign-and-magnitude, 2 - Chris's compact, default: 0)");
-std::shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::jumpGradationsPL =
+shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::jumpGradationsPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-jumpGradations", 4,
                                  "number of gradations of the saccade length (default: 4)");
-std::shared_ptr<ParameterLink<bool>> PeripheralAndRelativeSaccadingEyesSensors::forbidRestPL =
+shared_ptr<ParameterLink<bool>> PeripheralAndRelativeSaccadingEyesSensors::forbidRestPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-forbidRest", false,
                                  "if this is set to one sensors will move fovea at every time step with any input, with direction and magnitude of the move determined as usual. WARNING: ignored by all sensors but Chris's at the moment (default: 0)");
 
-SerializeableArray<std::uint8_t> PeripheralAndRelativeSaccadingEyesSensors::snapshotsCache;
+SerializeableArray<char> PeripheralAndRelativeSaccadingEyesSensors::snapshotsCache;
 
 PeripheralAndRelativeSaccadingEyesSensors::PeripheralAndRelativeSaccadingEyesSensors(shared_ptr<string> curAstName,
                                                                                      shared_ptr<AsteroidsDatasetParser> dsParser,
@@ -116,8 +116,14 @@ void PeripheralAndRelativeSaccadingEyesSensors::reset(int visualize) {
 
 void PeripheralAndRelativeSaccadingEyesSensors::doHeavyInit() {
 
-	// Caching asteroid snapshots, determining optimal peripheral FOV threshold for each
+	// Loading asteroid snapshots, determining optimal peripheral FOV threshold for each
+	if(snapshotsCache.empty())
+		readSnapshotsIntoCache();
+	loadSnapshotsFromCache();
+
 	set<string> asteroidNames = datasetParser->getAsteroidsNames();
+
+	cout << "Sensor " << this << ": verifying snapshots read from RAM cache" << endl;
 	for(const string& an : asteroidNames) {
 		map<string,set<unsigned>> parameterValuesSets = datasetParser->getAllParameterValues(an);
 		for(const auto& pvs : parameterValuesSets) {
@@ -130,9 +136,11 @@ void PeripheralAndRelativeSaccadingEyesSensors::doHeavyInit() {
 		unsigned distance = *(parameterValuesSets["distance"].begin());
 		unsigned phase = *(parameterValuesSets["phase"].begin());
 		string snapshotPath = datasetParser->getPicturePath(an, condition, distance, phase);
-		asteroidSnapshots.emplace(pair<AsteroidViewParameters,AsteroidSnapshot>(make_tuple(an),
-		                                                                        AsteroidSnapshot(snapshotPath, baseThreshold)));
+		if(!(asteroidSnapshots[make_tuple(an)]==AsteroidSnapshot(snapshotPath, baseThreshold)))
+			cout << "Snapshots differ for asteroid " << an << "!" << endl;
+	}
 
+	for(const string& an : asteroidNames) {
 		if(numThresholdsToTry > 0) {
 			uint8_t periFOVThresh = asteroidSnapshots[make_tuple(an)].getBestThreshold(peripheralFOVRes, numThresholdsToTry);
 			peripheralFOVThresholds.emplace(make_tuple(an), periFOVThresh);
@@ -336,7 +344,7 @@ void PeripheralAndRelativeSaccadingEyesSensors::readSnapshotsIntoCache() {
 
 void PeripheralAndRelativeSaccadingEyesSensors::loadSnapshotsFromCache() {
 	set<string> asteroidNames = datasetParser->getAsteroidsNames();
-	size_t cachePos = 0
+	size_t cachePos = 0;
 	for(const string& an : asteroidNames) {
 		asteroidSnapshots.emplace(pair<AsteroidViewParameters,AsteroidSnapshot>(make_tuple(an),
 		                                                                        AsteroidSnapshot(snapshotsCache.elements+cachePos)));

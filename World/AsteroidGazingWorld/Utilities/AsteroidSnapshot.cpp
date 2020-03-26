@@ -37,8 +37,8 @@ AsteroidSnapshot::AsteroidSnapshot(char* addr) :
 		exit(EXIT_FAILURE);
 	}
 
-	if(binThreshold > 255) {
-		std::cerr << "Binarization threshold cannot exceed 255 (requested " << binThreshold << ")" << std::endl;
+	if(binarizationThreshold > 255) {
+		std::cerr << "Binarization threshold cannot exceed 255 (requested " << binarizationThreshold << ")" << std::endl;
 		exit(EXIT_FAILURE);
 	}
 
@@ -199,7 +199,7 @@ void AsteroidSnapshot::serializeToRAM(char* addr) const {
 	}
 }
 
-bool AsteroidSnapshot::operator==(const AsteroidSnapshot& other) {
+bool AsteroidSnapshot::operator==(const AsteroidSnapshot& other) const {
 	if(width!=other.width || height!=other.height || binarizationThreshold!=other.binarizationThreshold)
 		return false;
 	for(std::uint32_t i=0; i<width; i++) {

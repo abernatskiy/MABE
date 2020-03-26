@@ -17,8 +17,8 @@ public:
 	SerializeableArray(size_t numElems, T* elems);
 	SerializeableArray(const std::vector<T>& elems);
 	~SerializeableArray();
-	void serialize const (string filename);
-	void deserialize(string filename);
+	void serialize(std::string filename) const;
+	void deserialize(std::string filename);
 	void reserve(size_t numElems); // will exit if applied to a non-empty array
 	size_t size() const { return numElements; };
 	T& operator[](size_t i) { return elements[i]; };
@@ -54,14 +54,14 @@ SerializeableArray<T>::~SerializeableArray() {
 }
 
 template<typename T>
-void SerializeableArray<T>::serialize(string filename) {
+void SerializeableArray<T>::serialize(std::string filename) const {
 	std::ofstream outfile(filename, std::ios::out | std::ios::binary);
 	outfile.write((char*) &numElements, sizeof(size_t));
 	outfile.write((char*) elements, numElements*sizeof(T));
 }
 
 template<typename T>
-void SerializeableArray<T>::deserialize(string filename) {
+void SerializeableArray<T>::deserialize(std::string filename) {
 	std::ifstream infile(filename, std::ios::in | std::ios::binary);
 	infile.read((char*) &numElements, sizeof(size_t));
 	elements = new T[numElements];
