@@ -90,6 +90,8 @@ private:
 	static std::shared_ptr<ParameterLink<bool>> forbidRestPL;
 
 	static SerializeableArray<char> snapshotsCache;
+	bool readPersistentSnapshotsCache(); // returns true if cache has been loaded successfully
+	void writePersistentSnapshotsCache();
 	void readSnapshotsIntoCache();
 	void loadSnapshotsFromCache();
 };

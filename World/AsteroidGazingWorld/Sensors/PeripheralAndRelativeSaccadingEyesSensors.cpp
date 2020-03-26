@@ -1,9 +1,14 @@
 #include "PeripheralAndRelativeSaccadingEyesSensors.h"
+
+#include <iostream>
+#include <cstdlib>
+#include "boost/filesystem/operations.hpp"
+#include "boost/filesystem/path.hpp"
 #include "../../../Utilities/nlohmann/json.hpp"
 #include "misc.h"
-#include <cstdlib>
 
 using namespace std;
+namespace fs = boost::filesystem;
 
 shared_ptr<ParameterLink<int>> PeripheralAndRelativeSaccadingEyesSensors::frameResolutionPL =
   Parameters::register_parameter("WORLD_ASTEROID_GAZING_RELATIVE_SACCADING_EYE-frameResolution", 16,
@@ -117,12 +122,17 @@ void PeripheralAndRelativeSaccadingEyesSensors::reset(int visualize) {
 void PeripheralAndRelativeSaccadingEyesSensors::doHeavyInit() {
 
 	// Loading asteroid snapshots, determining optimal peripheral FOV threshold for each
-	if(snapshotsCache.empty())
-		readSnapshotsIntoCache();
+	if(snapshotsCache.empty()) {
+		if(!readPersistentSnapshotsCache()) {
+			readSnapshotsIntoCache();
+			writePersistentSnapshotsCache();
+		}
+	}
 	loadSnapshotsFromCache();
 
 	set<string> asteroidNames = datasetParser->getAsteroidsNames();
 
+/*
 	cout << "Sensor " << this << ": verifying snapshots read from RAM cache" << endl;
 	for(const string& an : asteroidNames) {
 		map<string,set<unsigned>> parameterValuesSets = datasetParser->getAllParameterValues(an);
@@ -139,6 +149,7 @@ void PeripheralAndRelativeSaccadingEyesSensors::doHeavyInit() {
 		if(!(asteroidSnapshots[make_tuple(an)]==AsteroidSnapshot(snapshotPath, baseThreshold)))
 			cout << "Snapshots differ for asteroid " << an << "!" << endl;
 	}
+*/
 
 	for(const string& an : asteroidNames) {
 		if(numThresholdsToTry > 0) {
@@ -313,6 +324,19 @@ string PeripheralAndRelativeSaccadingEyesSensors::getSensorStateDescription() {
 		}
 	}
 	return stateJSON.dump();
+}
+
+bool PeripheralAndRelativeSaccadingEyesSensors::readPersistentSnapshotsCache() {
+	fs::path cachePath = datasetParser->getDatasetPath() / fs::path("snapshots.cache.bin");
+	if(!fs::exists(cachePath))
+		return false;
+	snapshotsCache.deserialize(cachePath.string());
+	return true;
+}
+
+void PeripheralAndRelativeSaccadingEyesSensors::writePersistentSnapshotsCache() {
+	fs::path cachePath = datasetParser->getDatasetPath() / fs::path("snapshots.cache.bin");
+	snapshotsCache.serialize(cachePath.string());
 }
 
 void PeripheralAndRelativeSaccadingEyesSensors::readSnapshotsIntoCache() {

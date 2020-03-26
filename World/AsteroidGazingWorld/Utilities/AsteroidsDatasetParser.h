@@ -29,6 +29,8 @@ public:
 	std::string getPicturePath(std::string asteroidName, unsigned condition, unsigned distance, unsigned phase);
 	std::map<std::string,std::set<unsigned>> getAllParameterValues(std::string asteroidName);
 
+	fs::path getDatasetPath() const { return fsDatasetPath; };
+
 private:
 	fs::path fsDatasetPath;
 	std::map<std::string,std::vector<command_type>> descriptionCache;
