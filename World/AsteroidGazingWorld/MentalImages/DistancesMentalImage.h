@@ -18,15 +18,14 @@ private:
 	std::shared_ptr<AbstractSensors> sensorsPtr;
 
 	std::vector<double> curBits;
-	std::string curStateString;
+	std::vector<std::string> curStateString; // historically it used to a single string, now it's a vector of them
 	std::string curLabelString;
 
 	// Parts for state counting
-	std::vector<std::string> stateStrings;
+	std::vector<std::vector<std::string>> stateStrings;
 	std::vector<std::string> labelStrings;
-	std::vector<std::string> labeledStateStrings;
-	double totalCrossLabelDistance;
-	double totalIntraLabelDistance;
+	std::vector<double> totalCrossLabelDistances;
+	std::vector<double> totalIntraLabelDistances;
 
 	// Parts for information-theoretic machinery
 	std::vector<std::pair<unsigned,unsigned>> infoRanges;
@@ -44,6 +43,8 @@ private:
 
 	const bool overwriteEvaluations;
 	void updateOrgDatamap(std::shared_ptr<Organism> org, std::string entryName, double entryValue);
+
+	void recomputeLayerStateStrings(std::vector<double> inputs);
 
 public:
 	DistancesMentalImage(std::shared_ptr<std::string> curAstName,

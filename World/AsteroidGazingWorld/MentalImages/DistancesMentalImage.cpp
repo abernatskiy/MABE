@@ -133,6 +133,14 @@ unsigned totalInputs() {
 	return out;
 }
 
+double topPrioritizingSum(std::vector<double> layerParams) {
+	double numLayers = layerParams.size();
+	double sum = 0.;
+	for(unsigned i=0; i<numLayers; i++)
+		sum += layerParams[i]*static_cast<double>(i+1);
+	return sum*2./(numLayers*(numLayers+1.));
+}
+
 /********************************************************************/
 /********** Public DistancesMentalImage class definitions **********/
 /********************************************************************/
@@ -162,7 +170,6 @@ DistancesMentalImage::DistancesMentalImage(std::shared_ptr<std::string> curAstNa
 void DistancesMentalImage::reset(int visualize) { // called in the beginning of each evaluation cycle
 	stateStrings.clear();
 	labelStrings.clear();
-	labeledStateStrings.clear();
 	sensorActivityStateScores.clear();
 	labelCounts.clear();
 	for(auto& rpc : rangesPatternCounts)
@@ -176,8 +183,13 @@ void DistancesMentalImage::resetAfterWorldStateChange(int visualize) { // called
 }
 
 void DistancesMentalImage::updateWithInputs(std::vector<double> inputs) {
+//	std::cout << *currentAsteroidNamePtr;
+//	for(const auto& inp : inputs)
+//		std::cout << " " << inp;
+//	std::cout << std::endl << std::endl;
+
 	curBits = inputs;
-	curStateString = bitRangeToHexStr(inputs.begin(), inputs.size());
+	recomputeLayerStateStrings(inputs);
 }
 
 void DistancesMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> org, int stateTime, int statePeriod) {
@@ -185,9 +197,13 @@ void DistancesMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organi
 		readLabel();
 
 	if(stateTime == statePeriod-1) {
+//		std::cout << *currentAsteroidNamePtr;
+//		for(const auto& sts : curStateString)
+//			std::cout << " " << sts;
+//		std::cout << std::endl << std::endl;
+
 		stateStrings.push_back(curStateString);
 		labelStrings.push_back(curLabelString);
-		labeledStateStrings.push_back(curStateString + curLabelString);
 
 		for(unsigned iri=0; iri<infoRanges.size(); iri++) {
 			std::string rangeSubstr = bitRangeToHexStr(curBits.begin()+infoRanges[iri].first, infoRanges[iri].second-infoRanges[iri].first);
@@ -215,8 +231,10 @@ void DistancesMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 	sampleScoresMap->append("sensorActivity", totSensoryActivity);
 
 	updateDistanceStats();
-	sampleScoresMap->append("totalCrossLabelDistance", totalCrossLabelDistance);
-	sampleScoresMap->append("totalIntraLabelDistance", totalIntraLabelDistance);
+//	std::cout << "Top prioritizing sum of cross label distances: " << topPrioritizingSum(totalCrossLabelDistances) << std::endl;
+	sampleScoresMap->append("totalCrossLabelDistance", topPrioritizingSum(totalCrossLabelDistances));
+//	std::cout << "Top prioritizing sum of intra label distances: " << topPrioritizingSum(totalIntraLabelDistances) << std::endl;
+	sampleScoresMap->append("totalIntraLabelDistance", topPrioritizingSum(totalIntraLabelDistances));
 
 	for(unsigned iri=0; iri<infoRanges.size(); iri++) {
 		std::string infoName = "plInfo_range" + std::to_string(iri);
@@ -275,19 +293,58 @@ void DistancesMentalImage::readLabel() {
 }
 
 void DistancesMentalImage::updateDistanceStats() {
-	totalCrossLabelDistance = 0.;
-	totalIntraLabelDistance = 0.;
+	totalCrossLabelDistances.clear();
+	totalIntraLabelDistances.clear();
 
 	unsigned numStates = stateStrings.size();
-	for(unsigned i=0; i<numStates; i++) {
-		for(unsigned j=0; j<numStates; j++) {
-			if(i==j)
-				continue;
-			if(labelStrings[i]==labelStrings[j])
-				totalIntraLabelDistance += hexStringHammingDistance(stateStrings[i], stateStrings[j]);
-			else
-				totalCrossLabelDistance += hexStringHammingDistance(stateStrings[i], stateStrings[j]);
+	unsigned l = 0;
+
+//	for(unsigned i=0; i<numStates; i++) {
+//		std::cout << "State " << i << ": label is " << labelStrings[i] << ", state strings are";
+//		for(unsigned il=0; il<layerByLayerRanges().size(); il++) {
+//			std::cout << " " << stateStrings[i][l];
+//		}
+//		std::cout << std::endl;
+//	}
+
+	for(const auto& lidxpair : layerByLayerRanges()) {
+		double layerSize = lidxpair.second - lidxpair.first;
+
+		totalCrossLabelDistances.push_back(0.);
+		totalIntraLabelDistances.push_back(0.);
+
+		unsigned numIntraLabelDistances = 0;
+		unsigned numCrossLabelDistances = 0;
+
+//		std::cout << "l=" << l << std::endl;
+		for(unsigned i=0; i<numStates; i++) {
+			for(unsigned j=0; j<numStates; j++) {
+//				std::cout << hexStringHammingDistance(stateStrings[i][l], stateStrings[j][l]) << " ";
+				if(i==j)
+					continue;
+				if(labelStrings[i]==labelStrings[j]) {
+					totalIntraLabelDistances.back() += static_cast<double>(hexStringHammingDistance(stateStrings[i][l], stateStrings[j][l])) / layerSize;
+					numIntraLabelDistances++;
+				}
+				else {
+					totalCrossLabelDistances.back() += static_cast<double>(hexStringHammingDistance(stateStrings[i][l], stateStrings[j][l])) / layerSize;
+					numCrossLabelDistances++;
+				}
+			}
+//			std::cout << std::endl;
 		}
+
+//		std::cout << "Intralabel distances: " << numIntraLabelDistances << " cross-label: " << numCrossLabelDistances << std::endl;
+//		std::cout << "Intralabel sum: " << totalIntraLabelDistances.back() << " cross-label: " << totalCrossLabelDistances.back() << std::endl;
+//		std::cout << "Intralabel distances: " << 0.00001*static_cast<double>(numIntraLabelDistances) << " cross-label: " << 0.00001*static_cast<double>(numCrossLabelDistances) << std::endl;
+
+		totalIntraLabelDistances.back() /= numIntraLabelDistances;
+		totalCrossLabelDistances.back() /= numCrossLabelDistances;
+
+//		std::cout << "Normalized intralabel sum: " << totalIntraLabelDistances.back() / numIntraLabelDistances << " cross-label: " << totalCrossLabelDistances.back() / numCrossLabelDistances << std::endl;
+//		std::cout << "Normalized intralabel sum: " << totalIntraLabelDistances.back() << " cross-label: " << totalCrossLabelDistances.back() << std::endl;
+
+		l++;
 	}
 }
 
@@ -296,4 +353,13 @@ void DistancesMentalImage::updateOrgDatamap(std::shared_ptr<Organism> org, std::
 		org->dataMap.set(entryName, std::vector<double>({entryValue}));
 	else
 		org->dataMap.append(entryName, entryValue);
+}
+
+void DistancesMentalImage::recomputeLayerStateStrings(std::vector<double> inputs) {
+	curStateString.clear();
+	for(const auto& lidxpair : layerByLayerRanges()) {
+		unsigned is, ie;
+		std::tie(is, ie) = lidxpair;
+		curStateString.push_back(bitRangeToHexStr(inputs.begin()+is, ie-is));
+	}
 }
