@@ -21,35 +21,23 @@ public:
 	                    std::shared_ptr<ParametersTable> PT);
 	~CompleteViewSensors();
 	void update(int visualize) override;
-	void reset(int visualize) override;
+	void reset(int visualize) override; // not currently doing anything
 	void doHeavyInit() override;
 
-	int numOutputs() override { return numSensors; };
-	int numInputs() override { return numMotors; };
-
-	const std::vector<bool>& getLastPercept() override { return savedPercept; };
-	void* logTimeSeries(const std::string& label) override;
-
-	unsigned numSaccades() override { return 0; };
-	unsigned numActiveStatesInRecording() override;
-	unsigned numStatesInRecording() override { return numSensors*perceptTimeSeries.size(); };
-	double sensoryMotorEntropy(int shift) override { return 0.; };
+	int numOutputs() override { return 0; };
+	int numInputs() override { return 0; };
 
 private:
 	std::shared_ptr<std::string> currentAsteroidName;
 	std::shared_ptr<AsteroidsDatasetParser> datasetParser;
 
 	Percept* perceptPtr;
-	std::string storedPerceptIdentifier; // if we're cycling through asteroids and each one gives a percept, then it is the asteroid name
+	std::string storedPerceptIdentifier; // name of the asteroid giving rise to actual info at perceptPtr,
+	                                     // as opposed to the name of the asteroid that the World wants perceived (*currentAsteroidName)
 
 	const unsigned frameRes;
 	const unsigned numPhases = 1;
 	const std::uint8_t baseThreshold = 128;
-
-	// Derived vars and facilities
-	std::shared_ptr<AbstractRangeDecoder> rangeDecoder;
-	const unsigned numSensors;
-	const unsigned numMotors;
 
 	// Actual state
 	AsteroidSnapshotsLibrary asteroidSnapshots;

@@ -5,7 +5,6 @@
 #include "boost/filesystem/operations.hpp"
 #include "boost/filesystem/path.hpp"
 #include "../../../Utilities/nlohmann/json.hpp"
-#include "../../../Utilities/doublepointer.h"
 #include "misc.h"
 
 using namespace std;
@@ -22,9 +21,7 @@ CompleteViewSensors::CompleteViewSensors(shared_ptr<string> curAstName,
                                          shared_ptr<ParametersTable> PT_) :
 	currentAsteroidName(curAstName), datasetParser(dsParser),
 	storedPerceptIdentifier(""),
-	frameRes(frameResolutionPL->get(PT_)),
-	numSensors(2),
-	numMotors(0) {
+	frameRes(frameResolutionPL->get(PT_)) {
 
 	perceptPtr = new Percept(boost::extents[frameRes][frameRes][1][1]);
 }
@@ -43,9 +40,6 @@ void CompleteViewSensors::update(int visualize) {
 				(*perceptPtr)[x][y][0][0] = astSnap.getBinary(x, y);
 		storedPerceptIdentifier = *currentAsteroidName;
 	}
-
-	vector<double> out(2);
-	toDoubles(perceptPtr, out.begin());
 
 	AbstractSensors::update(visualize); // increment the clock
 }
@@ -67,9 +61,9 @@ void CompleteViewSensors::doHeavyInit() {
 	}
 	loadSnapshotsFromCache();
 
+/*
 	set<string> asteroidNames = datasetParser->getAsteroidsNames();
 
-/*
 	cout << "Sensor " << this << ": verifying snapshots read from RAM cache" << endl;
 	for(const string& an : asteroidNames) {
 		map<string,set<unsigned>> parameterValuesSets = datasetParser->getAllParameterValues(an);
@@ -87,22 +81,6 @@ void CompleteViewSensors::doHeavyInit() {
 			cout << "Snapshots differ for asteroid " << an << "!" << endl;
 	}
 */
-}
-
-void* CompleteViewSensors::logTimeSeries(const string& label) {
-
-//	ofstream ctrlog(string("sensorState_") + label + string(".log"));
-//	ctrlog.close();
-	return nullptr;
-}
-
-unsigned CompleteViewSensors::numActiveStatesInRecording() {
-
-//	unsigned activeStates = 0;
-//	for(const auto& percept : perceptTimeSeries)
-//		activeStates += percept.size() - count(percept.begin(), percept.end(), 0);
-//	return activeStates;
-	return 0;
 }
 
 /********** Private CompleteViewSensors definitions **********/
