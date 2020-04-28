@@ -23,6 +23,7 @@ public:
 	void update(int visualize) override;
 	void reset(int visualize) override; // not currently doing anything
 	void doHeavyInit() override;
+	void* getDataForBrain() override { return perceptPtr; };
 
 	int numOutputs() override { return 0; };
 	int numInputs() override { return 0; };
