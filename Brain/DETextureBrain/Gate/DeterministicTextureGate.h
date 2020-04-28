@@ -6,6 +6,7 @@ class DeterministicTextureGate: public AbstractTextureGate {
 public:
 	std::vector<std::vector<uint8_t>> table;
 
+	DeterministicTextureGate() = default;
 	DeterministicTextureGate(unsigned ID,
 	                         std::vector<std::tuple<size_t,size_t,size_t,size_t>> inputsIndices,
 	                         std::vector<std::tuple<size_t,size_t,size_t,size_t>> outputsIndices); // uses process-wide RNG to initialize the table
@@ -16,4 +17,6 @@ public:
 	std::string description() const override;
 	std::string gateType() const override { return "DeterministicTexture"; };
 	void mutateInternalStructure() override; // uses the process-wide RNG
+	nlohmann::json serialize() const override;
+	void deserialize(const nlohmann::json&) override;
 };

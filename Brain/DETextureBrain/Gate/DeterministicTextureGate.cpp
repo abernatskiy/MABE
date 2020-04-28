@@ -105,3 +105,23 @@ void DeterministicTextureGate::update(std::mt19937* rng=nullptr) const {
 	for(size_t o=0; o<outputs.size(); o++)
 		*outputs[o] = table[inPat][o];
 }
+
+nlohmann::json DeterministicTextureGate::serialize() const {
+	nlohmann::json out = AbstractTextureGate::serialize();
+	out["table"] = nlohmann::json::array();
+	for(const auto& row : table) {
+		out["table"].push_back(nlohmann::json::array());
+		for(const auto& columnVal : row)
+			out["table"].back().push_back(static_cast<unsigned>(columnVal));
+	}
+}
+
+void DeterministicTextureGate::deserialize(const nlohmann::json& in) {
+	AbstractTextureGate::deserialize(in);
+	table.clear();
+	for(const auto& row : in["table"]) {
+		table.push_back({});
+		for(const auto& val : row)
+			table.back().push_back(static_cast<uint8_t>(val));
+	}
+}
