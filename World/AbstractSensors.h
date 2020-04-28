@@ -16,6 +16,7 @@ protected:
 
 public:
 	void attachToBrain(std::shared_ptr<AbstractBrain> br) { brain=br; };
+	virtual void* getDataForBrain() { return nullptr; };
 
 	// Overloading of all four private methods below is encouraged, but call the prototypes withing the extensions for the void ones
 	virtual void reset(int visualize) { clock=0; };

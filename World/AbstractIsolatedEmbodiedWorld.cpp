@@ -1,13 +1,3 @@
-//  MABE is a product of The Hintze Lab @ MSU
-//     for general research information:
-//         hintzelab.msu.edu
-//     for MABE documentation:
-//         github.com/Hintzelab/MABE/wiki
-//
-//  Copyright (c) 2015 Michigan State University. All rights reserved.
-//     to view the full license, visit:
-//         github.com/Hintzelab/MABE/wiki/License
-
 #include "AbstractIsolatedEmbodiedWorld.h"
 
 std::shared_ptr<ParameterLink<int>> AbstractIsolatedEmbodiedWorld::evaluationsPerGenerationPL =
@@ -60,6 +50,8 @@ void AbstractIsolatedEmbodiedWorld::evaluateOnce(std::shared_ptr<Organism> org, 
 
 	sensors->attachToBrain(brain);
 	motors->attachToBrain(brain);
+
+	brain->attachToSensors(sensors->getDataForBrain());
 
 	unsigned long timeStep = 0;
 
