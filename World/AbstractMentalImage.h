@@ -6,8 +6,11 @@
 #include "../Organism/Organism.h"
 
 class AbstractMentalImage {
+protected:
+	std::shared_ptr<AbstractBrain> brain;
 
 public:
+	virtual void attachToBrain(std::shared_ptr<AbstractBrain> br) { brain = br; };
 	virtual void reset(int visualize) = 0;
 	virtual void resetAfterWorldStateChange(int visualize) {}; // only used when discrete state changes are employed
 	virtual void updateWithInputs(std::vector<double> inputs) = 0;

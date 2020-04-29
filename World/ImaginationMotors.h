@@ -19,6 +19,10 @@ public:
 		offset(inputOffset) {
 		currentBrainOutput.resize(numInputs());
 	};
+	void attachToBrain(std::shared_ptr<AbstractBrain> br) override {
+		AbstractMotors::attachToBrain(br);
+		image->attachToBrain(br);
+	};
 	void reset(int visualize) override {
 		// this actuator does not have any state by itself, so there's no need to reset anything besides the clock
 		AbstractMotors::reset(visualize);
