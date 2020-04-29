@@ -115,6 +115,7 @@ public:
 //	void logNote(std::string note) override { log.log("DETextureBrain's external note: " + note + "\n"); };
 	DataMap serialize(std::string& name) override; // OK
 	void deserialize(std::shared_ptr<ParametersTable> PT, std::unordered_map<std::string,std::string>& orgData, std::string& name) override; // OK
+	void* getDataForMotors() override { return output; };
 };
 
 inline std::shared_ptr<AbstractBrain> DETextureBrain_brainFactory(int ins, int outs, std::shared_ptr<ParametersTable> PT, bool randomize = true) {
