@@ -34,10 +34,10 @@ public:
 	virtual ~AbstractTextureGate() = default;
 
 	void reset(); // make this virtual if stateful gates are needed
-	void updateInputs(const boost::multi_array<uint8_t,4>* inputPtr);
+	void updateInputs(boost::multi_array<uint8_t,4>* inputPtr);
 	void updateOutputs(boost::multi_array<uint8_t,4>* outputPtr);
 
-	virtual void update(std::mt19937* rng=nullptr) const = 0; // might use a thread-specific RNG
+	virtual void update(std::mt19937* rng=nullptr) = 0; // might use a thread-specific RNG
 	virtual std::shared_ptr<AbstractTextureGate> makeCopy(unsigned copyID) const = 0;
 	virtual std::string description() const = 0;
 	virtual std::string gateType() const = 0;
@@ -51,7 +51,7 @@ public:
 
 /***** Definitions *****/
 
-std::string textureAddressRepresentation(const std::tuple<size_t,size_t,size_t,size_t>& addr) {
+inline std::string textureAddressRepresentation(const std::tuple<size_t,size_t,size_t,size_t>& addr) {
 	std::stringstream ss;
 	ss << '(' << std::get<0>(addr) << ','
 	   << std::get<1>(addr) << ','
@@ -60,7 +60,7 @@ std::string textureAddressRepresentation(const std::tuple<size_t,size_t,size_t,s
 	return ss.str();
 }
 
-AbstractTextureGate::AbstractTextureGate(unsigned newID,
+inline AbstractTextureGate::AbstractTextureGate(unsigned newID,
                                          std::vector<std::tuple<size_t,size_t,size_t,size_t>> newInputsIndices,
                                          std::vector<std::tuple<size_t,size_t,size_t,size_t>> newOutputsIndices) :
 	ID(newID),
@@ -69,28 +69,28 @@ AbstractTextureGate::AbstractTextureGate(unsigned newID,
 	inputs(newInputsIndices.size(), nullptr),
 	outputs(newOutputsIndices.size(), nullptr) {}
 
-void AbstractTextureGate::reset() {
+inline void AbstractTextureGate::reset() {
 	std::fill(inputs.begin(), inputs.end(), nullptr);
 	std::fill(outputs.begin(), outputs.end(), nullptr);
 }
 
-void AbstractTextureGate::updateInputs(const boost::multi_array<uint8_t,4>* inputPtr) {
+inline void AbstractTextureGate::updateInputs(boost::multi_array<uint8_t,4>* inputPtr) {
 	for(size_t i=0; i<inputsIndices.size(); i++) {
 		size_t x, y, t, c;
-		std::tie(x, y, t, c) = inputIndices[i];
+		std::tie(x, y, t, c) = inputsIndices[i];
 		inputs[i] = &(*inputPtr)[x][y][t][c];
 	}
 }
 
-void AbstractTextureGate::updateOutputs(boost::multi_array<uint8_t,4>* outputPtr) {
-	for(size_t o=0; o<outputIndices.size(); o++) {
+inline void AbstractTextureGate::updateOutputs(boost::multi_array<uint8_t,4>* outputPtr) {
+	for(size_t o=0; o<outputsIndices.size(); o++) {
 		size_t x, y, t, c;
-		std::tie(x, y, t, c) = outputIndices[o];
+		std::tie(x, y, t, c) = outputsIndices[o];
 		outputs[o] = &(*outputPtr)[x][y][t][c];
 	}
 }
 
-nlohmann::json AbstractTextureGate::serialize() const {
+inline nlohmann::json AbstractTextureGate::serialize() const {
 	nlohmann::json out = nlohmann::json::object();
 	out["id"] = ID;
 	out["type"] = this->gateType();
@@ -99,32 +99,32 @@ nlohmann::json AbstractTextureGate::serialize() const {
 		return nlohmann::json::array({std::get<0>(idxs), std::get<1>(idxs), std::get<2>(idxs), std::get<3>(idxs)});
 	};
 
-	out["inputIndices"] = nlohmann::json::array();
-	for(const auto& inputIdxs : inputIndices)
-		out["inputIndices"].push_back(indices2json(inputIdxs));
-	out["outputIndices"] = nlohmann::json::array();
-	for(const auto& outputIdxs : outputIndices)
-		out["outputIndices"].push_back(indices2json(outputIdxs));
+	out["inputsIndices"] = nlohmann::json::array();
+	for(const auto& inputIdxs : inputsIndices)
+		out["inputsIndices"].push_back(indices2json(inputIdxs));
+	out["outputsIndices"] = nlohmann::json::array();
+	for(const auto& outputIdxs : outputsIndices)
+		out["outputsIndices"].push_back(indices2json(outputIdxs));
 
 	return out;
 }
 
-void AbstractTextureGate::deserialize(const nlohmann::json& in) {
+inline void AbstractTextureGate::deserialize(const nlohmann::json& in) {
 	ID = in["id"];
 
-	auto json2indices = [](const nlohmall::json& idxsjson) {
+	auto json2indices = [](const nlohmann::json& idxsjson) {
 		return std::tuple<size_t,size_t,size_t,size_t>(idxsjson[0], idxsjson[1], idxsjson[2], idxsjson[3]);
 	};
 
-	inputIndices.clear();
-	for(const auto& iidj : in["inputIndices"])
-		inputIndices.push_back(json2indices(iidj));
-	outputIndices.clear();
-	for(const auto& oidj : in["outputIndices"])
-		outputIndices.push_back(json2indices(oidj));
+	inputsIndices.clear();
+	for(const auto& iidj : in["inputsIndices"])
+		inputsIndices.push_back(json2indices(iidj));
+	outputsIndices.clear();
+	for(const auto& oidj : in["outputsIndices"])
+		outputsIndices.push_back(json2indices(oidj));
 
-	inputs.resize(inputIndices.size());
+	inputs.resize(inputsIndices.size());
 	std::fill(inputs.begin(), inputs.end(), nullptr);
-	outputs.resize(outputIndices.size());
+	outputs.resize(outputsIndices.size());
 	std::fill(outputs.begin(), outputs.end(), nullptr);
 }

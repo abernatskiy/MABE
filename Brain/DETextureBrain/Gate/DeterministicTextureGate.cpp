@@ -31,7 +31,7 @@ DeterministicTextureGate::DeterministicTextureGate(unsigned newID,
 	if(inputs.size()>4) throw length_error("DeterministicTextureGate was given more than four inputs, "
 	                                       "which is supported but should be avoided. You'll need to "
 	                                       "comment out this throw and recompile to proceed.");
-	if(inputs.size()>=CHAR_BITS*sizeof(size_t)) throw length_error("DeterministicTextureGate was given far too many inputs");
+	if(inputs.size()>=CHAR_BIT*sizeof(size_t)) throw length_error("DeterministicTextureGate was given far too many inputs");
 
 	size_t tableSize = 1;
 	tableSize <<= inputs.size();
@@ -39,7 +39,7 @@ DeterministicTextureGate::DeterministicTextureGate(unsigned newID,
 	for(size_t ipat=0; ipat<tableSize; ipat++) {
 		table.push_back({});
 		for(size_t o=0; o<outputs.size(); o++)
-			table[ipat].push_back(getInt(1)); // the table is generated randomly
+			table[ipat].push_back(Random::getInt(1)); // the table is generated randomly
 	}
 }
 
@@ -74,7 +74,7 @@ string DeterministicTextureGate::description() const {
 	return ss.str();
 }
 
-void DeterministicTextureGate::mutateInternalStructure() const {
+void DeterministicTextureGate::mutateInternalStructure() {
 	int inPatIdx = Random::getIndex(table.size());
 
 	// True point mutation - legacy, check before enabling!
@@ -84,7 +84,7 @@ void DeterministicTextureGate::mutateInternalStructure() const {
 	// Randomize output pattern mutation
 	// It is supposed to make info landscape convex with an optimum at 1 and its empirical performance seems better, but that is not conclusive
 	size_t outPatternWidth = table[inPatIdx].size();
-	vector<int> newOutPattern(outPatternWidth);
+	vector<uint8_t> newOutPattern(outPatternWidth);
 	while(1) {
 		for(size_t i=0; i<outPatternWidth; i++)
 			newOutPattern[i] = Random::getInt(0, 1);
@@ -95,7 +95,7 @@ void DeterministicTextureGate::mutateInternalStructure() const {
 	}
 }
 
-void DeterministicTextureGate::update(std::mt19937* rng=nullptr) const {
+void DeterministicTextureGate::update(std::mt19937* rng) {
 	size_t inPat = 0;
 	for(size_t i=0; i<inputs.size(); i++) {
 		inPat <<= 1;

@@ -7,13 +7,13 @@
 #include "../../Utilities/nlohmann/json.hpp" // https://github.com/nlohmann/json/ v3.6.1
 
 #include "DETextureBrain.h"
-#include "Gates/DeterministicTextureGate.h"
+#include "Gate/DeterministicTextureGate.h"
 
 using namespace std;
 
 /********** Auxiliary funcs **********/
 
-tuple<int,int,int,int> parseGateLimitsStr(string thestring) {
+tuple<int,int,int,int> parseGateLimitsStr_texture(string thestring) {
 	string sinmin, sinmax, soutmin, soutmax;
 	stringstream s(thestring);
 	getline(s, sinmin, '-');
@@ -23,13 +23,13 @@ tuple<int,int,int,int> parseGateLimitsStr(string thestring) {
 	return make_tuple(stoi(sinmin), stoi(sinmax), stoi(soutmin), stoi(soutmax));
 }
 
-tuple<size_t,size_t,size_t> parseShapeStr(string thestring) {
+tuple<size_t,size_t,size_t> parseShapeStr_texture(string thestring) {
 	string sizex, sizey, sizet;
 	stringstream s(thestring);
 	getline(s, sizex, ',');
 	getline(s, sizey, ',');
 	getline(s, sizet);
-	return make_tuple(stoi(sizex), stoi(sizey), stoi(sizet))
+	return make_tuple(stoi(sizex), stoi(sizey), stoi(sizet));
 }
 
 /********** Static variables definition **********/
@@ -67,7 +67,6 @@ shared_ptr<ParameterLink<int>> DETextureBrain::outBitsPerPixelPL = Parameters::r
 
 DETextureBrain::DETextureBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<ParametersTable> PT_) :
 	AbstractBrain(_nrInNodes, _nrOutNodes, PT_),
-	nrNodes(_nrInNodes+_nrOutNodes),
 	minGates(minGateCountPL->get(PT_)),
 	visualize(Global::modePL->get() == "visualize"),
 	originationStory("primordial"),
@@ -76,18 +75,18 @@ DETextureBrain::DETextureBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Param
 	if(_nrInNodes!=0) throw invalid_argument("Construction of DETextureBrain with number of input nodes other than 0 attempted");
 	if(_nrOutNodes!=0) throw invalid_argument("Construction of DETextureBrain with number of output nodes other than 0 attempted");
 
-	tie(inputSizeX, inputSizeY, inputSizeT) = parseShapeStr(inTextureShapePL->get(PT_));
-	tie(filterSizeX, filterSizeY, filterSizeT) = parseShapeStr(filterShapePL->get(PT_));
-	tie(strideX, strideY, strideT) = parseShapeStr(strideShapePL->get(PT_));
+	tie(inputSizeX, inputSizeY, inputSizeT) = parseShapeStr_texture(inTextureShapePL->get(PT_));
+	tie(filterSizeX, filterSizeY, filterSizeT) = parseShapeStr_texture(filterShapePL->get(PT_));
+	tie(strideX, strideY, strideT) = parseShapeStr_texture(strideShapePL->get(PT_));
 	inBitsPerPixel = inBitsPerPixelPL->get(PT_);
 	validateDimensions();
 
 	tie(outputSizeX, outputSizeY, outputSizeT) = computeOutputShape();
 	outBitsPerPixel = outBitsPerPixelPL->get(PT_);
 
-	tie(gateMinIns, gateMaxIns, gateMinOuts, gateMaxOuts) = parseGateLimitsStr(gateIORangesPL->get(PT_));
+	tie(gateMinIns, gateMaxIns, gateMinOuts, gateMaxOuts) = parseGateLimitsStr_texture(gateIORangesPL->get(PT_));
 
-	output = new boost::multi_array<uint8_t,4>(boost::extents[outputSizeX][outputSizeY][outputSizeT][outBits]);
+	output = new boost::multi_array<uint8_t,4>(boost::extents[outputSizeX][outputSizeY][outputSizeT][outBitsPerPixel]);
 	resetOutputTexture();
 
 	// columns to be added to ave file
@@ -102,7 +101,7 @@ DETextureBrain::~DETextureBrain() {
 }
 
 void DETextureBrain::update() {
-	validateInput(input);
+	validateInput();
 
 	for(auto& g : gates)
 		g->update();
@@ -113,12 +112,12 @@ void DETextureBrain::update() {
 
 shared_ptr<AbstractBrain> DETextureBrain::makeCopy(shared_ptr<ParametersTable> PT_) {
 	if(PT_==nullptr) throw invalid_argument("DETextureBrain::makeCopy caught a nullptr");
-	if(PT_!=PT) throw invalid_argument("DETextureBrain::makeCopy was called with a parameters table that is different from the one the original used. Are you sure you want to do that?")
+	if(PT_!=PT) throw invalid_argument("DETextureBrain::makeCopy was called with a parameters table that is different from the one the original used. Are you sure you want to do that?");
 
 	auto newBrain = make_shared<DETextureBrain>(nrInputValues, nrOutputValues, PT);
 	for(auto gate : gates) {
 		newBrain->gates.push_back(gate->makeCopy(gate->ID));
-		newBrain->gates.back().updateOutputs(newBrain->output);
+		newBrain->gates.back()->updateOutputs(newBrain->output);
 	}
 	return newBrain;
 }
@@ -232,7 +231,7 @@ void DETextureBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<s
 		for(const auto& val : dimPair.second) {
 			if(brainJSON[field][i]!=val)
 				throw invalid_argument(string("DETextureBrain.deserialize has detected mismatch of stored and preloaded ") + dimNames[i] +
-				                       " of " + field + ": " + to_string(brainJSON[field][i]) + " vs " + to_string(val));
+				                       " of " + field + ": " + to_string(static_cast<size_t>(brainJSON[field][i])) + " vs " + to_string(val));
 			i++;
 		}
 	}
@@ -252,7 +251,7 @@ void DETextureBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<s
 			throw invalid_argument("ProbabilisticTextureGate cannot be deserialized since it is not implemented yet");
 		}
 		else
-			throw invalid_argument(string("DETextureBrain::deserialize: Unsupported gate type ") + gateJSON["type"]);
+			throw invalid_argument(string("DETextureBrain::deserialize: Unsupported gate type ") + static_cast<string>(gateJSON["type"]));
 	}
 }
 
@@ -369,10 +368,10 @@ void DETextureBrain::rewireGateRandomly(size_t gateIdx) {
 	const size_t gateOutputSize = gates[gateIdx]->outputsIndices.size();
 	size_t connectionIdx = Random::getIndex(gateInputSize+gateOutputSize);
 	if(connectionIdx<gateInputSize)
-		gates[gateIdx]->inputIndices[connectionIdx] = getRandomInputTextureAddress();
+		gates[gateIdx]->inputsIndices[connectionIdx] = getRandomInputTextureAddress();
 	else {
 		connectionIdx -= gateInputSize;
-		gates[gateIdx]->outputIndices[connectionIdx] = getRandomOutputTextureAddress();
+		gates[gateIdx]->outputsIndices[connectionIdx] = getRandomOutputTextureAddress();
 		gates[gateIdx]->updateOutputs(output);
 	}
 }

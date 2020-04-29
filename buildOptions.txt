@@ -23,9 +23,10 @@
   - ConstantValues
   - Human
   - Wire
-  + BiLog
+  - BiLog
   - DerivedMarkov
   + DEMarkov
+  + DETexture
   + Layered
 	
 % Optimizer

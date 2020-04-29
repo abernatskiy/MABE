@@ -27,7 +27,7 @@ private:
 	size_t inBitsPerPixel, outBitsPerPixel;
 
 	// Major state vars
-	const boost::multi_array<uint8_t,4>* input; // we do not modify the input, but occasionally we may want to switch to another complete one - hence a pointer to const
+	boost::multi_array<uint8_t,4>* input; // we do not modify the input, but occasionally we may want to switch to another complete one - hence a pointer to const
 	boost::multi_array<uint8_t,4>* output;
 	std::vector<std::shared_ptr<AbstractTextureGate>> gates;
 	// keep in mind that this class is responsible for maintaining the output pointers of the gates in a valid state
@@ -67,7 +67,7 @@ private:
 	static std::shared_ptr<ParameterLink<int>> outBitsPerPixelPL;
 //	static std::shared_ptr<ParameterLink<bool>> logicalConvolutionPL; // make it an int regime?
 
-	static std::shared_ptr<ParameterLink<string>> gateIORangesPL;
+	static std::shared_ptr<ParameterLink<std::string>> gateIORangesPL;
 	static std::shared_ptr<ParameterLink<int>> initialGateCountPL;
 	static std::shared_ptr<ParameterLink<double>> gateInsertionProbabilityPL;
 	static std::shared_ptr<ParameterLink<double>> gateDeletionProbabilityPL;
