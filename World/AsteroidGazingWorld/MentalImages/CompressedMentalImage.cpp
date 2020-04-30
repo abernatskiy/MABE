@@ -4,6 +4,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <cmath>
+#include "boost/multi_array.hpp"
 
 /*****************************************/
 /********** Auxiliary functions **********/
@@ -295,8 +296,11 @@ void CompressedMentalImage::resetAfterWorldStateChange(int visualize) { // calle
 void CompressedMentalImage::updateWithInputs(std::vector<double> inputs) {
 //	if(answerGiven)
 //		return;
-
-	curStateString = bitRangeToHexStr(inputs.begin(), inputs.size());
+	void* brainDataPtr = brain->getDataForMotors();
+	if(brainDataPtr)
+		curStateString = textureToHexStr(reinterpret_cast<boost::multi_array<uint8_t,4>*>(brainDataPtr));
+	else
+		curStateString = bitRangeToHexStr(inputs.begin(), inputs.size());
 
 	// stateTS.push_back(stateStr);
 }

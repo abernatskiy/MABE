@@ -5,6 +5,7 @@
 #include <string>
 #include <sstream>
 #include <unordered_map>
+#include "boost/multi_array.hpp"
 
 // Decoders based on "one-hot" encoding
 // Quotes are due to the fact that only the leftmost one counts, if there are any more ones to the right of it the decoder does not care
@@ -124,6 +125,30 @@ inline std::string bitRangeToHexStr(std::vector<double>::iterator startAt, unsig
 		}
 		outStr[i] = digits[curval];
 	}
+	return outStr;
+}
+
+inline std::string textureToHexStr(boost::multi_array<uint8_t,4>* texture) {
+	auto shape = texture->shape();
+	size_t queuedBits = 0;
+	size_t queue = 0;
+	const char digits[16] = {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
+	std::string outStr;
+	for(size_t x=0; x<shape[0]; x++)
+		for(size_t y=0; y<shape[1]; y++)
+			for(size_t t=0; t<shape[2]; t++)
+				for(size_t c=0; c<shape[3]; c++) {
+					if(queuedBits==4) {
+						outStr.push_back(digits[queue]);
+						queuedBits = 0;
+						queue = 0;
+					}
+					queuedBits++;
+					queue <<= 1;
+					queue |= (*texture)[x][y][t][c];
+				}
+	if(queuedBits>0)
+		outStr.push_back(digits[queue]);
 	return outStr;
 }
 
