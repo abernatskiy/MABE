@@ -9,6 +9,7 @@
 	- TestImagination
 	- TestSlideshow
 	+ AsteroidGazing
+	+ AsteroidTextureGazing
 	* ParallelIsolatedEmbodied
 	+ AsteroidTeamGazing
 
