@@ -247,7 +247,8 @@ CompressedMentalImage::CompressedMentalImage(std::shared_ptr<std::string> curAst
                                              unsigned patternChunkSize,
                                              unsigned nNeighbors,
                                              double leakBaseMult,
-                                             double leakDecayRad) :
+                                             double leakDecayRad,
+                                             bool textureInput) :
 	currentAsteroidNamePtr(curAstNamePtr),
 	datasetParserPtr(dsParserPtr),
 	sensorsPtr(sPtr),
@@ -258,7 +259,8 @@ CompressedMentalImage::CompressedMentalImage(std::shared_ptr<std::string> curAst
 	neighborsdb(nBits, patternChunkSize),
 	numNeighbors(nNeighbors),
 	leakBaseMultiplier(leakBaseMult),
-	leakDecayRadius(leakDecayRad) {
+	leakDecayRadius(leakDecayRad),
+	inputIsATexture(textureInput) {
 
 	if(leakDecayRadius==0) {
 		std::cerr << "Leak decay radius cannot be zero" << std::endl;
@@ -296,9 +298,8 @@ void CompressedMentalImage::resetAfterWorldStateChange(int visualize) { // calle
 void CompressedMentalImage::updateWithInputs(std::vector<double> inputs) {
 //	if(answerGiven)
 //		return;
-	void* brainDataPtr = brain->getDataForMotors();
-	if(brainDataPtr)
-		curStateString = textureToHexStr(reinterpret_cast<boost::multi_array<uint8_t,4>*>(brainDataPtr));
+	if(inputIsATexture)
+		curStateString = textureToHexStr(reinterpret_cast<boost::multi_array<uint8_t,4>*>(brain->getDataForMotors()));
 	else
 		curStateString = bitRangeToHexStr(inputs.begin(), inputs.size());
 
@@ -427,7 +428,10 @@ void CompressedMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std:
 }
 
 int CompressedMentalImage::numInputs() {
-	return numBits;
+	if(inputIsATexture)
+		return 0;
+	else
+		return numBits;
 //	return mnistNumBits + numTriggerBits;
 }
 

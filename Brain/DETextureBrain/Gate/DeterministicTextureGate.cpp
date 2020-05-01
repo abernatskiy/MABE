@@ -39,7 +39,7 @@ DeterministicTextureGate::DeterministicTextureGate(unsigned newID,
 	for(size_t ipat=0; ipat<tableSize; ipat++) {
 		table.push_back({});
 		for(size_t o=0; o<outputs.size(); o++)
-			table[ipat].push_back(Random::getInt(1)); // the table is generated randomly
+			table.back().push_back(Random::getInt(1)); // the table is generated randomly
 	}
 }
 
@@ -108,12 +108,16 @@ void DeterministicTextureGate::update(std::mt19937* rng) {
 
 nlohmann::json DeterministicTextureGate::serialize() const {
 	nlohmann::json out = AbstractTextureGate::serialize();
+
 	out["table"] = nlohmann::json::array();
 	for(const auto& row : table) {
-		out["table"].push_back(nlohmann::json::array());
+		auto jsonRow = nlohmann::json::array();
 		for(const auto& columnVal : row)
-			out["table"].back().push_back(static_cast<unsigned>(columnVal));
+			jsonRow.push_back(static_cast<unsigned>(columnVal));
+		out["table"].push_back(jsonRow);
 	}
+
+	return out;
 }
 
 void DeterministicTextureGate::deserialize(const nlohmann::json& in) {

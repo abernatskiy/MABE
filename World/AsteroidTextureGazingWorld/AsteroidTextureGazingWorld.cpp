@@ -87,10 +87,11 @@ AsteroidTextureGazingWorld::AsteroidTextureGazingWorld(shared_ptr<ParametersTabl
 	                                                 datasetParser,
 	                                                 sensors,
 	                                                 compressToBitsPL->get(PT_),
-	                                                 true,
+	                                                 false,
 	                                                 mihPatternChunkSizeBitsPL->get(PT_),
 	                                                 fastRepellingPLInfoNumNeighborsPL->get(PT_),
 	                                                 leakBaseMultiplierPL->get(PT_),
-	                                                 leakDecayRadiusPL->get(PT_));
+	                                                 leakDecayRadiusPL->get(PT_),
+	                                                 true);
 	makeMotors();
 };

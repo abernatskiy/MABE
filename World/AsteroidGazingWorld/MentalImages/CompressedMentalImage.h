@@ -50,6 +50,8 @@ private:
 	const double leakBaseMultiplier;
 	const double leakDecayRadius;
 
+	const bool inputIsATexture;
+
 	//// Stuff that might become useful in the future
 	// std::vector<std::string> stateTS;
 	// unsigned numTriggerBits;
@@ -67,7 +69,8 @@ public:
 	                      unsigned patternChunkSize,
 	                      unsigned numNeighbors,
 	                      double leakBaseMultiplier,
-	                      double leakDecayRadius);
+	                      double leakDecayRadius,
+	                      bool inputIsATexture=false);
 
 	void reset(int visualize) override;
 	void resetAfterWorldStateChange(int visualize) override;

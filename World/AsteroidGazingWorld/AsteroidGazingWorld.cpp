@@ -137,7 +137,7 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 	                                                      datasetParser,
 	                                                      sensors,
 	                                                      compressToBitsPL->get(PT_),
-	                                                      true,
+	                                                      false,
 	                                                      mihPatternChunkSizeBitsPL->get(PT_),
 	                                                      fastRepellingPLInfoNumNeighborsPL->get(PT_),
 	                                                      leakBaseMultiplierPL->get(PT_),

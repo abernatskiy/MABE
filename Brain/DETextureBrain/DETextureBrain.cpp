@@ -4,6 +4,8 @@
 #include <stdexcept>
 #include <algorithm>
 
+#include <cstdlib>
+
 #include "../../Utilities/nlohmann/json.hpp" // https://github.com/nlohmann/json/ v3.6.1
 
 #include "DETextureBrain.h"
@@ -85,6 +87,9 @@ DETextureBrain::DETextureBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Param
 	outBitsPerPixel = outBitsPerPixelPL->get(PT_);
 
 	tie(gateMinIns, gateMaxIns, gateMinOuts, gateMaxOuts) = parseGateLimitsStr_texture(gateIORangesPL->get(PT_));
+
+//	cout << description() << endl;
+//	exit(EXIT_FAILURE);
 
 	output = new boost::multi_array<uint8_t,4>(boost::extents[outputSizeX][outputSizeY][outputSizeT][outBitsPerPixel]);
 	resetOutputTexture();
@@ -258,9 +263,9 @@ void DETextureBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<s
 /********** Private definitions **********/
 
 tuple<size_t,size_t,size_t> DETextureBrain::computeOutputShape() {
-	size_t outx = (inputSizeX-filterSizeX) / strideX;
-	size_t outy = (inputSizeY-filterSizeY) / strideY;
-	size_t outt = (inputSizeT-filterSizeT) / strideT;
+	size_t outx = (inputSizeX-filterSizeX) / strideX + 1;
+	size_t outy = (inputSizeY-filterSizeY) / strideY + 1;
+	size_t outt = (inputSizeT-filterSizeT) / strideT + 1;
 	return make_tuple(outx, outy, outt);
 }
 
