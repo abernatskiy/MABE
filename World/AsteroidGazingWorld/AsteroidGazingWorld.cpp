@@ -3,8 +3,8 @@
 #include <limits>
 #include "../../Utilities/Random.h"
 
-#include "MentalImages/DistancesMentalImage.h"
-//#include "MentalImages/CompressedMentalImage.h"
+//#include "MentalImages/DistancesMentalImage.h"
+#include "MentalImages/CompressedMentalImage.h"
 //#include "MentalImages/DigitMentalImage.h"
 //#include "MentalImages/SpikesOnCubeMentalImage.h"
 //#include "MentalImages/SpikesOnCubeFullMentalImage.h"
@@ -132,6 +132,7 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 	                                                 sensors,
 	                                                 numTriggerBitsPL->get(PT_),
 	                                                 integrateFitnessPL->get(PT_));
+*/
 	mentalImage = std::make_shared<CompressedMentalImage>(currentAsteroidName,
 	                                                      datasetParser,
 	                                                      sensors,
@@ -141,10 +142,11 @@ AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) :
 	                                                      fastRepellingPLInfoNumNeighborsPL->get(PT_),
 	                                                      leakBaseMultiplierPL->get(PT_),
 	                                                      leakDecayRadiusPL->get(PT_));
-*/
+/*
 	mentalImage = std::make_shared<DistancesMentalImage>(currentAsteroidName,
 	                                                     datasetParser,
 	                                                     sensors, // gets the number of output nodes data from Brain/LayeredBrain/topology.h
 	                                                     overwriteEvaluationsPL->get(PT_));
+*/
 	makeMotors();
 };
