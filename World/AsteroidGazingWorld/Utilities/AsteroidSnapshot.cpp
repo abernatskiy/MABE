@@ -2,7 +2,7 @@
 #include <cmath>
 
 #include "AsteroidSnapshot.h"
-#include "shades.h"
+#include "../../../Utilities/shades.h"
 
 // Public member definitions
 

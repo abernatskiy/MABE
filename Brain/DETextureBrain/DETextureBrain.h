@@ -12,8 +12,9 @@
 #include "Gate/AbstractTextureGate.h"
 #include "../../Utilities/Random.h"
 #include "../MarkovBrain/logFile.h"
+#include "../../Utilities/texture.h"
 
-// This brain expects a vector of two doubles that encode a pointer to a boost::multi_array with axes [x, y, t, channel]
+// This brain expects a vector of two doubles that encode a pointer to a a Texture (boost::multi_array) with axes [x, y, t, channel]
 
 class DETextureBrain : public AbstractBrain {
 private:
@@ -27,8 +28,8 @@ private:
 	size_t inBitsPerPixel, outBitsPerPixel;
 
 	// Major state vars
-	boost::multi_array<uint8_t,4>* input; // we do not modify the input, but occasionally we may want to switch to another complete one - hence a pointer to const
-	boost::multi_array<uint8_t,4>* output;
+	Texture* input; // we do not modify the input, but occasionally we may want to switch to another complete one - hence a pointer to const
+	Texture* output;
 	std::vector<std::shared_ptr<AbstractTextureGate>> gates;
 	// keep in mind that this class is responsible for maintaining the output pointers of the gates in a valid state
 	// it follows that every time this class resets a gate, generates a new one or modifies one's output connections, it must call gate->updateOutputs(output)

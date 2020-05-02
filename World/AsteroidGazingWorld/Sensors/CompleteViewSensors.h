@@ -1,17 +1,16 @@
 #pragma once
 
 #include <map>
-#include "boost/multi_array.hpp"
 
 #include "../../AbstractSensors.h"
 #include "../Utilities/AsteroidsDatasetParser.h"
 #include "../Utilities/AsteroidSnapshot.h"
 #include "../../../Utilities/serializeableArray.h"
+#include "../../../Utilities/texture.h"
 #include "rangeDecoders.h"
 
 typedef std::tuple<std::string> AsteroidViewParameters;
 typedef std::map<AsteroidViewParameters,AsteroidSnapshot> AsteroidSnapshotsLibrary;
-typedef boost::multi_array<uint8_t,4> Percept; // x, y, t, channel
 
 class CompleteViewSensors : public AbstractSensors {
 
@@ -32,7 +31,7 @@ private:
 	std::shared_ptr<std::string> currentAsteroidName;
 	std::shared_ptr<AsteroidsDatasetParser> datasetParser;
 
-	Percept* perceptPtr;
+	Texture* perceptPtr;
 	std::string storedPerceptIdentifier; // name of the asteroid giving rise to actual info at perceptPtr,
 	                                     // as opposed to the name of the asteroid that the World wants perceived (*currentAsteroidName)
 

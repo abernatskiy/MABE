@@ -23,7 +23,7 @@ CompleteViewSensors::CompleteViewSensors(shared_ptr<string> curAstName,
 	storedPerceptIdentifier(""),
 	frameRes(frameResolutionPL->get(PT_)) {
 
-	perceptPtr = new Percept(boost::extents[frameRes][frameRes][1][1]);
+	perceptPtr = new Texture(boost::extents[frameRes][frameRes][1][1]);
 }
 
 CompleteViewSensors::~CompleteViewSensors() {
@@ -40,6 +40,9 @@ void CompleteViewSensors::update(int visualize) {
 				(*perceptPtr)[x][y][0][0] = astSnap.getBinary(x, y);
 		storedPerceptIdentifier = *currentAsteroidName;
 	}
+
+//	cout << *currentAsteroidName << endl;
+//	cout << readableTextureRepr(*perceptPtr);
 
 	AbstractSensors::update(visualize); // increment the clock
 }

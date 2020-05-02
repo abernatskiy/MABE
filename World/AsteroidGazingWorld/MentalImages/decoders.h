@@ -5,7 +5,8 @@
 #include <string>
 #include <sstream>
 #include <unordered_map>
-#include "boost/multi_array.hpp"
+
+#include "../../../Utilities/texture.h"
 
 // Decoders based on "one-hot" encoding
 // Quotes are due to the fact that only the leftmost one counts, if there are any more ones to the right of it the decoder does not care
@@ -128,7 +129,7 @@ inline std::string bitRangeToHexStr(std::vector<double>::iterator startAt, unsig
 	return outStr;
 }
 
-inline std::string textureToHexStr(boost::multi_array<uint8_t,4>* texture) {
+inline std::string textureToHexStr(Texture* texture) {
 	auto shape = texture->shape();
 	size_t queuedBits = 0;
 	size_t queue = 0;

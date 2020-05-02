@@ -1,17 +1,19 @@
-#include "CompressedMentalImage.h"
-#include "decoders.h"
-
 #include <fstream>
 #include <cstdlib>
 #include <cmath>
-#include "boost/multi_array.hpp"
+
+#include "CompressedMentalImage.h"
+#include "decoders.h"
+#include "../../../Utilities/texture.h"
+
+using namespace std;
 
 /*****************************************/
 /********** Auxiliary functions **********/
 /*****************************************/
 
 template<class KeyClass, typename NumType>
-void incrementMapField(std::map<KeyClass,NumType>& mymap, const KeyClass& key, NumType theIncrement = 1) {
+void incrementMapField(map<KeyClass,NumType>& mymap, const KeyClass& key, NumType theIncrement = 1) {
 	if(mymap.find(key)==mymap.end())
 		mymap[key] = theIncrement;
 	else
@@ -19,32 +21,32 @@ void incrementMapField(std::map<KeyClass,NumType>& mymap, const KeyClass& key, N
 }
 
 template<class NumType>
-void printMap(const std::map<std::string,NumType>& mymap) {
+void printMap(const map<string,NumType>& mymap) {
 	unsigned st = 0;
 	for(const auto& mpair : mymap)
-		std::cout << (st++==0?"":" ") << mpair.first << ":" << mpair.second;
-	std::cout << std::endl;
+		cout << (st++==0?"":" ") << mpair.first << ":" << mpair.second;
+	cout << endl;
 }
 
 template<class NumType>
-void printMap(const std::map<std::pair<std::string,std::string>,NumType>& mymap) {
+void printMap(const map<pair<string,string>,NumType>& mymap) {
 	unsigned st = 0;
 	for(const auto& mpair : mymap)
-		std::cout << (st++==0?"(":" (") << mpair.first.first << "," << mpair.first.second << "):" << mpair.second;
-	std::cout << std::endl;
+		cout << (st++==0?"(":" (") << mpair.first.first << "," << mpair.first.second << "):" << mpair.second;
+	cout << endl;
 }
 
 template<class NumType>
-void printPatternConditionals(const std::map<std::pair<std::string,std::string>,NumType>& joint) {
-	std::map<std::string,std::map<std::string,NumType>> patternConditionals;
+void printPatternConditionals(const map<pair<string,string>,NumType>& joint) {
+	map<string,map<string,NumType>> patternConditionals;
 	for(const auto& mpair : joint) {
-		std::string pattern = mpair.first.second;
+		string pattern = mpair.first.second;
 		auto itCurConditional = patternConditionals.find(pattern);
 		if(itCurConditional==patternConditionals.end()) {
 			patternConditionals[pattern] = {};
 			itCurConditional = patternConditionals.find(pattern);
 		}
-		std::string label = mpair.first.first;
+		string label = mpair.first.first;
 		auto itCurField = itCurConditional->second.find(label);
 		if(itCurField==itCurConditional->second.end()) {
 			itCurConditional->second.emplace(label, 0);
@@ -54,16 +56,16 @@ void printPatternConditionals(const std::map<std::pair<std::string,std::string>,
 	}
 
 	for(const auto& patpair : patternConditionals) {
-		std::cout << patpair.first << ":";
+		cout << patpair.first << ":";
 		for(const auto& labpair : patpair.second)
-			std::cout << " " << labpair.first << "-" << labpair.second;
-		std::cout << std::endl;
+			cout << " " << labpair.first << "-" << labpair.second;
+		cout << endl;
 	}
 }
 
-double computeFuzzySharedEntropy(const std::map<std::pair<std::string,std::string>,unsigned>& jointCounts,
-                                 const std::map<std::string,unsigned>& patternCounts,
-                                 const std::map<std::string,unsigned>& labelCounts,
+double computeFuzzySharedEntropy(const map<pair<string,string>,unsigned>& jointCounts,
+                                 const map<string,unsigned>& patternCounts,
+                                 const map<string,unsigned>& labelCounts,
                                  unsigned numSamples,
                                  HammingNeighborhoodGenerator& hng) {
 	using namespace std;
@@ -110,40 +112,40 @@ double computeFuzzySharedEntropy(const std::map<std::pair<std::string,std::strin
 	return patternLabelInfo;
 }
 
-double computeSharedEntropy(const std::map<std::pair<std::string,std::string>,unsigned>& jointCounts,
-                            const std::map<std::string,unsigned>& patternCounts,
-                            const std::map<std::string,unsigned>& labelCounts,
+double computeSharedEntropy(const map<pair<string,string>,unsigned>& jointCounts,
+                            const map<string,unsigned>& patternCounts,
+                            const map<string,unsigned>& labelCounts,
                             unsigned numSamples) {
-	std::map<std::string,double> labelDistribution;
+	map<string,double> labelDistribution;
 	for(const auto& lpair : labelCounts)
 		labelDistribution[lpair.first] = static_cast<double>(lpair.second)/static_cast<double>(numSamples);
-//	printMap(labelDistribution); std::cout << std::endl;
-	std::map<std::string,double> patternDistribution;
+//	printMap(labelDistribution); cout << endl;
+	map<string,double> patternDistribution;
 	for(const auto& ppair : patternCounts)
 		patternDistribution[ppair.first] = static_cast<double>(ppair.second)/static_cast<double>(numSamples);
-//	printMap(patternDistribution); std::cout << std::endl;
-//	printMap(jointCounts); std::cout << std::endl;
+//	printMap(patternDistribution); cout << endl;
+//	printMap(jointCounts); cout << endl;
 	double patternLabelInfo = 0.;
 	for(const auto& labpatpair : jointCounts) {
-		std::string label, pattern;
-		std::tie(label, pattern) = labpatpair.first;
+		string label, pattern;
+		tie(label, pattern) = labpatpair.first;
 		double jp = static_cast<double>(labpatpair.second)/static_cast<double>(numSamples);
 		patternLabelInfo += jp*log10(jp/(labelDistribution[label]*patternDistribution[pattern]));
 	}
 	return patternLabelInfo;
 }
 
-std::map<std::string,double> computeLabelConditionalEntropy(const std::map<std::pair<std::string,std::string>,unsigned>& jointCounts,
-                                                            const std::map<std::string,unsigned>& labelCounts) {
-	std::map<std::string,double> lcEntropy;
-//	std::cout << "Class conditional pattern distributions (histograms):" << std::endl;
+map<string,double> computeLabelConditionalEntropy(const map<pair<string,string>,unsigned>& jointCounts,
+                                                            const map<string,unsigned>& labelCounts) {
+	map<string,double> lcEntropy;
+//	cout << "Class conditional pattern distributions (histograms):" << endl;
 	for(const auto& lcpair : labelCounts) {
-		std::map<std::string,unsigned> condPatternCounts;
+		map<string,unsigned> condPatternCounts;
 		for(const auto& jcpair : jointCounts)
 			if(jcpair.first.first==lcpair.first)
 				incrementMapField(condPatternCounts, jcpair.first.second, jcpair.second);
 
-//		std::cout << "For label " << lcpair.first << ": ";
+//		cout << "For label " << lcpair.first << ": ";
 //		printMap(condPatternCounts);
 
 		lcEntropy[lcpair.first] = 0.;
@@ -152,18 +154,18 @@ std::map<std::string,double> computeLabelConditionalEntropy(const std::map<std::
 			lcEntropy[lcpair.first] -= patProbGivenLabel*log10(patProbGivenLabel);
 		}
 	}
-//	std::cout << std::endl;
+//	cout << endl;
 	return lcEntropy;
 }
 
-double computeAverageLabelConditionalEntropy(const std::map<std::pair<std::string,std::string>,unsigned>& jointCounts,
-                                          const std::map<std::string,unsigned>& labelCounts,
+double computeAverageLabelConditionalEntropy(const map<pair<string,string>,unsigned>& jointCounts,
+                                          const map<string,unsigned>& labelCounts,
                                           unsigned numSamples) {
-	std::map<std::string,double> labelConditionalEntropy = computeLabelConditionalEntropy(jointCounts, labelCounts);
+	map<string,double> labelConditionalEntropy = computeLabelConditionalEntropy(jointCounts, labelCounts);
 
-//	std::cout << "Computed label conditional entropies:" << std::endl;
+//	cout << "Computed label conditional entropies:" << endl;
 //	printMap(labelConditionalEntropy);
-//	std::cout << std::endl;
+//	cout << endl;
 
 	double fullLabelConditional = 0.;
 	for(const auto& lcpair : labelCounts)
@@ -171,23 +173,23 @@ double computeAverageLabelConditionalEntropy(const std::map<std::pair<std::strin
 	return fullLabelConditional;
 }
 
-std::map<std::string,std::string> makeNaiveClassifier(const std::map<std::pair<std::string,std::string>,unsigned>& jointCounts,
-                                                      const std::map<std::string,unsigned>& patternCounts) {
-	std::map<std::string,std::string> decipherer;
+map<string,string> makeNaiveClassifier(const map<pair<string,string>,unsigned>& jointCounts,
+                                                      const map<string,unsigned>& patternCounts) {
+	map<string,string> decipherer;
 	long unsigned tieBreaker = 0;
 	for(const auto& ppair : patternCounts) {
-		std::string pattern = ppair.first;
-		std::map<std::string,unsigned> condLabelCounts;
+		string pattern = ppair.first;
+		map<string,unsigned> condLabelCounts;
 		for(const auto& jppair : jointCounts)
 			if(jppair.first.second == pattern)
 				incrementMapField(condLabelCounts, jppair.first.first, jppair.second);
 
-//		std::cout << pattern << ":" << std::endl;
+//		cout << pattern << ":" << endl;
 //		printMap(condLabelCounts);
-//		std::cout << std::endl;
+//		cout << endl;
 
 		unsigned maxCount = 0;
-		std::string bestLabel;
+		string bestLabel;
 		for(const auto& clcpair : condLabelCounts) {
 			if(clcpair.second>maxCount) {
 				maxCount = clcpair.second;
@@ -204,27 +206,27 @@ std::map<std::string,std::string> makeNaiveClassifier(const std::map<std::pair<s
 	return decipherer;
 }
 
-void saveClassifier(const std::map<std::string,std::string>& patternsToLabels,
-                    std::string filename) {
-	std::ofstream classifierFile(filename, std::ofstream::out);
+void saveClassifier(const map<string,string>& patternsToLabels,
+                    string filename) {
+	ofstream classifierFile(filename, ofstream::out);
 	for(const auto& plpair : patternsToLabels)
-		classifierFile << plpair.first << " " << plpair.second << std::endl;
+		classifierFile << plpair.first << " " << plpair.second << endl;
 	classifierFile.close();
 }
 
-std::map<std::string,std::string> loadClassifier(std::string filename) {
-	std::map<std::string,std::string> theClassifier;
-	std::string pattern, label;
-	std::ifstream classifierFile(filename);
+map<string,string> loadClassifier(string filename) {
+	map<string,string> theClassifier;
+	string pattern, label;
+	ifstream classifierFile(filename);
 	while(classifierFile >> pattern >> label)
 		theClassifier[pattern] = label;
 	return theClassifier;
 }
 
-std::string labelOfClosestNeighbor(std::string pattern, const std::map<std::string,std::string>& patternsToLabels) {
+string labelOfClosestNeighbor(string pattern, const map<string,string>& patternsToLabels) {
 	// Hamming distance is used
 	unsigned minDist = pattern.size()*4;
-	std::string outPattern;
+	string outPattern;
 	for(const auto& plpair : patternsToLabels) {
 		unsigned curDist = hexStringHammingDistance(pattern, plpair.first);
 		if(curDist<=minDist) { // TODO: maybe add meaningful tie breaking here, idk
@@ -239,9 +241,9 @@ std::string labelOfClosestNeighbor(std::string pattern, const std::map<std::stri
 /********** Public CompressedMentalImage class definitions **********/
 /********************************************************************/
 
-CompressedMentalImage::CompressedMentalImage(std::shared_ptr<std::string> curAstNamePtr,
-                                             std::shared_ptr<AsteroidsDatasetParser> dsParserPtr,
-                                             std::shared_ptr<AbstractSensors> sPtr,
+CompressedMentalImage::CompressedMentalImage(shared_ptr<string> curAstNamePtr,
+                                             shared_ptr<AsteroidsDatasetParser> dsParserPtr,
+                                             shared_ptr<AbstractSensors> sPtr,
                                              unsigned nBits,
                                              bool computeFRPLInfo,
                                              unsigned patternChunkSize,
@@ -263,7 +265,7 @@ CompressedMentalImage::CompressedMentalImage(std::shared_ptr<std::string> curAst
 	inputIsATexture(textureInput) {
 
 	if(leakDecayRadius==0) {
-		std::cerr << "Leak decay radius cannot be zero" << std::endl;
+		cerr << "Leak decay radius cannot be zero" << endl;
 		exit(EXIT_FAILURE);
 	}
 }
@@ -295,60 +297,51 @@ void CompressedMentalImage::resetAfterWorldStateChange(int visualize) { // calle
 //	stateTS.clear();
 }
 
-void CompressedMentalImage::updateWithInputs(std::vector<double> inputs) {
+void CompressedMentalImage::updateWithInputs(vector<double> inputs) {
 //	if(answerGiven)
 //		return;
 	if(inputIsATexture)
-		curStateString = textureToHexStr(reinterpret_cast<boost::multi_array<uint8_t,4>*>(brain->getDataForMotors()));
+		curStateString = textureToHexStr(reinterpret_cast<Texture*>(brain->getDataForMotors()));
 	else
 		curStateString = bitRangeToHexStr(inputs.begin(), inputs.size());
 
 	// stateTS.push_back(stateStr);
 }
 
-void CompressedMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organism> org, int stateTime, int statePeriod) {
+void CompressedMentalImage::recordRunningScoresWithinState(shared_ptr<Organism> org, int stateTime, int statePeriod) {
 //	if(answerReceived)
 //		return;
 
 	if(stateTime == 0)
 		readLabel();
 
-//	std::cout << "stateTime = " << stateTime << " statePeriod = " << statePeriod;
-//	std::cout << " label = " << curLabelString << " state = " << curStateString;
-//	std::cout << std::endl;
+//	cout << "stateTime = " << stateTime << " statePeriod = " << statePeriod;
+//	cout << " label = " << curLabelString << " state = " << curStateString;
+//	cout << endl;
 
 	// Debug "throws"
 	if(curStateString.empty()) {
-		std::cerr << "Mental image evaluator got an empty state string, exiting" << std::endl;
+		cerr << "Mental image evaluator got an empty state string, exiting" << endl;
 		exit(EXIT_FAILURE);
 	}
 
-//	if( answerGiven || ( (!requireTriggering) && stateTime == statePeriod-1) ) {
 	if(stateTime == statePeriod-1) {
-/*		std::cout << "state sets before adding " << curStateString << " with label " << curLabelString << std::endl;
-		for(const auto& ss : stateStrings)
-			std::cout << " " << ss;
-		std::cout << std::endl;
-		for(const auto& lss : labeledStateStrings)
-			std::cout << " " << lss;
-		std::cout << std::endl;
-*/
 		unsigned curNumStates = stateStrings.size();
 		unsigned curNumLabeledStates = labeledStateStrings.size();
 		stateStrings.insert(curStateString);
 		labeledStateStrings.insert(curStateString + curLabelString);
 		if(stateStrings.size()==curNumStates) {
 			lostStates++;
-//			std::cout << "Incremented lost states, now it is " << lostStates << std::endl;
+//			cout << "Incremented lost states, now it is " << lostStates << endl;
 			if(labeledStateStrings.size()!=curNumLabeledStates) {
 				lostLabels++;
-//				std::cout << "Incremented lost labels, now it is " << lostLabels << std::endl;
+//				cout << "Incremented lost labels, now it is " << lostLabels << endl;
 			}
 		}
 
 		incrementMapField(labelCounts, curLabelString);
 		incrementMapField(patternCounts, curStateString);
-		incrementMapField(jointCounts, std::make_pair(curLabelString, curStateString));
+		incrementMapField(jointCounts, make_pair(curLabelString, curStateString));
 		numSamples++;
 
 		sensorActivityStateScores.push_back(static_cast<double>(sensorsPtr->numSaccades())/static_cast<double>(statePeriod));
@@ -360,11 +353,11 @@ void CompressedMentalImage::recordRunningScoresWithinState(std::shared_ptr<Organ
 //	}
 }
 
-void CompressedMentalImage::recordRunningScores(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {}
+void CompressedMentalImage::recordRunningScores(shared_ptr<Organism> org, shared_ptr<DataMap> runningScoresMap, int evalTime, int visualize) {}
 
-void CompressedMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
-                                               std::shared_ptr<DataMap> sampleScoresMap,
-                                               std::shared_ptr<DataMap> runningScoresMap,
+void CompressedMentalImage::recordSampleScores(shared_ptr<Organism> org,
+                                               shared_ptr<DataMap> sampleScoresMap,
+                                               shared_ptr<DataMap> runningScoresMap,
                                                int evalTime,
                                                int visualize) {
 	double totSensoryActivity = 0;
@@ -382,18 +375,18 @@ void CompressedMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 	sampleScoresMap->append("patternLabelInformation", computeSharedEntropy(jointCounts, patternCounts, labelCounts, numSamples));
 	sampleScoresMap->append("averageLabelConditionalEntropy", computeAverageLabelConditionalEntropy(jointCounts, labelCounts, numSamples));
 	if(mVisualize) {
-		std::map<std::string,std::string> currentDecipherer = makeNaiveClassifier(jointCounts, patternCounts);
+		map<string,string> currentDecipherer = makeNaiveClassifier(jointCounts, patternCounts);
 
 //		saveClassifier(currentDecipherer, "decipherer.log");
-//		std::map<std::string,std::string> decipherer = loadClassifier("decipherer.log");
-		std::map<std::string,std::string> decipherer = currentDecipherer;
+//		map<string,string> decipherer = loadClassifier("decipherer.log");
+		map<string,string> decipherer = currentDecipherer;
 
 		long unsigned successfulTrials = 0;
 		long unsigned totalTrials = 0;
 		long unsigned unknownPattern = 0;
 		for(const auto& jppair : jointCounts) {
-			std::string label, pattern;
-			std::tie(label, pattern) = jppair.first;
+			string label, pattern;
+			tie(label, pattern) = jppair.first;
 //			if(decipherer.find(pattern)==decipherer.end())
 //				unknownPattern += jppair.second;
 //			else if(decipherer[pattern]==label)
@@ -402,14 +395,14 @@ void CompressedMentalImage::recordSampleScores(std::shared_ptr<Organism> org,
 				successfulTrials += jppair.second;
 			totalTrials += jppair.second;
 		}
-		std::cout << "Out of " << totalTrials << " trials " << successfulTrials << " were successful and " << unknownPattern << " yielded unknown patterns" << std::endl;
+		cout << "Out of " << totalTrials << " trials " << successfulTrials << " were successful and " << unknownPattern << " yielded unknown patterns" << endl;
 	}
 
 	sampleScoresMap->append("sensorActivity", totSensoryActivity);
 }
 
-void CompressedMentalImage::evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) {
-//	std::cout << "Writing evals for org " << org->ID << std::endl;
+void CompressedMentalImage::evaluateOrganism(shared_ptr<Organism> org, shared_ptr<DataMap> sampleScoresMap, int visualize) {
+//	cout << "Writing evals for org " << org->ID << endl;
 	org->dataMap.append("lostStates", sampleScoresMap->getAverage("lostStates"));
 	org->dataMap.append("lostLabels", sampleScoresMap->getAverage("lostLabels"));
 	org->dataMap.append("numPatterns", sampleScoresMap->getAverage("numPatterns"));
@@ -435,11 +428,11 @@ int CompressedMentalImage::numInputs() {
 //	return mnistNumBits + numTriggerBits;
 }
 
-void* CompressedMentalImage::logTimeSeries(const std::string& label) {
-	std::ofstream statesLog(std::string("states_") + label + std::string(".log"));
+void* CompressedMentalImage::logTimeSeries(const string& label) {
+	ofstream statesLog(string("states_") + label + string(".log"));
 //	for(const auto& state : stateTS)
-//		stateLog << curLabelStr << bitRangeToHexStr(state.begin(), state.size()) << std::endl;
-	statesLog << "not implemented" << std::endl;
+//		stateLog << curLabelStr << bitRangeToHexStr(state.begin(), state.size()) << endl;
+	statesLog << "not implemented" << endl;
 	statesLog.close();
 	return nullptr;
 }
@@ -447,8 +440,8 @@ void* CompressedMentalImage::logTimeSeries(const std::string& label) {
 /***** Private DigitMentalImage class definitions *****/
 
 void CompressedMentalImage::readLabel() {
-	const std::vector<std::vector<unsigned>>& commands = datasetParserPtr->cachingGetDescription(*currentAsteroidNamePtr);
-	curLabelString = std::to_string(commands[0][0]); // OK for ten digits; for higher number of labels should be fine, too, if less readable
+	const vector<vector<unsigned>>& commands = datasetParserPtr->cachingGetDescription(*currentAsteroidNamePtr);
+	curLabelString = to_string(commands[0][0]); // OK for ten digits; for higher number of labels should be fine, too, if less readable
 }
 
 double CompressedMentalImage::computeRepellingSharedEntropy() {

@@ -91,7 +91,7 @@ DETextureBrain::DETextureBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Param
 //	cout << description() << endl;
 //	exit(EXIT_FAILURE);
 
-	output = new boost::multi_array<uint8_t,4>(boost::extents[outputSizeX][outputSizeY][outputSizeT][outBitsPerPixel]);
+	output = new Texture(boost::extents[outputSizeX][outputSizeY][outputSizeT][outBitsPerPixel]);
 	resetOutputTexture();
 
 	// columns to be added to ave file
@@ -108,8 +108,13 @@ DETextureBrain::~DETextureBrain() {
 void DETextureBrain::update() {
 	validateInput();
 
+//	cout << "Brain at " << this << " is updating with input at " << input << " and output at " << output << endl;
+//	cout << readableTextureRepr(*input) << endl;
+
 	for(auto& g : gates)
 		g->update();
+
+//	cout << readableTextureRepr(*output) << endl;
 
 //	if(visualize)
 //		log.logStateAfterUpdate(nodes);
@@ -154,7 +159,8 @@ void DETextureBrain::resetBrain() {
 }
 
 void DETextureBrain::attachToSensors(void* inputPtr) {
-	input = reinterpret_cast<boost::multi_array<uint8_t,4>*>(inputPtr);
+//	cout << "Attaching brain " << this << " to sensors using data pointer " << inputPtr << endl;
+	input = reinterpret_cast<Texture*>(inputPtr);
 	for(auto& g : gates)
 		g->updateInputs(input);
 }

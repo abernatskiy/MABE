@@ -8,8 +8,8 @@
 #include <string>
 #include <algorithm>
 #include <sstream>
-#include "boost/multi_array.hpp"
 #include "../../../Utilities/nlohmann/json.hpp"
+#include "../../../Utilities/texture.h"
 
 /***** Declarations *****/
 
@@ -33,15 +33,17 @@ public:
 	                    std::vector<std::tuple<size_t,size_t,size_t,size_t>> outputsIndices);
 	virtual ~AbstractTextureGate() = default;
 
+	void updateInputs(Texture* inputPtr);
+	void updateOutputs(Texture* outputPtr);
+
 	void reset(); // make this virtual if stateful gates are needed
-	void updateInputs(boost::multi_array<uint8_t,4>* inputPtr);
-	void updateOutputs(boost::multi_array<uint8_t,4>* outputPtr);
 
 	virtual void update(std::mt19937* rng=nullptr) = 0; // might use a thread-specific RNG
 	virtual std::shared_ptr<AbstractTextureGate> makeCopy(unsigned copyID) const = 0;
 	virtual std::string description() const = 0;
 	virtual std::string gateType() const = 0;
 	virtual void mutateInternalStructure() = 0; // should use the process-wide RNG
+
 	virtual nlohmann::json serialize() const;
 	virtual void deserialize(const nlohmann::json&);
 };
@@ -74,19 +76,19 @@ inline void AbstractTextureGate::reset() {
 	std::fill(outputs.begin(), outputs.end(), nullptr);
 }
 
-inline void AbstractTextureGate::updateInputs(boost::multi_array<uint8_t,4>* inputPtr) {
+inline void AbstractTextureGate::updateInputs(Texture* inputPtr) {
 	for(size_t i=0; i<inputsIndices.size(); i++) {
 		size_t x, y, t, c;
 		std::tie(x, y, t, c) = inputsIndices[i];
-		inputs[i] = &(*inputPtr)[x][y][t][c];
+		inputs[i] = &((*inputPtr)[x][y][t][c]);
 	}
 }
 
-inline void AbstractTextureGate::updateOutputs(boost::multi_array<uint8_t,4>* outputPtr) {
+inline void AbstractTextureGate::updateOutputs(Texture* outputPtr) {
 	for(size_t o=0; o<outputsIndices.size(); o++) {
 		size_t x, y, t, c;
 		std::tie(x, y, t, c) = outputsIndices[o];
-		outputs[o] = &(*outputPtr)[x][y][t][c];
+		outputs[o] = &((*outputPtr)[x][y][t][c]);
 	}
 }
 
