@@ -60,15 +60,15 @@ string DeterministicTextureGate::description() const {
 		ss << ' ' << textureAddressRepresentation(oi);
 	ss << endl << "Current input pointers:";
 	for(const auto& i : inputs)
-		ss << ' ' << i;
+		ss << ' ' << static_cast<void*>(i);
 	ss << endl << "Current output pointers:";
 	for(const auto& o : outputs)
-		ss << ' ' << o;
+		ss << ' ' << static_cast<void*>(o);
 	ss << endl << "Table:" << endl;
 	for(size_t ipat=0; ipat<table.size(); ipat++) {
 		ss << fixedWidthBinaryRepresentation(ipat, inputs.size()) << ":";
 		for(size_t o=0; o<outputs.size(); o++)
-			ss << ' ' << table[ipat][o];
+			ss << ' ' << static_cast<unsigned>(table[ipat][o]);
 		ss << endl;
 	}
 	return ss.str();
@@ -99,7 +99,7 @@ void DeterministicTextureGate::update(std::mt19937* rng) {
 	size_t inPat = 0;
 	for(size_t i=0; i<inputs.size(); i++) {
 		inPat <<= 1;
-		inPat &= (*inputs[i]); // add "!= 0" to allow inputs outside of {0,1}
+		inPat |= (*inputs[i]); // add "!= 0" to allow inputs outside of {0,1}
 	}
 
 	for(size_t o=0; o<outputs.size(); o++)
