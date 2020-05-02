@@ -4,14 +4,14 @@
   - Test
   - ComplexiPhi
   - EdlundMaze
-	- Mixture
-	- TestIsolatedEmbodied
-	- TestImagination
-	- TestSlideshow
-	+ AsteroidGazing
-	+ AsteroidTextureGazing
-	* ParallelIsolatedEmbodied
-	+ AsteroidTeamGazing
+  - Mixture
+  - TestIsolatedEmbodied
+  - TestImagination
+  - TestSlideshow
+  + AsteroidGazing
+  + AsteroidTextureGazing
+  * ParallelIsolatedEmbodied
+  + AsteroidTeamGazing
 
 % Genome
   - Multi
@@ -29,12 +29,12 @@
   + DEMarkov
   + DETexture
   + Layered
-	
+
 % Optimizer
   * Simple
-  + Islands
-  + Lexicase
-	+ AgeFitnessPareto
+  - Islands
+  - Lexicase
+  + AgeFitnessPareto
 
 % Archivist
   * Default
