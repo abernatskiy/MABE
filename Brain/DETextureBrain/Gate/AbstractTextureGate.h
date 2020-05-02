@@ -36,7 +36,7 @@ public:
 	void updateInputs(Texture* inputPtr);
 	void updateOutputs(Texture* outputPtr);
 
-	void reset(); // make this virtual if stateful gates are needed
+	void reset() {}; // make this virtual if stateful gates are needed
 
 	virtual void update(std::mt19937* rng=nullptr) = 0; // might use a thread-specific RNG
 	virtual std::shared_ptr<AbstractTextureGate> makeCopy(unsigned copyID) const = 0;
@@ -70,11 +70,6 @@ inline AbstractTextureGate::AbstractTextureGate(unsigned newID,
 	outputsIndices(newOutputsIndices),
 	inputs(newInputsIndices.size(), nullptr),
 	outputs(newOutputsIndices.size(), nullptr) {}
-
-inline void AbstractTextureGate::reset() {
-	std::fill(inputs.begin(), inputs.end(), nullptr);
-	std::fill(outputs.begin(), outputs.end(), nullptr);
-}
 
 inline void AbstractTextureGate::updateInputs(Texture* inputPtr) {
 	for(size_t i=0; i<inputsIndices.size(); i++) {
