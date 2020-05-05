@@ -109,12 +109,12 @@ void DETextureBrain::update() {
 	validateInput();
 
 //	cout << "Brain at " << this << " is updating with input at " << input << " and output at " << output << endl;
-//	cout << readableTextureRepr(*input) << endl;
+//	cout << readableRepr(*input) << endl;
 
 	for(auto& g : gates)
 		g->update();
 
-//	cout << readableTextureRepr(*output) << endl;
+//	cout << readableRepr(*output) << endl;
 
 //	if(visualize)
 //		log.logStateAfterUpdate(nodes);
@@ -396,8 +396,8 @@ shared_ptr<AbstractTextureGate> DETextureBrain::getGateCopy(size_t oldGateIdx, u
 shared_ptr<AbstractTextureGate> DETextureBrain::getRandomGate(unsigned gateID) {
 	const unsigned nins = Random::getInt(gateMinIns, gateMaxIns);
 	const unsigned nouts = Random::getInt(gateMinOuts, gateMaxOuts);
-	vector<tuple<size_t,size_t,size_t,size_t>> inputIdxs;
-	vector<tuple<size_t,size_t,size_t,size_t>> outputIdxs;
+	vector<TextureIndex> inputIdxs;
+	vector<TextureIndex> outputIdxs;
 	for(unsigned i=0; i<nins; i++)
 		inputIdxs.push_back(getRandomInputTextureAddress());
 	for(unsigned j=0; j<nouts; j++)
@@ -408,18 +408,18 @@ shared_ptr<AbstractTextureGate> DETextureBrain::getRandomGate(unsigned gateID) {
 	return newGatePtr;
 }
 
-tuple<size_t,size_t,size_t,size_t> DETextureBrain::getRandomInputTextureAddress() {
-	return make_tuple(Random::getIndex(inputSizeX),
-	                  Random::getIndex(inputSizeY),
-	                  Random::getIndex(inputSizeT),
-	                  Random::getIndex(inBitsPerPixel));
+TextureIndex DETextureBrain::getRandomInputTextureAddress() {
+	return {{ Random::getIndex(inputSizeX),
+	          Random::getIndex(inputSizeY),
+	          Random::getIndex(inputSizeT),
+	          Random::getIndex(inBitsPerPixel) }};
 }
 
-tuple<size_t,size_t,size_t,size_t> DETextureBrain::getRandomOutputTextureAddress() {
-	return make_tuple(Random::getIndex(outputSizeX),
-	                  Random::getIndex(outputSizeY),
-	                  Random::getIndex(outputSizeT),
-	                  Random::getIndex(outBitsPerPixel));
+TextureIndex DETextureBrain::getRandomOutputTextureAddress() {
+	return {{ Random::getIndex(outputSizeX),
+	          Random::getIndex(outputSizeY),
+	          Random::getIndex(outputSizeT),
+	          Random::getIndex(outBitsPerPixel) }};
 }
 
 unsigned DETextureBrain::getLowestAvailableGateID() {

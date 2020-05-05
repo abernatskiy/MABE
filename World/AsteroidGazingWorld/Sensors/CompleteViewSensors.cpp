@@ -42,7 +42,7 @@ void CompleteViewSensors::update(int visualize) {
 	}
 
 //	cout << *currentAsteroidName << endl;
-//	cout << readableTextureRepr(*perceptPtr);
+//	cout << readableRepr(*perceptPtr);
 
 	AbstractSensors::update(visualize); // increment the clock
 }

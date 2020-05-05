@@ -45,8 +45,8 @@ private:
 	void rewireGateRandomly(size_t gateIdx);
 	std::shared_ptr<AbstractTextureGate> getGateCopy(size_t oldGateIdx, unsigned newGateID); // OK
 	std::shared_ptr<AbstractTextureGate> getRandomGate(unsigned gateID); // OK
-	std::tuple<size_t,size_t,size_t,size_t> getRandomInputTextureAddress(); // new, OK
-	std::tuple<size_t,size_t,size_t,size_t> getRandomOutputTextureAddress(); // new, OK
+	TextureIndex getRandomInputTextureAddress(); // new, OK
+	TextureIndex getRandomOutputTextureAddress(); // new, OK
 	unsigned getLowestAvailableGateID(); // OK
 //	void beginLogging();
 //	void logBrainStructure();

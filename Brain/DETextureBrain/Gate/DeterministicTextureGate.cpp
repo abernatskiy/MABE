@@ -22,8 +22,8 @@ string fixedWidthBinaryRepresentation(size_t number, size_t width) {
 /***** DetermininisticTextureGate definitions *****/
 
 DeterministicTextureGate::DeterministicTextureGate(unsigned newID,
-                                                   std::vector<std::tuple<size_t,size_t,size_t,size_t>> newInputsIndices,
-                                                   std::vector<std::tuple<size_t,size_t,size_t,size_t>> newOutputsIndices) :
+                                                   vector<TextureIndex> newInputsIndices,
+                                                   vector<TextureIndex> newOutputsIndices) :
 	AbstractTextureGate(newID, newInputsIndices, newOutputsIndices) {
 
 	// inputs and outputs are initialized to the correct size in the base class constructor,
@@ -53,16 +53,16 @@ string DeterministicTextureGate::description() const {
 	stringstream ss;
 	ss << "DETERMINISTIC TEXTURE GATE:" << endl
 	   << "Input texture addresses:";
-	for(const auto& ii : inputsIndices)
-		ss << ' ' << textureAddressRepresentation(ii);
+	for(auto ii : inputsIndices)
+		ss << ' ' << readableRepr(ii);
 	ss << endl << "Output texture addresses:";
-	for(const auto& oi : outputsIndices)
-		ss << ' ' << textureAddressRepresentation(oi);
+	for(auto oi : outputsIndices)
+		ss << ' ' << readableRepr(oi);
 	ss << endl << "Current input pointers:";
-	for(const auto& i : inputs)
+	for(auto i : inputs)
 		ss << ' ' << static_cast<void*>(i);
 	ss << endl << "Current output pointers:";
-	for(const auto& o : outputs)
+	for(auto o : outputs)
 		ss << ' ' << static_cast<void*>(o);
 	ss << endl << "Table:" << endl;
 	for(size_t ipat=0; ipat<table.size(); ipat++) {

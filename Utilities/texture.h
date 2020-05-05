@@ -1,12 +1,14 @@
 #pragma once
 
 #include <sstream>
+#include <tuple>
 #include "boost/multi_array.hpp"
 #include "shades.h"
 
 typedef boost::multi_array<uint8_t,4> Texture; // dimensions: x, y, time, channel
+typedef boost::array<boost::multi_array_types::index,4> TextureIndex;
 
-inline std::string readableTextureRepr(const Texture& texture, bool binary=true) {
+inline std::string readableRepr(const Texture& texture, bool binary=true) {
 	// X is horizontal, increases left-to-right
 	// Y is vertical, increases top-to-bottom
 	// Channels increase left-to-right
@@ -25,4 +27,16 @@ inline std::string readableTextureRepr(const Texture& texture, bool binary=true)
 		}
 	}
 	return ss.str();
+}
+
+inline TextureIndex operator+(TextureIndex left, TextureIndex right) {
+	return {{left[0]+right[0], left[1]+right[1], left[2]+right[2], left[3]+right[3]}};
+}
+
+inline std::string readableRepr(TextureIndex idx) {
+	return std::string("(") +
+	       std::to_string(idx[0]) + "," +
+	       std::to_string(idx[1]) + "," +
+	       std::to_string(idx[2]) + "," +
+	       std::to_string(idx[3]) + ")";
 }
