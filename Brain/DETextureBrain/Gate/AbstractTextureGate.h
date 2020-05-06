@@ -18,18 +18,22 @@ protected:
 public:
 	// look: this class has public data!
 	unsigned ID;
-	std::vector<TextureIndex> inputsIndices;
-	std::vector<TextureIndex> outputsIndices;
+	std::vector<TextureIndex> inputsFilterIndices;
+	std::vector<TextureIndex> outputsFilterIndices;
+	TextureIndex inputsShift;
+	TextureIndex outputsShift;
 
 	// constructor overrides should call this one and use process-wide RNG to randomize the gate structure
 	AbstractTextureGate() = default;
 	AbstractTextureGate(unsigned ID,
-	                    std::vector<TextureIndex> inputsIndices,
-	                    std::vector<TextureIndex> outputsIndices);
+	                    std::vector<TextureIndex> inputsFilterIndices,
+	                    std::vector<TextureIndex> outputsFilterIndices);
 	virtual ~AbstractTextureGate() = default;
 
 	void updateInputs(Texture* inputPtr);
 	void updateOutputs(Texture* outputPtr);
+	void setInputsShift(TextureIndex shift);
+	void setOutputsShift(TextureIndex shift);
 
 	void reset() {}; // make this virtual if stateful gates are needed
 
@@ -44,22 +48,30 @@ public:
 };
 
 inline AbstractTextureGate::AbstractTextureGate(unsigned newID,
-                                         std::vector<TextureIndex> newInputsIndices,
-                                         std::vector<TextureIndex> newOutputsIndices) :
+                                         std::vector<TextureIndex> newInputsFilterIndices,
+                                         std::vector<TextureIndex> newOutputsFilterIndices) :
 	ID(newID),
-	inputsIndices(newInputsIndices),
-	outputsIndices(newOutputsIndices),
-	inputs(newInputsIndices.size(), nullptr),
-	outputs(newOutputsIndices.size(), nullptr) {}
+	inputsFilterIndices(newInputsFilterIndices),
+	outputsFilterIndices(newOutputsFilterIndices),
+	inputs(newInputsFilterIndices.size(), nullptr),
+	outputs(newOutputsFilterIndices.size(), nullptr) {}
 
 inline void AbstractTextureGate::updateInputs(Texture* inputPtr) {
-	for(size_t i=0; i<inputsIndices.size(); i++)
-		inputs[i] = &((*inputPtr)(inputsIndices[i])); // operator() of boost::multi_array
+	for(size_t i=0; i<inputsFilterIndices.size(); i++)
+		inputs[i] = &((*inputPtr)(inputsFilterIndices[i]+inputsShift)); // operator() of boost::multi_array
 }
 
 inline void AbstractTextureGate::updateOutputs(Texture* outputPtr) {
-	for(size_t o=0; o<outputsIndices.size(); o++)
-		outputs[o] = &((*outputPtr)(outputsIndices[o]));
+	for(size_t o=0; o<outputsFilterIndices.size(); o++)
+		outputs[o] = &((*outputPtr)(outputsFilterIndices[o]+outputsShift));
+}
+
+inline void AbstractTextureGate::setInputsShift(TextureIndex shift) {
+	inputsShift = shift;
+}
+
+inline void AbstractTextureGate::setOutputsShift(TextureIndex shift) {
+	outputsShift = shift;
 }
 
 inline nlohmann::json AbstractTextureGate::serialize() const {
@@ -71,12 +83,15 @@ inline nlohmann::json AbstractTextureGate::serialize() const {
 		return nlohmann::json::array({idx[0], idx[1], idx[2], idx[3]});
 	};
 
-	out["inputsIndices"] = nlohmann::json::array();
-	for(auto inputIdxs : inputsIndices)
-		out["inputsIndices"].push_back(indices2json(inputIdxs));
-	out["outputsIndices"] = nlohmann::json::array();
-	for(auto outputIdxs : outputsIndices)
-		out["outputsIndices"].push_back(indices2json(outputIdxs));
+	out["inputsFilterIndices"] = nlohmann::json::array();
+	for(auto inputIdxs : inputsFilterIndices)
+		out["inputsFilterIndices"].push_back(indices2json(inputIdxs));
+	out["inputsShift"] = indices2json(inputsShift);
+
+	out["outputsFilterIndices"] = nlohmann::json::array();
+	for(auto outputIdxs : outputsFilterIndices)
+		out["outputsFilterIndices"].push_back(indices2json(outputIdxs));
+	out["outputsShift"] = indices2json(outputsShift);
 
 	return out;
 }
@@ -88,15 +103,17 @@ inline void AbstractTextureGate::deserialize(const nlohmann::json& in) {
 		return TextureIndex({{idxsjson[0], idxsjson[1], idxsjson[2], idxsjson[3]}});
 	};
 
-	inputsIndices.clear();
-	for(const auto& iidj : in["inputsIndices"])
-		inputsIndices.push_back(json2indices(iidj));
-	outputsIndices.clear();
-	for(const auto& oidj : in["outputsIndices"])
-		outputsIndices.push_back(json2indices(oidj));
+	inputsFilterIndices.clear();
+	for(const auto& iidj : in["inputsFilterIndices"])
+		inputsFilterIndices.push_back(json2indices(iidj));
+	inputsShift = json2indices(in["inputsShift"]);
+	outputsFilterIndices.clear();
+	for(const auto& oidj : in["outputsFilterIndices"])
+		outputsFilterIndices.push_back(json2indices(oidj));
+	outputsShift = json2indices(in["outputsShift"]);
 
-	inputs.resize(inputsIndices.size());
+	inputs.resize(inputsFilterIndices.size());
 	std::fill(inputs.begin(), inputs.end(), nullptr);
-	outputs.resize(outputsIndices.size());
+	outputs.resize(outputsFilterIndices.size());
 	std::fill(outputs.begin(), outputs.end(), nullptr);
 }

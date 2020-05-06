@@ -22,9 +22,9 @@ string fixedWidthBinaryRepresentation(size_t number, size_t width) {
 /***** DetermininisticTextureGate definitions *****/
 
 DeterministicTextureGate::DeterministicTextureGate(unsigned newID,
-                                                   vector<TextureIndex> newInputsIndices,
-                                                   vector<TextureIndex> newOutputsIndices) :
-	AbstractTextureGate(newID, newInputsIndices, newOutputsIndices) {
+                                                   vector<TextureIndex> newInputsFilterIndices,
+                                                   vector<TextureIndex> newOutputsFilterIndices) :
+	AbstractTextureGate(newID, newInputsFilterIndices, newOutputsFilterIndices) {
 
 	// inputs and outputs are initialized to the correct size in the base class constructor,
 	// so I can freely use their .size()s to validate the gate and make an appropriate table
@@ -44,7 +44,9 @@ DeterministicTextureGate::DeterministicTextureGate(unsigned newID,
 }
 
 shared_ptr<AbstractTextureGate> DeterministicTextureGate::makeCopy(unsigned copyID) const {
-	auto newGate = make_shared<DeterministicTextureGate>(copyID, inputsIndices, outputsIndices);
+	auto newGate = make_shared<DeterministicTextureGate>(copyID, inputsFilterIndices, outputsFilterIndices);
+	newGate->setInputsShift(inputsShift);
+	newGate->setOutputsShift(outputsShift);
 	newGate->table = table;
 	return newGate;
 }
@@ -52,11 +54,11 @@ shared_ptr<AbstractTextureGate> DeterministicTextureGate::makeCopy(unsigned copy
 string DeterministicTextureGate::description() const {
 	stringstream ss;
 	ss << "DETERMINISTIC TEXTURE GATE:" << endl
-	   << "Input texture addresses:";
-	for(auto ii : inputsIndices)
+	   << "Input shift is " << readableRepr(inputsShift) << ". Input filter indices:";
+	for(auto ii : inputsFilterIndices)
 		ss << ' ' << readableRepr(ii);
-	ss << endl << "Output texture addresses:";
-	for(auto oi : outputsIndices)
+	ss << endl << "Output shift is " << readableRepr(outputsShift) << ". Output filter indices:";
+	for(auto oi : outputsFilterIndices)
 		ss << ' ' << readableRepr(oi);
 	ss << endl << "Current input pointers:";
 	for(auto i : inputs)

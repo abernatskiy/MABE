@@ -8,8 +8,8 @@ public:
 
 	DeterministicTextureGate() = default;
 	DeterministicTextureGate(unsigned ID,
-	                         std::vector<TextureIndex> inputsIndices,
-	                         std::vector<TextureIndex> outputsIndices); // uses process-wide RNG to initialize the table
+	                         std::vector<TextureIndex> inputsFilterIndices,
+	                         std::vector<TextureIndex> outputsFilterIndices); // uses process-wide RNG to initialize the table
 	~DeterministicTextureGate() = default;
 
 	void update(std::mt19937* rng=nullptr) override; // ignores the RNG since the gate is deterministic
