@@ -14,6 +14,9 @@
 #include "../MarkovBrain/logFile.h"
 #include "../../Utilities/texture.h"
 
+#define UNSHARED_REGIME 0
+#define SHARED_REGIME 1
+
 // This brain expects a vector of two doubles that encode a pointer to a a Texture (boost::multi_array) with axes [x, y, t, channel]
 
 class DETextureBrain : public AbstractBrain {
@@ -26,32 +29,39 @@ private:
 	size_t strideX, strideY, strideT;
 	size_t outputSizeX, outputSizeY, outputSizeT;
 	size_t inBitsPerPixel, outBitsPerPixel;
+	const int convolutionRegime;
 
 	// Major state vars
-	Texture* input; // we do not modify the input, but occasionally we may want to switch to another complete one - hence a pointer to const
+	Texture* input;
 	Texture* output;
-	std::vector<std::shared_ptr<AbstractTextureGate>> gates;
+	boost::multi_array<std::vector<std::shared_ptr<AbstractTextureGate>>,3> filters;
 	// keep in mind that this class is responsible for maintaining the output pointers of the gates in a valid state
 	// it follows that every time this class resets a gate, generates a new one or modifies one's output connections, it must call gate->updateOutputs(output)
 	// the inputs do not require such care as they are updated by attachToSensors() before every evalution
 
 	// Private methods
-	std::tuple<size_t,size_t,size_t> computeOutputShape(); // new, OK
-	void resetOutputTexture(); // new, OK
+	std::tuple<size_t,size_t,size_t> computeOutputShape();
+	unsigned totalNumberOfGates();
+	unsigned totalNumberOfFilters() { return outputSizeX*outputSizeY*outputSizeT; };
+	void resetOutputTexture();
 
-	void mutateStructurewide(); // OK
-	void mainMutate(); // OK
-	void randomize(); // OK
-	void rewireGateRandomly(size_t gateIdx);
-	std::shared_ptr<AbstractTextureGate> getGateCopy(size_t oldGateIdx, unsigned newGateID); // OK
-	std::shared_ptr<AbstractTextureGate> getRandomGate(unsigned gateID); // OK
-	TextureIndex getRandomInputTextureAddress(); // new, OK
-	TextureIndex getRandomOutputTextureAddress(); // new, OK
-	unsigned getLowestAvailableGateID(); // OK
+	void mutateStructurewide();
+	void mainMutate();
+	void randomize();
+	void internallyMutateRandomlySelectedGate();
+	void randomlyRewireRandomlySelectedGate();
+	void addCopyOfRandomlySelectedGate();
+	void addRandomGate();
+	void deleteRandomlySelectedGate();
+
+	std::tuple<size_t,size_t,size_t> getRandomFilterIndex();
+	TextureIndex getRandomFilterInputIndex();
+	TextureIndex getRandomFilterOutputIndex();
+	unsigned getLowestAvailableGateID();
 //	void beginLogging();
 //	void logBrainStructure();
-	void validateDimensions(); // throws exceptions, OK
-	void validateInput(); // throws exceptions, OK
+	void validateDimensions(); // throws exceptions
+	void validateInput(); // throws exceptions
 
 	// Mutation-related variables
 	const double structurewideMutationProbability;
@@ -66,7 +76,7 @@ private:
 	static std::shared_ptr<ParameterLink<std::string>> strideShapePL;
 	static std::shared_ptr<ParameterLink<int>> inBitsPerPixelPL;
 	static std::shared_ptr<ParameterLink<int>> outBitsPerPixelPL;
-//	static std::shared_ptr<ParameterLink<bool>> logicalConvolutionPL; // make it an int regime?
+	static std::shared_ptr<ParameterLink<int>> convolutionRegimePL;
 
 	static std::shared_ptr<ParameterLink<std::string>> gateIORangesPL;
 	static std::shared_ptr<ParameterLink<int>> initialGateCountPL;
