@@ -232,7 +232,7 @@ DataMap DETextureBrain::getStats(string& prefix) {
 				gatecounts["ProbabilisticTextureGates"]++;
 		}
 		gatecounts["DeterministicTextureGates"] *= totalNumberOfFilters();
-		gatecounts["ProbabilisticTextureGates"] *= totalNumebrOfFilters();
+		gatecounts["ProbabilisticTextureGates"] *= totalNumberOfFilters();
 	}
 	dataMap.set(prefix + "markovBrainDeterministicTextureGates", gatecounts["DeterministicTextureGates"]);
 	dataMap.set(prefix + "markovBrainProbabilisticTextureGates", gatecounts["ProbabilisticTextureGates"]);
@@ -345,7 +345,7 @@ void DETextureBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<s
 					}
 				}
 				if(convolutionRegime==SHARED_REGIME) {
-					for(auto baseGateJSON : filtersJSON) {
+					for(auto gateJSON : filtersJSON) {
 						auto gate = deserializeGate(gateJSON);
 						gate->setInputsShift({{fx*strideX, fy*strideY, ft*strideT, 0}});
 						gate->setOutputsShift({{fx, fy, ft, 0}});
@@ -354,7 +354,6 @@ void DETextureBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<s
 					}
 				}
 			}
-	}
 }
 
 /********** Private definitions **********/
@@ -424,7 +423,7 @@ void DETextureBrain::mutateStructurewide() {
 					for(size_t fx=0; fx<outputSizeX; fx++)
 						for(size_t fy=0; fy<outputSizeY; fy++)
 							for(size_t ft=0; ft<outputSizeT; ft++)
-								filter[fx][fy][ft][gi]->inputsFilterIndices[connectionIdx] = newInputAddress;
+								filters[fx][fy][ft][gi]->inputsFilterIndices[connectionIdx] = newInputAddress;
 				}
 				else {
 					connectionIdx -= gateInputSize;
@@ -432,8 +431,8 @@ void DETextureBrain::mutateStructurewide() {
 					for(size_t fx=0; fx<outputSizeX; fx++)
 						for(size_t fy=0; fy<outputSizeY; fy++)
 							for(size_t ft=0; ft<outputSizeT; ft++) {
-								filter[fx][fy][ft][gi]->outputsFilterIndices[connectionIdx] = newOutputAddress;
-								filter[fx][fy][ft][gi]->updateOutputs(output);
+								filters[fx][fy][ft][gi]->outputsFilterIndices[connectionIdx] = newOutputAddress;
+								filters[fx][fy][ft][gi]->updateOutputs(output);
 							}
 				}
 			}
@@ -552,7 +551,7 @@ void DETextureBrain::randomlyRewireRandomlySelectedGate() {
 			for(size_t fx=0; fx<outputSizeX; fx++)
 				for(size_t fy=0; fy<outputSizeY; fy++)
 					for(size_t ft=0; ft<outputSizeT; ft++)
-						filter[fx][fy][ft][gidx]->inputsFilterIndices[connectionIdx] = newInputAddress;
+						filters[fx][fy][ft][gidx]->inputsFilterIndices[connectionIdx] = newInputAddress;
 		}
 		else {
 			connectionIdx -= gateInputSize;
@@ -560,8 +559,8 @@ void DETextureBrain::randomlyRewireRandomlySelectedGate() {
 			for(size_t fx=0; fx<outputSizeX; fx++)
 				for(size_t fy=0; fy<outputSizeY; fy++)
 					for(size_t ft=0; ft<outputSizeT; ft++) {
-						filter[fx][fy][ft][gidx]->outputsFilterIndices[connectionIdx] = newOutputAddress;
-						filter[fx][fy][ft][gidx]->updateOutputs(output);
+						filters[fx][fy][ft][gidx]->outputsFilterIndices[connectionIdx] = newOutputAddress;
+						filters[fx][fy][ft][gidx]->updateOutputs(output);
 					}
 		}
 	}
@@ -589,7 +588,7 @@ void DETextureBrain::addCopyOfRandomlySelectedGate() {
 				for(size_t ft=0; ft<outputSizeT; ft++) {
 					auto newGate = filters[0][0][0][sidx]->makeCopy(newGateID);
 					newGate->setInputsShift({{fx*strideX, fy*strideY, ft*strideT, 0}});
-					newGate->setOutputShift({{fx, fy, ft, 0}});
+					newGate->setOutputsShift({{fx, fy, ft, 0}});
 					newGate->updateOutputs(output);
 					filters[fx][fy][ft].push_back(newGate);
 				}
@@ -621,7 +620,7 @@ void DETextureBrain::addRandomGate() {
 				for(size_t ft=0; ft<outputSizeT; ft++) {
 					shared_ptr<AbstractTextureGate> newLocalGate = newGate->makeCopy(newGate->ID);
 					newLocalGate->setInputsShift({{fx*strideX, fy*strideY, ft*strideT, 0}});
-					newLocalGate->setOutputsShift({{rfx, rfy, rft, 0}});
+					newLocalGate->setOutputsShift({{fx, fy, ft, 0}});
 					newLocalGate->updateOutputs(output);
 					filters[fx][fy][ft].push_back(newLocalGate);
 				}
@@ -635,7 +634,7 @@ void DETextureBrain::deleteRandomlySelectedGate() {
 		size_t rgidx = Random::getIndex(filters[rfx][rfy][rft].size());
 		filters[rfx][rfy][rft].erase(filters[rfx][rfy][rft].begin() + rgidx);
 	}
-	if(convolutionalRegime==SHARED_REGIME) {
+	if(convolutionRegime==SHARED_REGIME) {
 		size_t rgidx = Random::getIndex(filters[0][0][0].size());
 		for(size_t fx=0; fx<outputSizeX; fx++)
 			for(size_t fy=0; fy<outputSizeY; fy++)
