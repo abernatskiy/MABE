@@ -12,6 +12,8 @@
 #include "DETextureBrain.h"
 #include "Gate/DeterministicTextureGate.h"
 
+typedef DeterministicTextureGate UsedDerivedTextureGate;
+
 using namespace std;
 
 /********** Auxiliary funcs **********/
@@ -614,7 +616,7 @@ void DETextureBrain::addRandomGate() {
 	for(unsigned j=0; j<nouts; j++)
 		outputIdxs.push_back(getRandomFilterOutputIndex());
 
-	shared_ptr<AbstractTextureGate> newGate = make_shared<DeterministicTextureGate>(getLowestAvailableGateID(), inputIdxs, outputIdxs);
+	shared_ptr<AbstractTextureGate> newGate = make_shared<UsedDerivedTextureGate>(getLowestAvailableGateID(), inputIdxs, outputIdxs);
 	if(convolutionRegime==UNSHARED_REGIME) {
 		size_t rfx, rfy, rft; // random filter <dimension>
 		tie(rfx, rfy, rft) = getRandomFilterIndex();
