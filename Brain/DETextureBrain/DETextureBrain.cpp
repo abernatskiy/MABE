@@ -51,8 +51,6 @@ shared_ptr<ParameterLink<double>> DETextureBrain::connectionToTableChangeRatioPL
                                                                                                                   "if the brain experiences no insertion, deletions or duplictions, call to mutate() changes parameters of a randomly chosen gate. This parameters governs relative frequencies of such changes to connections and logic tables (default: 1.0 or equal probability)");
 shared_ptr<ParameterLink<int>> DETextureBrain::minGateCountPL = Parameters::register_parameter("BRAIN_DETEXTURE-minGateCount", 0,
                                                                                                "number of gates that causes gate deletions to become impossible (mutation operator calls itself if the mutation happens to be a deletion)");
-shared_ptr<ParameterLink<bool>> DETextureBrain::readFromInputsOnlyPL = Parameters::register_parameter("BRAIN_DETEXTURE-readFromInputsOnly", false,
-                                                                                                      "if set to true, gates will only read from input nodes; by default, they'll read from all nodes");
 shared_ptr<ParameterLink<double>> DETextureBrain::structurewideMutationProbabilityPL = Parameters::register_parameter("BRAIN_DETEXTURE-structurewideMutationProbability", 0.0,
                                                                                                                       "probability of mutation of each brain component upon reproduction");
 shared_ptr<ParameterLink<string>> DETextureBrain::inTextureShapePL = Parameters::register_parameter("BRAIN_DETEXTURE-inTextureShape", (string) "15,15,1",
@@ -110,9 +108,10 @@ DETextureBrain::~DETextureBrain() {
 }
 
 void DETextureBrain::update() {
+
 	validateInput();
 
-//	cout << "Brain at " << this << " is updating with input at " << input << " and output at " << output << endl;
+//	cout << "Brain at " << this << " with input at " << input << " and output at " << output << ", originated through " << originationStory << ", is updating" << endl;
 //	cout << readableRepr(*input) << endl;
 
 	for(size_t fx=0; fx<outputSizeX; fx++)
@@ -136,7 +135,7 @@ shared_ptr<AbstractBrain> DETextureBrain::makeCopy(shared_ptr<ParametersTable> P
 		for(size_t fy=0; fy<outputSizeY; fy++)
 			for(size_t ft=0; ft<outputSizeT; ft++)
 				for(auto gate : filters[fx][fy][ft]) {
-					auto gateCopyPtr = gate->makeCopy(gate->ID);
+					shared_ptr<AbstractTextureGate> gateCopyPtr = gate->makeCopy(gate->ID);
 					gateCopyPtr->updateOutputs(newBrain->output);
 					newBrain->filters[fx][fy][ft].push_back(gateCopyPtr);
 				}
@@ -339,14 +338,14 @@ void DETextureBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<s
 				filters[fx][fy][ft].clear();
 				if(convolutionRegime==UNSHARED_REGIME) {
 					for(auto gateJSON : filtersJSON[fx][fy][ft]) {
-						auto gate = deserializeGate(gateJSON);
+						shared_ptr<AbstractTextureGate> gate = deserializeGate(gateJSON);
 						gate->updateOutputs(output);
 						filters[fx][fy][ft].push_back(gate);
 					}
 				}
 				if(convolutionRegime==SHARED_REGIME) {
 					for(auto gateJSON : filtersJSON) {
-						auto gate = deserializeGate(gateJSON);
+						shared_ptr<AbstractTextureGate> gate = deserializeGate(gateJSON);
 						gate->setInputsShift({{fx*strideX, fy*strideY, ft*strideT, 0}});
 						gate->setOutputsShift({{fx, fy, ft, 0}});
 						gate->updateOutputs(output);
@@ -410,8 +409,13 @@ void DETextureBrain::mutateStructurewide() {
 				filters[0][0][0][gi]->mutateInternalStructure();
 				for(size_t fx=0; fx<outputSizeX; fx++)
 					for(size_t fy=0; fy<outputSizeY; fy++)
-						for(size_t ft=0; ft<outputSizeT; ft++)
-							filters[fx][fy][ft][gi] = filters[0][0][0][gi]->makeCopy(filters[0][0][0][gi]->ID);
+						for(size_t ft=0; ft<outputSizeT; ft++) {
+							shared_ptr<AbstractTextureGate> newGate = filters[0][0][0][gi]->makeCopy(filters[0][0][0][gi]->ID);
+							newGate->setInputsShift(filters[fx][fy][ft][gi]->inputsShift);
+							newGate->setOutputsShift(filters[fx][fy][ft][gi]->outputsShift);
+							newGate->updateOutputs(output);
+							filters[fx][fy][ft][gi] = newGate;
+						}
 			}
 			if(Random::getDouble(1.)<structurewideMutationProbability) {
 				shared_ptr<AbstractTextureGate> theGate = filters[0][0][0][gi];
@@ -517,8 +521,13 @@ void DETextureBrain::internallyMutateRandomlySelectedGate() {
 		theGate->mutateInternalStructure();
 		for(size_t fx=0; fx<outputSizeX; fx++)
 			for(size_t fy=0; fy<outputSizeY; fy++)
-				for(size_t ft=0; ft<outputSizeT; ft++)
-					filters[fx][fy][ft][gidx] = theGate->makeCopy(theGate->ID);
+				for(size_t ft=0; ft<outputSizeT; ft++) {
+					shared_ptr<AbstractTextureGate> newGate = theGate->makeCopy(theGate->ID);
+					newGate->setInputsShift(filters[fx][fy][ft][gidx]->inputsShift);
+					newGate->setOutputsShift(filters[fx][fy][ft][gidx]->outputsShift);
+					newGate->updateOutputs(output);
+					filters[fx][fy][ft][gidx] = newGate;
+				}
 	}
 }
 
@@ -586,7 +595,7 @@ void DETextureBrain::addCopyOfRandomlySelectedGate() {
 		for(size_t fx=0; fx<outputSizeX; fx++)
 			for(size_t fy=0; fy<outputSizeY; fy++)
 				for(size_t ft=0; ft<outputSizeT; ft++) {
-					auto newGate = filters[0][0][0][sidx]->makeCopy(newGateID);
+					shared_ptr<AbstractTextureGate> newGate = filters[0][0][0][sidx]->makeCopy(newGateID);
 					newGate->setInputsShift({{fx*strideX, fy*strideY, ft*strideT, 0}});
 					newGate->setOutputsShift({{fx, fy, ft, 0}});
 					newGate->updateOutputs(output);

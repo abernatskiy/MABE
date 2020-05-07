@@ -85,7 +85,6 @@ private:
 	static std::shared_ptr<ParameterLink<double>> gateDuplicationProbabilityPL;
 	static std::shared_ptr<ParameterLink<double>> connectionToTableChangeRatioPL;
 	static std::shared_ptr<ParameterLink<int>> minGateCountPL;
-	static std::shared_ptr<ParameterLink<bool>> readFromInputsOnlyPL;
 	static std::shared_ptr<ParameterLink<double>> structurewideMutationProbabilityPL;
 
 public:
