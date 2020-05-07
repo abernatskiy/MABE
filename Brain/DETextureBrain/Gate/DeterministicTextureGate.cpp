@@ -53,7 +53,7 @@ shared_ptr<AbstractTextureGate> DeterministicTextureGate::makeCopy(unsigned copy
 
 string DeterministicTextureGate::description() const {
 	stringstream ss;
-	ss << "DETERMINISTIC TEXTURE GATE:" << endl
+	ss << "DETERMINISTIC TEXTURE GATE " << ID << endl
 	   << "Input shift is " << readableRepr(inputsShift) << ". Input filter indices:";
 	for(auto ii : inputsFilterIndices)
 		ss << ' ' << readableRepr(ii);

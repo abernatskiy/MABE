@@ -57,11 +57,13 @@ inline AbstractTextureGate::AbstractTextureGate(unsigned newID,
 	outputs(newOutputsFilterIndices.size(), nullptr) {}
 
 inline void AbstractTextureGate::updateInputs(Texture* inputPtr) {
+	if(!inputPtr) throw std::invalid_argument("AbstractTextureGate::updateInputs caught nullptr");
 	for(size_t i=0; i<inputsFilterIndices.size(); i++)
 		inputs[i] = &((*inputPtr)(inputsFilterIndices[i]+inputsShift)); // operator() of boost::multi_array
 }
 
 inline void AbstractTextureGate::updateOutputs(Texture* outputPtr) {
+	if(!outputPtr) throw std::invalid_argument("AbstractTextureGate::updateOutputs caught nullptr");
 	for(size_t o=0; o<outputsFilterIndices.size(); o++)
 		outputs[o] = &((*outputPtr)(outputsFilterIndices[o]+outputsShift));
 }
