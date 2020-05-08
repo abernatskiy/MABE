@@ -11,8 +11,9 @@
 
 #include "DETextureBrain.h"
 #include "Gate/DeterministicTextureGate.h"
+#include "Gate/ProbabilisticTextureGate.h"
 
-typedef DeterministicTextureGate UsedDerivedTextureGate;
+typedef ProbabilisticTextureGate UsedDerivedTextureGate;
 
 using namespace std;
 
@@ -110,7 +111,6 @@ DETextureBrain::~DETextureBrain() {
 }
 
 void DETextureBrain::update(mt19937* rng) {
-
 	validateInput();
 
 //	cout << "Brain at " << this << " with input at " << input << " and output at " << output << ", originated through " << originationStory << ", is updating" << endl;
