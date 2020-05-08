@@ -5,21 +5,9 @@
 #include <sstream>
 
 #include "../../../Utilities/Random.h"
+#include "../../../Utilities/Utilities.h" // for fixedWidthBinaryRepresentation(size_t number, size_t width)
 
 using namespace std;
-
-/***** Auxiliary functions *****/
-
-string fixedWidthBinaryRepresentation(size_t number, size_t width) {
-	stringstream ss;
-//	for(size_t i=width; i>0; i--)
-//		ss << ((number >> (i-1)) & 1);
-	for(size_t i=0; i<width; i++)
-		ss << ((number >> i) & 1);
-	return ss.str();
-}
-
-/***** DetermininisticTextureGate definitions *****/
 
 DeterministicTextureGate::DeterministicTextureGate(unsigned newID,
                                                    vector<TextureIndex> newInputsFilterIndices,

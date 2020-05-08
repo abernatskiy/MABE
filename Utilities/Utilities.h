@@ -437,3 +437,10 @@ inline double entropy1d(double probabilityOfOne) {
 	else
 		return -1.*probabilityOfOne*log2(probabilityOfOne) - (1.-probabilityOfOne)*log2(1.-probabilityOfOne);
 }
+
+inline std::string fixedWidthBinaryRepresentation(size_t number, size_t width) {
+  std::stringstream ss;
+  for(size_t i=0; i<width; i++)
+    ss << ((number >> i) & 1);
+  return ss.str();
+}
