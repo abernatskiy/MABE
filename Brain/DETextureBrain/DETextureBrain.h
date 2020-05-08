@@ -101,9 +101,7 @@ public:
 	};
 	~DETextureBrain(); // these objects own their output pointers that must be destroyed explicitly
 
-	// constructors OK
-
-	void update() override; // OK?
+	void update(std::mt19937* rng=nullptr) override;
 	std::shared_ptr<AbstractBrain> makeCopy(std::shared_ptr<ParametersTable> PT_ = nullptr) override;
 	std::shared_ptr<AbstractBrain> makeBrain(std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& _genomes) override; // returns a random brain like the one from which it's called
 	std::shared_ptr<AbstractBrain> makeBrainFrom(std::shared_ptr<AbstractBrain> brain,
@@ -111,20 +109,18 @@ public:
 	std::shared_ptr<AbstractBrain> makeBrainFromMany(std::vector<std::shared_ptr<AbstractBrain>> _brains,
 	                                                 std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& _genomes) override; // brains' procreation
 
-	// copiers OK
-
-	void mutate() override; // OK
-	void resetBrain() override; // OK
-	void attachToSensors(void*) override; // sets the input address and updates the pointers in gates // OK
-	std::unordered_set<std::string> requiredGenomes() override { return {}; } // OK
+	void mutate() override;
+	void resetBrain() override;
+	void attachToSensors(void*) override; // sets the input address and updates the pointers in gates
+	std::unordered_set<std::string> requiredGenomes() override { return {}; };
 
 	// Infrastructure
-	std::string description() override; // OK
-	DataMap getStats(std::string& prefix) override; // OK
-	std::string getType() override { return "DETexture"; } // OK
+	std::string description() override;
+	DataMap getStats(std::string& prefix) override;
+	std::string getType() override { return "DETexture"; };
 //	void logNote(std::string note) override { log.log("DETextureBrain's external note: " + note + "\n"); };
-	DataMap serialize(std::string& name) override; // OK
-	void deserialize(std::shared_ptr<ParametersTable> PT, std::unordered_map<std::string,std::string>& orgData, std::string& name) override; // OK
+	DataMap serialize(std::string& name) override;
+	void deserialize(std::shared_ptr<ParametersTable> PT, std::unordered_map<std::string,std::string>& orgData, std::string& name) override;
 	void* getDataForMotors() override { return output; };
 };
 

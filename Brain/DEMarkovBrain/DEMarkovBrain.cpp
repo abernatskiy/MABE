@@ -74,7 +74,7 @@ DEMarkovBrain::DEMarkovBrain(int _nrInNodes, int _nrHidNodes, int _nrOutNodes, s
 		parseGateLimitsStr(DeterministicGate::IO_RangesPL->get(PT_));
 }
 
-void DEMarkovBrain::update() {
+void DEMarkovBrain::update(std::mt19937* worldRNG) {
 	nextNodes.assign(nrNodes, 0.0);
 	DataMap IOMap;
 

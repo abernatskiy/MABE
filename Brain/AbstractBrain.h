@@ -15,6 +15,7 @@
 #include <iostream>
 #include <set>
 #include <vector>
+#include <random>
 
 #include "../Genome/AbstractGenome.h"
 #include "../Utilities/Parameters.h"
@@ -51,7 +52,7 @@ public:
 
   virtual ~AbstractBrain() = default;
 
-  virtual void update() = 0;
+  virtual void update(std::mt19937* rng=nullptr) = 0;
 
   virtual std::string description() = 0; // returns a desription of this brain in it's current state
 

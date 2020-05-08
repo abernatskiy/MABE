@@ -1,7 +1,10 @@
+#include <climits>
+
 #include "ParallelIsolatedEmbodiedWorld.h"
 
 // #include "../AsteroidTeamGazingWorld/AsteroidTeamGazingWorld.h"
 #include "../AsteroidGazingWorld/AsteroidGazingWorld.h"
+#include "../../Utilities/Random.h"
 
 /***** Auxiliary functions *****/
 
@@ -61,9 +64,12 @@ ParallelIsolatedEmbodiedWorld::ParallelIsolatedEmbodiedWorld(std::shared_ptr<Par
 		exit(EXIT_FAILURE);
 	}
 
+	for(unsigned i=0; i<numThreads; i++)
+		subworldRNGs.emplace_back(static_cast<unsigned>(Random::getInt(INT_MAX)));
+
 	for(unsigned i=0; i<numThreads; i++) {
-		// subworlds.push_back(std::make_unique<AsteroidTeamGazingWorld>(PT_)); // setting the daughter class manually for now
-		subworlds.push_back(std::make_unique<AsteroidGazingWorld>(PT_)); // setting the daughter class manually for now
+		// subworlds.push_back(std::make_unique<AsteroidTeamGazingWorld>(PT_, &subworldRNGs[i])); // setting the daughter class manually for now
+		subworlds.push_back(std::make_unique<AsteroidGazingWorld>(PT_, &subworldRNGs[i])); // setting the daughter class manually for now
 	}
 }
 

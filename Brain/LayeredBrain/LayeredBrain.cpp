@@ -142,7 +142,7 @@ LayeredBrain::LayeredBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Parameter
 //	popFileColumns.push_back("markovBrainDeterministicGates");
 }
 
-void LayeredBrain::update() {
+void LayeredBrain::update(mt19937* rng) {
 	for(int i=0; i<nrInputValues; i++)
 		layers[0]->setInput(i, inputValues[i]);
 	layers[0]->update();

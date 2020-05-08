@@ -109,7 +109,7 @@ DETextureBrain::~DETextureBrain() {
 	delete output;
 }
 
-void DETextureBrain::update() {
+void DETextureBrain::update(mt19937* rng) {
 
 	validateInput();
 
@@ -120,7 +120,7 @@ void DETextureBrain::update() {
 		for(size_t fy=0; fy<outputSizeY; fy++)
 			for(size_t ft=0; ft<outputSizeT; ft++)
 				for(auto gate : filters[fx][fy][ft])
-					gate->update();
+					gate->update(rng);
 
 //	cout << readableRepr(*output) << endl;
 

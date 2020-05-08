@@ -43,7 +43,7 @@ public:
 	LayeredBrain(int ins, int outs, std::shared_ptr<ParametersTable> PT); // constructor generates an empty brain, then it is randomized be the factory
 	~LayeredBrain() = default;
 
-	void update() override;
+	void update(std::mt19937* rng=nullptr) override;
 	std::shared_ptr<AbstractBrain> makeCopy(std::shared_ptr<ParametersTable> PT_) override;
 	std::shared_ptr<AbstractBrain> makeBrain(std::unordered_map<std::string,std::shared_ptr<AbstractGenome>>& _genomes) override; // returns a random brain like the one from which it's called
 	std::shared_ptr<AbstractBrain> makeBrainFrom(std::shared_ptr<AbstractBrain> brain,

@@ -14,7 +14,7 @@ std::shared_ptr<ParameterLink<std::string>> AbstractIsolatedEmbodiedWorld::brain
     Parameters::register_parameter("WORLD_ISOLATED_EMBODIED_NAMES-brainNameSpace", (std::string) "root::",
                                    "Namespace for parameters used to define brain");
 
-AbstractIsolatedEmbodiedWorld::AbstractIsolatedEmbodiedWorld(std::shared_ptr<ParametersTable> PT_) :
+AbstractIsolatedEmbodiedWorld::AbstractIsolatedEmbodiedWorld(std::shared_ptr<ParametersTable> PT_, std::mt19937* worldRNG) :
 	AbstractWorld(PT_),
 	brain(nullptr),
 	currentActualEvaluationNum(0) {
@@ -29,6 +29,9 @@ AbstractIsolatedEmbodiedWorld::AbstractIsolatedEmbodiedWorld(std::shared_ptr<Par
 			std::cerr << "AbstractIsolatedEmbodiedWorld: WARNING! Request for repeating evaluations " << evaluationsPerGeneration << " times declined because WORLD_ISOLATED_EMBODIED-assumeDeterministicEvaluations is true" << std::endl;
 		evaluationsPerGeneration = 1;
 	}
+
+	// Remembering the world-specific random generator pointer
+	rng = worldRNG;
 }
 
 void AbstractIsolatedEmbodiedWorld::evaluateOnce(std::shared_ptr<Organism> org, unsigned repIdx, int visualize) {

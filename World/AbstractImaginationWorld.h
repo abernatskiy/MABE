@@ -53,7 +53,8 @@ protected:
 	};
 
 public:
-	AbstractImaginationWorld(std::shared_ptr<ParametersTable> PT_) : AbstractIsolatedEmbodiedWorld(PT_) {
+	AbstractImaginationWorld(std::shared_ptr<ParametersTable> PT_, std::mt19937* worldRNG=nullptr) :
+		AbstractIsolatedEmbodiedWorld(PT_, worldRNG) {
 		runningScores = std::make_shared<DataMap>();
 		sampleScores = std::make_shared<DataMap>();
 	};

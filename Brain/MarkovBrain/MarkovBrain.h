@@ -105,7 +105,7 @@ public:
 
 	void readParameters();
 
-	virtual void update() override;
+	virtual void update(std::mt19937* rng=nullptr) override;
 
 	void inOutReMap();
 

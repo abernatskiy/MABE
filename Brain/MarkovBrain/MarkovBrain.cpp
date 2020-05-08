@@ -177,7 +177,7 @@ void MarkovBrain::resetOutputs() {
 		log.log("Outputs were reset\n");
 }
 
-void MarkovBrain::update() {
+void MarkovBrain::update(std::mt19937* worldRNG) {
 
 	nextNodes.assign(nrNodes, 0.0);
 	DataMap IOMap;

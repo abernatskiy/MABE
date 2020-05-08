@@ -70,7 +70,8 @@ int AsteroidGazingWorld::initialConditionsInitialized = 0;
 std::map<std::string,std::vector<Range2d>> AsteroidGazingWorld::commonRelativeSensorsInitialConditions;
 int AsteroidGazingWorld::schedulesRandomSeed = -1;
 
-AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_) : AbstractSlideshowWorld(PT_) {
+AsteroidGazingWorld::AsteroidGazingWorld(std::shared_ptr<ParametersTable> PT_, std::mt19937* worldRNG) :
+	AbstractSlideshowWorld(PT_, worldRNG) {
 
 	// Localizing settings
 	brainUpdatesPerAsteroid = brainUpdatesPerAsteroidPL->get(PT_);
