@@ -4,6 +4,8 @@
 
 // #include "../AsteroidTeamGazingWorld/AsteroidTeamGazingWorld.h"
 #include "../AsteroidGazingWorld/AsteroidGazingWorld.h"
+#include "../AsteroidTextureGazingWorld/AsteroidTextureGazingWorld.h"
+
 #include "../../Utilities/Random.h"
 
 /***** Auxiliary functions *****/
@@ -69,7 +71,8 @@ ParallelIsolatedEmbodiedWorld::ParallelIsolatedEmbodiedWorld(std::shared_ptr<Par
 
 	for(unsigned i=0; i<numThreads; i++) {
 		// subworlds.push_back(std::make_unique<AsteroidTeamGazingWorld>(PT_, &subworldRNGs[i])); // setting the daughter class manually for now
-		subworlds.push_back(std::make_unique<AsteroidGazingWorld>(PT_, &subworldRNGs[i])); // setting the daughter class manually for now
+		// subworlds.push_back(std::make_unique<AsteroidGazingWorld>(PT_, &subworldRNGs[i])); // setting the daughter class manually for now
+		subworlds.push_back(std::make_unique<AsteroidTextureGazingWorld>(PT_, &subworldRNGs[i])); // setting the daughter class manually for now
 	}
 }
 
