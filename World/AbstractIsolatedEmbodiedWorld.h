@@ -33,7 +33,7 @@ protected:
 	std::shared_ptr<AbstractBrain> brain;
 
 	// Infrastructure
-	std::mt19937* rng; // World-specific RNG for use in stochastic brains
+	std::mt19937 rng; // World-specific RNG for use in stochastic brains
 	unsigned currentActualEvaluationNum; // within the generation
 
 	static std::shared_ptr<ParameterLink<int>> evaluationsPerGenerationPL;
@@ -57,7 +57,7 @@ protected:
 	virtual void evaluateOrganism(std::shared_ptr<Organism> currentOrganism, int visualize) = 0;
 
 public:
-	AbstractIsolatedEmbodiedWorld(std::shared_ptr<ParametersTable> PT_, std::mt19937* rng=nullptr);
+	AbstractIsolatedEmbodiedWorld(std::shared_ptr<ParametersTable> PT_);
 	virtual ~AbstractIsolatedEmbodiedWorld() = default;
 
 	// Add parallelization both on the level of organisms and on the level of repeats

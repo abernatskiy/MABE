@@ -52,8 +52,8 @@ shared_ptr<ParameterLink<bool>> AsteroidTextureGazingWorld::overwriteEvaluations
 
 int AsteroidTextureGazingWorld::schedulesRandomSeed = -1;
 
-AsteroidTextureGazingWorld::AsteroidTextureGazingWorld(shared_ptr<ParametersTable> PT_, mt19937* worldRNG) :
-	AbstractSlideshowWorld(PT_, worldRNG) {
+AsteroidTextureGazingWorld::AsteroidTextureGazingWorld(shared_ptr<ParametersTable> PT_) :
+	AbstractSlideshowWorld(PT_) {
 
 	// Localizing settings
 	brainUpdatesPerAsteroid = brainUpdatesPerAsteroidPL->get(PT_);

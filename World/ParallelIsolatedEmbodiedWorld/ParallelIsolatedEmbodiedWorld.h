@@ -17,7 +17,6 @@ public:
 	static std::shared_ptr<ParameterLink<int>> numThreadsPL; unsigned numThreads;
 
 	std::vector<std::unique_ptr<AbstractIsolatedEmbodiedWorld>> subworlds;
-	std::vector<std::mt19937> subworldRNGs;
 
 	ParallelIsolatedEmbodiedWorld(std::shared_ptr<ParametersTable> PT_);
 	virtual ~ParallelIsolatedEmbodiedWorld() = default;

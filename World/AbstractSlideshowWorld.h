@@ -57,8 +57,8 @@ protected:
 	};
 
 public:
-	AbstractSlideshowWorld(std::shared_ptr<ParametersTable> PT_, std::mt19937* worldRNG=nullptr) :
-		AbstractImaginationWorld(PT_, worldRNG),
+	AbstractSlideshowWorld(std::shared_ptr<ParametersTable> PT_) :
+		AbstractImaginationWorld(PT_),
 		timeSeriesLogger(std::make_shared<AbstractTimeSeriesLogger>()) {};
 	virtual ~AbstractSlideshowWorld() = default;
 };

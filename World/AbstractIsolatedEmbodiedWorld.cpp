@@ -1,3 +1,5 @@
+#include <climits>
+
 #include "AbstractIsolatedEmbodiedWorld.h"
 
 std::shared_ptr<ParameterLink<int>> AbstractIsolatedEmbodiedWorld::evaluationsPerGenerationPL =
@@ -14,10 +16,11 @@ std::shared_ptr<ParameterLink<std::string>> AbstractIsolatedEmbodiedWorld::brain
     Parameters::register_parameter("WORLD_ISOLATED_EMBODIED_NAMES-brainNameSpace", (std::string) "root::",
                                    "Namespace for parameters used to define brain");
 
-AbstractIsolatedEmbodiedWorld::AbstractIsolatedEmbodiedWorld(std::shared_ptr<ParametersTable> PT_, std::mt19937* worldRNG) :
+AbstractIsolatedEmbodiedWorld::AbstractIsolatedEmbodiedWorld(std::shared_ptr<ParametersTable> PT_) :
 	AbstractWorld(PT_),
 	brain(nullptr),
-	currentActualEvaluationNum(0) {
+	currentActualEvaluationNum(0),
+	rng(Random::getInt(INT_MAX)) {
 
 	// Locatizing the settings
 	evaluationsPerGeneration = evaluationsPerGenerationPL->get(PT_);
@@ -29,9 +32,6 @@ AbstractIsolatedEmbodiedWorld::AbstractIsolatedEmbodiedWorld(std::shared_ptr<Par
 			std::cerr << "AbstractIsolatedEmbodiedWorld: WARNING! Request for repeating evaluations " << evaluationsPerGeneration << " times declined because WORLD_ISOLATED_EMBODIED-assumeDeterministicEvaluations is true" << std::endl;
 		evaluationsPerGeneration = 1;
 	}
-
-	// Remembering the world-specific random generator pointer
-	rng = worldRNG;
 }
 
 void AbstractIsolatedEmbodiedWorld::evaluateOnce(std::shared_ptr<Organism> org, unsigned repIdx, int visualize) {
@@ -60,7 +60,7 @@ void AbstractIsolatedEmbodiedWorld::evaluateOnce(std::shared_ptr<Organism> org, 
 
 	while(!endEvaluation(timeStep)) {
 		sensors->update(visualize);
-		brain->update(rng);
+		brain->update(&rng);
 		motors->update(visualize);
 		preEvaluationOuterWorldUpdate(org, timeStep, visualize);
 		recordRunningScores(org, timeStep, visualize);

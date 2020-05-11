@@ -32,5 +32,5 @@ private:
 	static int schedulesRandomSeed;
 
 public:
-	AsteroidTextureGazingWorld(std::shared_ptr<ParametersTable> PT_, std::mt19937* rng=nullptr);
+	AsteroidTextureGazingWorld(std::shared_ptr<ParametersTable> PT_);
 };
