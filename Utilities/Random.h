@@ -16,6 +16,7 @@
 #pragma once
 
 #include <random>
+#include <stdexcept>
 
 namespace Random {
 
@@ -64,6 +65,7 @@ inline int getInt(const int upper, Generator &gen = getCommonGenerator()) {
 // elements.
 inline int getIndex(const int container_size,
                     Generator &gen = getCommonGenerator()) {
+	if(!container_size) throw std::invalid_argument("Random::getIndex caught a zero container size");
   return getInt(0, container_size - 1, gen);
 }
 
