@@ -92,8 +92,6 @@ void ProbabilisticTextureGate::update(std::mt19937* rng) {
 		inPat |= (*inputs[i]); // add "!= 0" to allow inputs outside of {0,1}
 	}
 
-	cout << "The pointer is " << rng << endl << flush;
-
 	float r = uniform_real_distribution<float>(0., 1.)(*rng);
 	float spentProb = 0.;
 	size_t outPat;
@@ -111,6 +109,9 @@ void ProbabilisticTextureGate::update(std::mt19937* rng) {
 nlohmann::json ProbabilisticTextureGate::serialize() const {
 	nlohmann::json out = AbstractTextureGate::serialize();
 
+	out["numInputPatterns"] = numInputPatterns;
+	out["numOutputPatterns"] = numOutputPatterns;
+
 	out["table"] = nlohmann::json::array();
 	for(const auto& row : table) {
 		auto jsonRow = nlohmann::json::array();
@@ -124,6 +125,8 @@ nlohmann::json ProbabilisticTextureGate::serialize() const {
 
 void ProbabilisticTextureGate::deserialize(const nlohmann::json& in) {
 	AbstractTextureGate::deserialize(in);
+	numInputPatterns = in["numInputPatterns"];
+	numOutputPatterns = in["numOutputPatterns"];
 	table.clear();
 	for(const auto& row : in["table"]) {
 		table.push_back({});
@@ -138,5 +141,4 @@ void ProbabilisticTextureGate::normalizeOutput(size_t inputIdx) {
 	float norm = accumulate(table[inputIdx].begin(), table[inputIdx].end(), 0.);
 	for(auto& prob : table[inputIdx])
 		prob /= norm;
-
 }
