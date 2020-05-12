@@ -328,7 +328,7 @@ void DETextureBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<s
 		if(gateJSON["type"] == "DeterministicTexture")
 			gate = make_shared<DeterministicTextureGate>();
 		else if(gateJSON["type"] == "ProbabilisticTexture")
-			throw invalid_argument("ProbabilisticTextureGate cannot be deserialized since it is not implemented yet"); // gate = make_shared<ProbabilisticTextureGate>();
+			gate = make_shared<ProbabilisticTextureGate>();
 		else
 			throw invalid_argument(string("DETextureBrain::deserialize: Unsupported gate type ") + static_cast<string>(gateJSON["type"]));
 		gate->deserialize(gateJSON);
@@ -450,9 +450,9 @@ void DETextureBrain::mainMutate() {
 	double r = Random::getDouble(1.);
 //	cout << "DETextureBrain " << this << " is mutating. Rolled " << r;
 	if(r < gateInsertionProbabilityPL->get(PT)) {
-//		cout << ", chose insertion. Had " << gates.size() << " gates, ";
+//		cout << ", chose insertion. Had " << totalNumberOfGates() << " gates";
 		addRandomGate();
-//		cout << " now it's " << gates.size() << endl;
+//		cout << ", now it's " << totalNumberOfGates() << endl;
 		originationStory = "mutation_insertion";
 	}
 	else {
@@ -469,31 +469,31 @@ void DETextureBrain::mainMutate() {
 				mainMutate();
 				return;
 			}
-//			cout << ", chose deletion. Had " << gates.size() << " gates, ";
+//			cout << ", chose deletion. Had " << totalNumberOfGates() << " gates";
 			deleteRandomlySelectedGate();
-//			cout << ", removed " << idx << "th one, now it's " << gates.size() << endl;
+//			cout << ", removed one, now it's " << totalNumberOfGates() << endl;
 			originationStory = "mutation_deletion";
 		}
 		else if(r < gateInsertionProbabilityPL->get(PT)+gateDeletionProbabilityPL->get(PT)+gateDuplicationProbabilityPL->get(PT)) {
-//			cout << ", chose duplication. Had " << gates.size() << " gates, ";
+//			cout << ", chose duplication. Had " << totalNumberOfGates() << " gates";
 			addCopyOfRandomlySelectedGate();
-//			cout << ", duplicated " << idx << "th one, now it's " << gates.size() << endl;
+//			cout << ", duplicated one, now it's " << totalNumberOfGates() << endl;
 			originationStory = "mutation_duplication";
 		}
 		else {
-//			cout << ", chose intra-gate mutation. Chose gate " << idx;
+//			cout << ", chose intra-gate ";
 			double spentProb = gateInsertionProbabilityPL->get(PT)+gateDeletionProbabilityPL->get(PT)+gateDuplicationProbabilityPL->get(PT);
 			double tableChangeThr = spentProb + (1.-spentProb)/(1.+connectionToTableChangeRatioPL->get(PT));
 			if(r < tableChangeThr) {
-//				cout << " and a table mutation. Gate before the mutation:" << endl << gates[idx]->description() << endl;
+//				cout << "table mutation. Brain before the mutation:" << endl << description() << endl;
 				internallyMutateRandomlySelectedGate();
-//				cout << "Gate after the mutation:" << endl << gates[idx]->description() << endl;
+//				cout << "Brain after the mutation:" << endl << description() << endl;
 				originationStory = "mutation_table";
 			}
 			else {
-//				cout << " and a wiring mutation. Gate before the mutation:" << endl << gates[idx]->description();
+//				cout << "wiring mutation. Brain before the mutation:" << endl << description();
 				randomlyRewireRandomlySelectedGate();
-//				cout << "Gate after the mutation:" << endl << gates[idx]->description() << endl;
+//				cout << "Brain after the mutation:" << endl << description() << endl;
 				originationStory = "mutation_rewiring";
 			}
 		}
@@ -514,7 +514,12 @@ void DETextureBrain::internallyMutateRandomlySelectedGate() {
 	if(convolutionRegime==UNSHARED_REGIME) {
 		size_t rfx, rfy, rft, gidx;
 		tie(rfx, rfy, rft) = getRandomFilterIndex();
-		gidx = Random::getIndex(filters[rfx][rfy][rft].size());
+		size_t filterSize = filters[rfx][rfy][rft].size();
+		if(!filterSize) {
+			internallyMutateRandomlySelectedGate(); // if the selected filter is empty, retry
+			return;
+		}
+		gidx = Random::getIndex(filterSize);
 		filters[rfx][rfy][rft][gidx]->mutateInternalStructure();
 	}
 	if(convolutionRegime==SHARED_REGIME) {
@@ -537,7 +542,12 @@ void DETextureBrain::randomlyRewireRandomlySelectedGate() {
 	if(convolutionRegime==UNSHARED_REGIME) {
 		size_t rfx, rfy, rft, gidx;
 		tie(rfx, rfy, rft) = getRandomFilterIndex();
-		gidx = Random::getIndex(filters[rfx][rfy][rft].size());
+		size_t filterSize = filters[rfx][rfy][rft].size();
+		if(!filterSize) {
+			randomlyRewireRandomlySelectedGate(); // if the we selected an empty filter, try again
+			return;
+		}
+		gidx = Random::getIndex(filterSize);
 		shared_ptr<AbstractTextureGate> theGate = filters[rfx][rfy][rft][gidx];
 
 		size_t gateInputSize = theGate->inputsFilterIndices.size();
@@ -583,7 +593,12 @@ void DETextureBrain::addCopyOfRandomlySelectedGate() {
 		size_t rsfx, rsfy, rsft, rdfx, rdfy, rdft; // random <source|destination> filter <dimension>
 		tie(rsfx, rsfy, rsft) = getRandomFilterIndex();
 		tie(rdfx, rdfy, rdft) = getRandomFilterIndex();
-		size_t sidx = Random::getIndex(filters[rsfx][rsfy][rsft].size()); // index within the source filter
+		size_t filterSize = filters[rsfx][rsfy][rsft].size();
+		if(!filterSize) {
+			addCopyOfRandomlySelectedGate(); // if the selected source filter has no gates, try again
+			return;
+		}
+		size_t sidx = Random::getIndex(filterSize);
 		shared_ptr<AbstractTextureGate> newGate = filters[rsfx][rsfy][rsft][sidx]->makeCopy(getLowestAvailableGateID());
 		newGate->setInputsShift({{rdfx*strideX, rdfy*strideY, rdft*strideT, 0}});
 		newGate->setOutputsShift({{rdfx, rdfy, rdft, 0}});
@@ -642,7 +657,12 @@ void DETextureBrain::deleteRandomlySelectedGate() {
 	if(convolutionRegime==UNSHARED_REGIME) {
 		size_t rfx, rfy, rft;
 		tie(rfx, rfy, rft) = getRandomFilterIndex();
-		size_t rgidx = Random::getIndex(filters[rfx][rfy][rft].size());
+		size_t filterSize = filters[rfx][rfy][rft].size();
+		if(!filterSize) {
+			deleteRandomlySelectedGate(); // if there are no gates in the selected filter, try again
+			return;
+		}
+		size_t rgidx = Random::getIndex(filterSize);
 		filters[rfx][rfy][rft].erase(filters[rfx][rfy][rft].begin() + rgidx);
 	}
 	if(convolutionRegime==SHARED_REGIME) {
