@@ -440,8 +440,8 @@ void* CompressedMentalImage::logTimeSeries(const string& label) {
 /***** Private DigitMentalImage class definitions *****/
 
 void CompressedMentalImage::readLabel() {
-	const vector<vector<unsigned>>& commands = datasetParserPtr->cachingGetDescription(*currentAsteroidNamePtr);
-	curLabelString = to_string(commands[0][0]); // OK for ten digits; for higher number of labels should be fine, too, if less readable
+	const vector<vector<double>>& commands = datasetParserPtr->cachingGetDescription(*currentAsteroidNamePtr);
+	curLabelString = to_string(static_cast<int>(commands[0][0]));
 }
 
 double CompressedMentalImage::computeRepellingSharedEntropy() {

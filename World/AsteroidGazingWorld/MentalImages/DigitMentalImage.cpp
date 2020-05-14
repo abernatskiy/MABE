@@ -301,10 +301,10 @@ void* DigitMentalImage::logTimeSeries(const std::string& label) {
 
 void DigitMentalImage::readOriginalCommands() {
 	originalCommands.clear();
-	const std::vector<std::vector<unsigned>>& commands = datasetParserPtr->cachingGetDescription(*currentAsteroidNamePtr);
+	const std::vector<std::vector<double>>& commands = datasetParserPtr->cachingGetDescription(*currentAsteroidNamePtr);
 
 	for(const auto& com : commands)
-		originalCommands.push_back(std::make_tuple(com[0]));
+		originalCommands.push_back(CommandType(com[0]));
 }
 
 const std::vector<unsigned>& DigitMentalImage::getEvaluationOrder(unsigned lineageID, unsigned numAsteroids) {

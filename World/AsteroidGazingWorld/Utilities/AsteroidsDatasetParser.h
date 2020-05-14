@@ -6,10 +6,11 @@
 #include <string>
 #include <map>
 #include <set>
+#include <vector>
 
 namespace fs = boost::filesystem;
 
-typedef unsigned command_field_type;
+typedef double command_field_type;
 typedef std::vector<command_field_type> command_type;
 
 std::string asteroidsDescriptionToString(const std::vector<command_type>& desc);

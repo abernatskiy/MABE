@@ -170,10 +170,10 @@ int SpikesOnCubeMentalImage::numInputs() {
 
 void SpikesOnCubeMentalImage::readOriginalCommands() {
 	originalCommands.clear();
-	const std::vector<std::vector<unsigned>>& commands = datasetParserPtr->cachingGetDescription(*currentAsteroidNamePtr);
+	const std::vector<std::vector<double>>& commands = datasetParserPtr->cachingGetDescription(*currentAsteroidNamePtr);
 
 	for(const auto& com : commands)
-		originalCommands.push_back(std::make_tuple(com[0], com[1], com[2]));
+		originalCommands.push_back(CommandType(com[0], com[1], com[2]));
 }
 
 void SpikesOnCubeMentalImage::readHelperANN() {

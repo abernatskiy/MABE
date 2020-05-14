@@ -288,8 +288,8 @@ void* DistancesMentalImage::logTimeSeries(const std::string& label) {
 /***** Private DigitMentalImage class definitions *****/
 
 void DistancesMentalImage::readLabel() {
-	const std::vector<std::vector<unsigned>>& commands = datasetParserPtr->cachingGetDescription(*currentAsteroidNamePtr);
-	curLabelString = std::to_string(commands[0][0]); // OK for ten digits; for higher number of labels should be fine, too, if less readable
+	const std::vector<std::vector<double>>& commands = datasetParserPtr->cachingGetDescription(*currentAsteroidNamePtr);
+	curLabelString = std::to_string(static_cast<int>(commands[0][0]));
 }
 
 void DistancesMentalImage::updateDistanceStats() {
