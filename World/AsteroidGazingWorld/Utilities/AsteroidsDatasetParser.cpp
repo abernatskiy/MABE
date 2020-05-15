@@ -71,6 +71,8 @@ AsteroidsDatasetParser::AsteroidsDatasetParser(std::string datasetPath) :
 			std::string cline;
 			std::vector<command_type> desc;
 			while(std::getline(commandsFstream, cline)) {
+				if(cline[0]=='#')
+					continue;
 				command_type com;
 				std::istringstream cstream(cline);
 				for(auto it=std::istream_iterator<command_field_type>(cstream); it!=std::istream_iterator<command_field_type>(); it++)
