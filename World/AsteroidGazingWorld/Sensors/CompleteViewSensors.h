@@ -9,8 +9,8 @@
 #include "../../../Utilities/texture.h"
 #include "rangeDecoders.h"
 
-typedef std::tuple<std::string> AsteroidViewParameters;
-typedef std::map<AsteroidViewParameters,AsteroidSnapshot> AsteroidSnapshotsLibrary;
+typedef std::tuple<std::string,unsigned> CompleteAsteroidViewParameters; // asteroid name, then phase
+typedef std::map<CompleteAsteroidViewParameters,AsteroidSnapshot> CompleteAsteroidSnapshotsLibrary;
 
 class CompleteViewSensors : public AbstractSensors {
 
@@ -36,14 +36,17 @@ private:
 	                                     // as opposed to the name of the asteroid that the World wants perceived (*currentAsteroidName)
 
 	const unsigned frameRes;
-	const unsigned numPhases = 1;
-	const std::uint8_t baseThreshold = 128;
+	const unsigned numPhases;
+	std::vector<unsigned> phases;
+	const std::uint8_t baseThreshold;
 
 	// Actual state
-	AsteroidSnapshotsLibrary asteroidSnapshots;
+	CompleteAsteroidSnapshotsLibrary asteroidSnapshots;
 
 	// Parameter links
 	static std::shared_ptr<ParameterLink<int>> frameResolutionPL;
+	static std::shared_ptr<ParameterLink<int>> numPhasesPL;
+	static std::shared_ptr<ParameterLink<int>> binarizationThresholdPL;
 
 	// Dataset caching
 	static SerializeableArray<char> snapshotsCache;
