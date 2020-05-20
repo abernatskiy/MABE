@@ -103,7 +103,7 @@ void ProbabilisticTextureGate::update(std::mt19937* rng) {
 	if(outPat==numOutputPatterns) outPat--;
 
 	for(size_t o=0; o<outputs.size(); o++)
-		*outputs[o] = (outPat >> o) && 1;
+		*outputs[o] |= (outPat >> o) && 1;
 }
 
 nlohmann::json ProbabilisticTextureGate::serialize() const {

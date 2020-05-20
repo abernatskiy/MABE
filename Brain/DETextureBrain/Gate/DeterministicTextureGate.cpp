@@ -93,7 +93,7 @@ void DeterministicTextureGate::update(std::mt19937* rng) {
 	}
 
 	for(size_t o=0; o<outputs.size(); o++)
-		*outputs[o] = table[inPat][o];
+		*outputs[o] |= table[inPat][o];
 }
 
 nlohmann::json DeterministicTextureGate::serialize() const {
