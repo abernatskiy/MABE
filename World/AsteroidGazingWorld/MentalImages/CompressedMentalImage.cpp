@@ -116,6 +116,7 @@ double computeSharedEntropy(const map<pair<string,string>,unsigned>& jointCounts
                             const map<string,unsigned>& patternCounts,
                             const map<string,unsigned>& labelCounts,
                             unsigned numSamples) {
+//	cout << "computeSharedEntropy called on JC at " << &jointCounts << " PC at " << &patternCounts << " and LC at " << &labelCounts << ", numSamples is " << numSamples << endl;
 	map<string,double> labelDistribution;
 	for(const auto& lpair : labelCounts)
 		labelDistribution[lpair.first] = static_cast<double>(lpair.second)/static_cast<double>(numSamples);
@@ -429,15 +430,17 @@ int CompressedMentalImage::numInputs() {
 }
 
 void* CompressedMentalImage::logTimeSeries(const string& label) {
+/*
 	ofstream statesLog(string("states_") + label + string(".log"));
 //	for(const auto& state : stateTS)
 //		stateLog << curLabelStr << bitRangeToHexStr(state.begin(), state.size()) << endl;
 	statesLog << "not implemented" << endl;
 	statesLog.close();
+*/
 	return nullptr;
 }
 
-/***** Private DigitMentalImage class definitions *****/
+/***** Private CompressedMentalImage class definitions *****/
 
 void CompressedMentalImage::readLabel() {
 	const vector<vector<double>>& commands = datasetParserPtr->cachingGetDescription(*currentAsteroidNamePtr);
