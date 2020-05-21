@@ -64,7 +64,7 @@ void printPatternConditionals(const map<pair<string,string>,NumType>& joint) {
 	}
 }
 
-double computeSharedEntropy(const map<pair<string,string>,unsigned>& jointCounts,
+double computeSharedEntropyWeGonnaCelebrate(const map<pair<string,string>,unsigned>& jointCounts,
                             const map<string,unsigned>& patternCounts,
                             const map<string,unsigned>& labelCounts,
                             unsigned numSamples) {
@@ -84,7 +84,7 @@ double computeSharedEntropy(const map<pair<string,string>,unsigned>& jointCounts
 	return patternLabelInfo;
 }
 
-map<string,double> computeLabelConditionalEntropy(const map<pair<string,string>,unsigned>& jointCounts,
+map<string,double> computeLabelConditionalEntropyWeGonnaCelebrate(const map<pair<string,string>,unsigned>& jointCounts,
                                                             const map<string,unsigned>& labelCounts) {
 	map<string,double> lcEntropy;
 	for(const auto& lcpair : labelCounts) {
@@ -101,10 +101,10 @@ map<string,double> computeLabelConditionalEntropy(const map<pair<string,string>,
 	return lcEntropy;
 }
 
-double computeAverageLabelConditionalEntropy(const map<pair<string,string>,unsigned>& jointCounts,
+double computeAverageLabelConditionalEntropyWeGonnaCelebrate(const map<pair<string,string>,unsigned>& jointCounts,
                                           const map<string,unsigned>& labelCounts,
                                           unsigned numSamples) {
-	map<string,double> labelConditionalEntropy = computeLabelConditionalEntropy(jointCounts, labelCounts);
+	map<string,double> labelConditionalEntropy = computeLabelConditionalEntropyWeGonnaCelebrate(jointCounts, labelCounts);
 	double fullLabelConditional = 0.;
 	for(const auto& lcpair : labelCounts)
 		fullLabelConditional += static_cast<double>(lcpair.second)*labelConditionalEntropy[lcpair.first]/static_cast<double>(numSamples);
@@ -182,7 +182,7 @@ string labelOfClosestNeighbor(string pattern, const map<string,string>& patterns
 /********************************************************************/
 
 ShapeMentalImage::ShapeMentalImage(shared_ptr<string> curAstNamePtr,
-                                   shared_ptr<AsteroidsDatasetParser> dsParserPtr)
+                                   shared_ptr<AsteroidsDatasetParser> dsParserPtr) :
 	currentAsteroidNamePtr(curAstNamePtr),
 	datasetParserPtr(dsParserPtr),
 	numMatches(0),
@@ -205,7 +205,7 @@ void ShapeMentalImage::reset(int visualize) { // called in the beginning of each
 
 void ShapeMentalImage::recordRunningScoresWithinState(shared_ptr<Organism> org, int stateTime, int statePeriod) {
 	if(stateTime == statePeriod-1) {
-		string curLabelString = labelCache(*currentAsteroidNamePtr);
+		string curLabelString = labelCache[*currentAsteroidNamePtr];
 		string curStateString = textureToHexStr(reinterpret_cast<Texture*>(brain->getDataForMotors()));
 		if(curLabelString==curStateString)
 			numMatches++;
@@ -228,8 +228,8 @@ void ShapeMentalImage::recordSampleScores(shared_ptr<Organism> org,
 	sampleScoresMap->append("numPatterns", static_cast<double>(stateStrings.size()));
 	sampleScoresMap->append("numLabeledPatterns", static_cast<double>(labeledStateStrings.size()));
 	sampleScoresMap->append("exactMatches", static_cast<double>(numMatches));
-	sampleScoresMap->append("patternLabelInformation", computeSharedEntropy(jointCounts, patternCounts, labelCounts, numSamples));
-	sampleScoresMap->append("averageLabelConditionalEntropy", computeAverageLabelConditionalEntropy(jointCounts, labelCounts, numSamples));
+	sampleScoresMap->append("patternLabelInformation", computeSharedEntropyWeGonnaCelebrate(jointCounts, patternCounts, labelCounts, numSamples));
+	sampleScoresMap->append("averageLabelConditionalEntropy", computeAverageLabelConditionalEntropyWeGonnaCelebrate(jointCounts, labelCounts, numSamples));
 
 /*
 	if(mVisualize) {
@@ -259,8 +259,6 @@ void ShapeMentalImage::recordSampleScores(shared_ptr<Organism> org,
 
 void ShapeMentalImage::evaluateOrganism(shared_ptr<Organism> org, shared_ptr<DataMap> sampleScoresMap, int visualize) {
 //	cout << "Writing evals for org " << org->ID << endl;
-	org->dataMap.append("lostStates", sampleScoresMap->getAverage("lostStates"));
-	org->dataMap.append("lostLabels", sampleScoresMap->getAverage("lostLabels"));
 	org->dataMap.append("numPatterns", sampleScoresMap->getAverage("numPatterns"));
 	org->dataMap.append("numLabeledPatterns", sampleScoresMap->getAverage("numLabeledPatterns"));
 
@@ -287,10 +285,10 @@ void ShapeMentalImage::readLabelCache() {
 		size_t maxMagnitudePos;
 		for(size_t i=0; i<perturbations.size(); i++) {
 			if(perturbations[i].size()!=4)
-				throw invalid_argument("ShapeMentalImage::readLabelCache found a command with number of digits other than four");
+				throw invalid_argument("ShapeMentalImage::readLabelCache found a command with number of digits other than four for asteroid " + asteroidName);
 			double curMagnitude = abs(perturbations[i][3]);
 			if(curMagnitude>maxMagnitude) {
-				maxMagniture = curMagnitude;
+				maxMagnitude = curMagnitude;
 				maxMagnitudePos = i;
 			}
 		}
@@ -302,6 +300,6 @@ void ShapeMentalImage::readLabelCache() {
 		thepat <<= 1; thepat |= (perturbations[maxMagnitudePos][2] > 0.7); // radius [0.4, 1]
 		thepat <<= 1; thepat |= (perturbations[maxMagnitudePos][3] > 0); // magnitude [-0.33, 0.33]
 
-		labelCache(asteroedName, string(1, digits[thepat]));
+		labelCache.emplace(asteroidName, string(1, digits[thepat]));
 	}
 }
