@@ -13,7 +13,8 @@
 #include "Gate/DeterministicTextureGate.h"
 #include "Gate/ProbabilisticTextureGate.h"
 
-typedef ProbabilisticTextureGate UsedDerivedTextureGate;
+//typedef ProbabilisticTextureGate UsedDerivedTextureGate;
+typedef DeterministicTextureGate UsedDerivedTextureGate;
 
 using namespace std;
 
@@ -73,11 +74,13 @@ shared_ptr<ParameterLink<int>> DETextureBrain::convolutionRegimePL = Parameters:
 
 DETextureBrain::DETextureBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<ParametersTable> PT_) :
 	AbstractBrain(_nrInNodes, _nrOutNodes, PT_),
-	convolutionRegime(convolutionRegimePL->get(PT_)),
 	minGates(minGateCountPL->get(PT_)),
-	visualize(Global::modePL->get() == "visualize"),
+	convolutionRegime(convolutionRegimePL->get(PT_)),
+	input(nullptr),
+	output(nullptr),
+	structurewideMutationProbability(structurewideMutationProbabilityPL->get(PT_)),
 	originationStory("primordial"),
-	structurewideMutationProbability(structurewideMutationProbabilityPL->get(PT_)) {
+	visualize(Global::modePL->get() == "visualize") {
 
 	if(_nrInNodes!=0) throw invalid_argument("Construction of DETextureBrain with number of input nodes other than 0 attempted");
 	if(_nrOutNodes!=0) throw invalid_argument("Construction of DETextureBrain with number of output nodes other than 0 attempted");
@@ -112,20 +115,11 @@ DETextureBrain::~DETextureBrain() {
 
 void DETextureBrain::update(mt19937* rng) {
 	validateInput();
-
-//	cout << "Brain at " << this << " with input at " << input << " and output at " << output << ", originated through " << originationStory << ", is updating" << endl;
-//	cout << readableRepr(*input) << endl;
-
 	for(size_t fx=0; fx<outputSizeX; fx++)
 		for(size_t fy=0; fy<outputSizeY; fy++)
 			for(size_t ft=0; ft<outputSizeT; ft++)
 				for(auto gate : filters[fx][fy][ft])
 					gate->update(rng);
-
-//	cout << readableRepr(*output) << endl;
-
-//	if(visualize)
-//		log.logStateAfterUpdate(nodes);
 }
 
 shared_ptr<AbstractBrain> DETextureBrain::makeCopy(shared_ptr<ParametersTable> PT_) {
@@ -158,6 +152,7 @@ void DETextureBrain::mutate() {
 	mainMutate();
 	if(structurewideMutationProbability!=0)
 		mutateStructurewide();
+	validateBrain();
 }
 
 void DETextureBrain::resetBrain() {
@@ -766,4 +761,83 @@ void DETextureBrain::validateInput() {
 
 	if(!errorss.str().empty()) throw invalid_argument(string("DETextureBrain dimensions not aligned with received input texture:") + errorss.str());
 
+}
+
+void DETextureBrain::validateBrain() {
+	if(convolutionRegime==UNSHARED_REGIME) {
+		for(size_t fx=0; fx<outputSizeX; fx++)
+			for(size_t fy=0; fy<outputSizeY; fy++)
+				for(size_t ft=0; ft<outputSizeT; ft++)
+					for(size_t i=0; i<filters[fx][fy][ft].size(); i++) {
+						TextureIndex curInShift, curOutShift;
+						curInShift[0] = fx*strideX; curInShift[1] = fy*strideY; curInShift[2] = ft*strideT; curInShift[3] = 0;
+						curOutShift[0] = fx; curOutShift[1] = fy; curOutShift[2] = ft; curOutShift[3] = 0;
+
+						shared_ptr<UsedDerivedTextureGate> curGate = dynamic_pointer_cast<UsedDerivedTextureGate>(filters[fx][fy][ft][i]);
+
+						if(curGate->inputsShift!=curInShift)
+							cerr << (string("DETextureBrain::validateBrain(): inputShift ") + readableRepr(curGate->inputsShift) +
+							                " is wrong at gate " + to_string(i) +
+							                " in filter " + readableRepr(curOutShift) +
+							                ". Producing mutation: " + originationStory) << endl;
+						if(curGate->outputsShift!=curOutShift)
+							cerr << (string("DETextureBrain::validateBrain(): outputShift ") + readableRepr(curGate->outputsShift) +
+							                " is wrong at gate " + to_string(i) +
+							                " in filter " + readableRepr(curOutShift) +
+							                ". Producing mutation: " + originationStory) << endl;
+					}
+	}
+	else {
+		for(size_t i=0; i<filters[0][0][0].size(); i++) {
+			shared_ptr<UsedDerivedTextureGate> baseGate = dynamic_pointer_cast<UsedDerivedTextureGate>(filters[0][0][0][i]);
+			for(size_t fx=0; fx<outputSizeX; fx++)
+				for(size_t fy=0; fy<outputSizeY; fy++)
+					for(size_t ft=0; ft<outputSizeT; ft++) {
+						TextureIndex curInShift, curOutShift;
+						curInShift[0] = fx*strideX; curInShift[1] = fy*strideY; curInShift[2] = ft*strideT; curInShift[3] = 0;
+						curOutShift[0] = fx; curOutShift[1] = fy; curOutShift[2] = ft; curOutShift[3] = 0;
+
+						shared_ptr<UsedDerivedTextureGate> curGate = dynamic_pointer_cast<UsedDerivedTextureGate>(filters[fx][fy][ft][i]);
+
+						if(baseGate->ID!=curGate->ID)
+							cerr << (string("DETextureBrain::validateBrain(): IDs disagree at gate ") + to_string(i) +
+							                " in filter " + readableRepr(curOutShift) +
+							                ": is " + to_string(curGate->ID) +
+							                ", should be " + to_string(baseGate->ID) + ". Producing mutation: " + originationStory) << endl;
+
+						if(baseGate->inputsFilterIndices!=curGate->inputsFilterIndices) {
+							string ifisb, ifisc;
+							for(TextureIndex ifib : baseGate->outputsFilterIndices) ifisb += string(" ") + readableRepr(ifib);
+							for(TextureIndex ific : curGate->outputsFilterIndices) ifisc += string(" ") + readableRepr(ific);
+							cerr << (string("DETextureBrain::validateBrain(): inputFilterIndices disagree at gate ") + to_string(i) +
+							                " in filter " + readableRepr(curOutShift) +
+							                ": is " + ifisc +
+							                ", should be " + ifisb + ". Producing mutation: " + originationStory) << endl;
+						}
+						if(baseGate->outputsFilterIndices!=curGate->outputsFilterIndices) {
+							string ofisb, ofisc;
+							for(TextureIndex ofib : baseGate->outputsFilterIndices) ofisb += string(" ") + readableRepr(ofib);
+							for(TextureIndex ofic : curGate->outputsFilterIndices) ofisc += string(" ") + readableRepr(ofic);
+							cerr << (string("DETextureBrain::validateBrain(): outputFilterIndices disagree at gate ") + to_string(i) +
+							                " in filter " + readableRepr(curOutShift) +
+							                ": is " + ofisc +
+							                ", should be " + ofisb + ". Producing mutation: " + originationStory) << endl;
+						}
+						if(baseGate->table!=curGate->table)
+							cerr << (string("DETextureBrain::validateBrain(): tables disagree at gate ") + to_string(i) +
+							                " in filter " + readableRepr(curOutShift) +
+							                ". Producing mutation: " + originationStory) << endl;
+						if(curGate->inputsShift!=curInShift)
+							cerr << (string("DETextureBrain::validateBrain(): inputShift ") + readableRepr(curGate->inputsShift) +
+							                " is wrong at gate " + to_string(i) +
+							                " in filter " + readableRepr(curOutShift) +
+							                ". Producing mutation: " + originationStory) << endl;
+						if(curGate->outputsShift!=curOutShift)
+							cerr << (string("DETextureBrain::validateBrain(): outputShift ") + readableRepr(curGate->outputsShift) +
+							                " is wrong at gate " + to_string(i) +
+							                " in filter " + readableRepr(curOutShift) +
+							                ". Producing mutation: " + originationStory) << endl;
+					}
+		}
+	}
 }

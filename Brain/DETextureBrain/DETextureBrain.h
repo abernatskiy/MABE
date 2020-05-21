@@ -62,6 +62,7 @@ private:
 //	void logBrainStructure();
 	void validateDimensions(); // throws exceptions
 	void validateInput(); // throws exceptions
+	void validateBrain(); // prints angry messages to stderr
 
 	// Mutation-related variables
 	const double structurewideMutationProbability;
