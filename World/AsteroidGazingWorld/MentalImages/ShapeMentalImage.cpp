@@ -79,7 +79,7 @@ double computeSharedEntropyWeGonnaCelebrate(const map<pair<string,string>,unsign
 		string label, pattern;
 		tie(label, pattern) = labpatpair.first;
 		double jp = static_cast<double>(labpatpair.second)/static_cast<double>(numSamples);
-		patternLabelInfo += jp*log10(jp/(labelDistribution[label]*patternDistribution[pattern]));
+		patternLabelInfo += jp*log2(jp/(labelDistribution[label]*patternDistribution[pattern]));
 	}
 	return patternLabelInfo;
 }
@@ -95,7 +95,7 @@ map<string,double> computeLabelConditionalEntropyWeGonnaCelebrate(const map<pair
 		lcEntropy[lcpair.first] = 0.;
 		for(const auto& cpcpair : condPatternCounts) {
 			double patProbGivenLabel = static_cast<double>(cpcpair.second)/static_cast<double>(lcpair.second);
-			lcEntropy[lcpair.first] -= patProbGivenLabel*log10(patProbGivenLabel);
+			lcEntropy[lcpair.first] -= patProbGivenLabel*log2(patProbGivenLabel);
 		}
 	}
 	return lcEntropy;
