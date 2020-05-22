@@ -13,8 +13,8 @@
 #include "Gate/DeterministicTextureGate.h"
 #include "Gate/ProbabilisticTextureGate.h"
 
-//typedef ProbabilisticTextureGate UsedDerivedTextureGate;
-typedef DeterministicTextureGate UsedDerivedTextureGate;
+typedef ProbabilisticTextureGate UsedDerivedTextureGate;
+//typedef DeterministicTextureGate UsedDerivedTextureGate;
 
 using namespace std;
 

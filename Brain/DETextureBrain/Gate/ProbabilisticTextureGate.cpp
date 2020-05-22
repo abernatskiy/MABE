@@ -76,12 +76,17 @@ string ProbabilisticTextureGate::description() const {
 
 void ProbabilisticTextureGate::mutateInternalStructure() {
 	size_t inPat = Random::getIndex(numInputPatterns);
-	size_t outPat = Random::getIndex(numOutputPatterns);
-	float curVal = table[inPat][outPat];
-	float newVal = Random::getNormal(curVal, curVal<0.5 ? curVal : 1.-curVal);
-	newVal = newVal>1. ? 1. : newVal;
-	newVal = newVal<0. ? 0. : newVal;
-	table[inPat][outPat] = newVal;
+	size_t srcOutPat = Random::getIndex(numOutputPatterns);
+	size_t dstOutPat = Random::getIndex(numOutputPatterns);
+	while(srcOutPat==dstOutPat)
+		dstOutPat = Random::getIndex(numOutputPatterns);
+
+	float delta = Random::getDouble(-0.05, 0.05);
+	delta = delta<0 ? max(delta, max(-1.f*table[inPat][srcOutPat], table[inPat][dstOutPat]-1.f))
+	                : min(delta, min(1.f-table[inPat][srcOutPat], table[inPat][dstOutPat]));
+	table[inPat][srcOutPat] += delta;
+	table[inPat][dstOutPat] -= delta;
+
 	normalizeOutput(inPat);
 }
 
