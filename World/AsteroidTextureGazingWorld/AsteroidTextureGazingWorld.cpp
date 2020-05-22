@@ -3,7 +3,9 @@
 #include <limits>
 #include "../../Utilities/Random.h"
 
-#include "../AsteroidGazingWorld/MentalImages/CompressedMentalImage.h"
+//#include "../AsteroidGazingWorld/MentalImages/CompressedMentalImage.h"
+#include "../AsteroidGazingWorld/MentalImages/ShapeMentalImage.h"
+
 #include "../AsteroidGazingWorld/Sensors/CompleteViewSensors.h"
 #include "../AsteroidGazingWorld/Schedules/AsteroidGazingSchedules.h"
 
@@ -84,6 +86,8 @@ AsteroidTextureGazingWorld::AsteroidTextureGazingWorld(shared_ptr<ParametersTabl
 	sensors->writeSensorStats();
 	sensors->doHeavyInit();
 
+	mentalImage = make_shared<ShapeMentalImage>(currentAsteroidName, datasetParser);
+/*
 	mentalImage = make_shared<CompressedMentalImage>(currentAsteroidName,
 	                                                 datasetParser,
 	                                                 sensors,
@@ -94,5 +98,6 @@ AsteroidTextureGazingWorld::AsteroidTextureGazingWorld(shared_ptr<ParametersTabl
 	                                                 leakBaseMultiplierPL->get(PT_),
 	                                                 leakDecayRadiusPL->get(PT_),
 	                                                 true);
+*/
 	makeMotors();
 };

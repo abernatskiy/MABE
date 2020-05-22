@@ -210,6 +210,8 @@ void ShapeMentalImage::recordRunningScoresWithinState(shared_ptr<Organism> org, 
 		if(curLabelString==curStateString)
 			numMatches++;
 
+//		cout << curLabelString << " " << readableRepr(*reinterpret_cast<Texture*>(brain->getDataForMotors())) << endl;
+
 		stateStrings.insert(curStateString);
 		labeledStateStrings.insert(curStateString + curLabelString);
 
@@ -261,7 +263,7 @@ void ShapeMentalImage::evaluateOrganism(shared_ptr<Organism> org, shared_ptr<Dat
 //	cout << "Writing evals for org " << org->ID << endl;
 	org->dataMap.append("numPatterns", sampleScoresMap->getAverage("numPatterns"));
 	org->dataMap.append("numLabeledPatterns", sampleScoresMap->getAverage("numLabeledPatterns"));
-
+	org->dataMap.append("exactMatches", sampleScoresMap->getAverage("exactMatches"));
 	org->dataMap.append("patternLabelInformation", sampleScoresMap->getAverage("patternLabelInformation"));
 	org->dataMap.append("averageLabelConditionalEntropy", sampleScoresMap->getAverage("averageLabelConditionalEntropy"));
 }
