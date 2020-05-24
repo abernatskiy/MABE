@@ -11,14 +11,14 @@
   + AsteroidGazing
   + AsteroidTextureGazing
   * ParallelIsolatedEmbodied
-  + AsteroidTeamGazing
+  - AsteroidTeamGazing
 
 % Genome
   - Multi
   * Circular
   
 % Brain
-  * Markov
+  - Markov
   - CGP
   - LSTM
   - ConstantValues
@@ -26,9 +26,10 @@
   - Wire
   - BiLog
   - DerivedMarkov
-  + DEMarkov
+  * DEMarkov
   + DETexture
   + Layered
+  + TextureLayered
 
 % Optimizer
   * Simple
