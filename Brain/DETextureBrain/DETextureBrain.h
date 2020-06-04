@@ -32,8 +32,8 @@ private:
 	const int convolutionRegime;
 
 	// Major state vars
-	Texture* input;
-	Texture* output;
+	Texture* input; // owned by "upstream" (sensors/brain layer below it)
+	Texture* output; // owned by this class
 	boost::multi_array<std::vector<std::shared_ptr<AbstractTextureGate>>,3> filters;
 	// keep in mind that this class is responsible for maintaining the output pointers of the gates in a valid state
 	// it follows that every time this class resets a gate, generates a new one or modifies one's output connections, it must call gate->updateOutputs(output)
@@ -113,6 +113,7 @@ public:
 	void mutate() override;
 	void resetBrain() override;
 	void attachToSensors(void*) override; // sets the input address and updates the pointers in gates
+	void* getDataForMotors() override { return output; };
 	std::unordered_set<std::string> requiredGenomes() override { return {}; };
 
 	// Infrastructure
@@ -122,7 +123,6 @@ public:
 //	void logNote(std::string note) override { log.log("DETextureBrain's external note: " + note + "\n"); };
 	DataMap serialize(std::string& name) override;
 	void deserialize(std::shared_ptr<ParametersTable> PT, std::unordered_map<std::string,std::string>& orgData, std::string& name) override;
-	void* getDataForMotors() override { return output; };
 };
 
 inline std::shared_ptr<AbstractBrain> DETextureBrain_brainFactory(int ins, int outs, std::shared_ptr<ParametersTable> PT, bool randomize = true) {
