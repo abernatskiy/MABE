@@ -46,7 +46,7 @@ TextureLayeredBrain::TextureLayeredBrain(int _nrInNodes, int _nrOutNodes, shared
 	const vector<int> componentOutBitDepths TEXTURE_BRAIN_COMPONENT_OUT_BIT_DEPTHS;
 
 	numLayers = componentInTextureShapes.size();
-	if(numLayers<1) throw invalid_argument("TextureLayeredBrain: topology error, number of layers is less than one")
+	if(numLayers<1) throw invalid_argument("TextureLayeredBrain: topology error, number of layers is less than one");
 	if(componentInBitDepths.size()!=numLayers) throw invalid_argument("TextureLayeredBrain: topology error, number of in bit depths is different from number of textures");
 	if(componentFilterShapes.size()!=numLayers) throw invalid_argument("TextureLayeredBrain: topology error, number of filter shapes is different from number of textures");
 	if(componentStrideShapes.size()!=numLayers) throw invalid_argument("TextureLayeredBrain: topology error, number of stride shapes is different from number of textures");
@@ -56,14 +56,14 @@ TextureLayeredBrain::TextureLayeredBrain(int _nrInNodes, int _nrOutNodes, shared
 	const vector<string> componentFileNames TEXTURE_BRAIN_COMPONENT_FILE_NAMES;
 	if(componentFileNames.size()!=numLayers) throw invalid_argument("TextureLayeredBrain: topology error, number of component file names is different from number of textures");
 #else // TEXTURE_BRAIN_COMPONENT_FILE_NAMES
-	const vector<string> brainFileNames(numLayers, "");
+	const vector<string> componentFileNames(numLayers, "");
 #endif // TEXTURE_BRAIN_COMPONENT_FILE_NAMES
 
 #ifdef TEXTURE_BRAIN_COMPONENT_MUTATION_RATES
-	mutationRates = vector<double>(TEXTURE_BRAIN_COMPONENT_MUTATION_RATES);
-	if(mutationRates.size()!=numLayers) throw invalid_argument("TextureLayeredBrain: topology error, number of mutation rates is different from number of textures");
+	componentMutationRates = vector<double>(TEXTURE_BRAIN_COMPONENT_MUTATION_RATES);
+	if(componentMutationRates.size()!=numLayers) throw invalid_argument("TextureLayeredBrain: topology error, number of mutation rates is different from number of textures");
 #else // TEXTURE_BRAIN_COMPONENT_MUTATION_RATES
-	mutationRates = getDefaultMutationRatesOneMoreTime(componentFileNames);
+	componentMutationRates = getDefaultMutationRatesOneMoreTime(componentFileNames);
 #endif // TEXTURE_BRAIN_COMPONENT_MUTATION_RATES
 
 	layers.resize(numLayers);
@@ -102,9 +102,9 @@ TextureLayeredBrain::TextureLayeredBrain(int _nrInNodes, int _nrOutNodes, shared
 	for(unsigned i=0; i<numLayers; i++) {
 		// all brains start randomized, then some are read from their files
 		layers[i] = DETextureBrain_brainFactory(0, 0, layerPTs[i]);
-		if(!brainFileNames[i].empty()) {
+		if(!componentFileNames[i].empty()) {
 			// file provided for the current layer, deserializing...
-			ifstream brainFile(brainFileNames[i]);
+			ifstream brainFile(componentFileNames[i]);
 			string layerJSONStr;
 			getline(brainFile, layerJSONStr);
 			brainFile.close();
@@ -149,9 +149,9 @@ shared_ptr<AbstractBrain> TextureLayeredBrain::makeBrainFromMany(vector<shared_p
 
 void TextureLayeredBrain::mutate() {
 	vector<double> mutationThresholds;
-	mutationThresholds.push_back(mutationRates[0]);
+	mutationThresholds.push_back(componentMutationRates[0]);
 	for(size_t l=1; l<numLayers; l++)
-		mutationThresholds.push_back(mutationThresholds.back()+mutationRates[l]);
+		mutationThresholds.push_back(mutationThresholds.back()+componentMutationRates[l]);
 
 	double r = Random::getDouble(1.);
 	size_t l = 0;
@@ -180,7 +180,7 @@ string TextureLayeredBrain::description() {
   string S = "Layered Brain with " + to_string(numLayers) + " layers\n";
 	for(unsigned l=0; l<numLayers; l++) {
 		S += "Layer " + to_string(l) + " of type " + layers[l]->getType() +
-		     " is" + (layerEvolvable[l]?"":" not") + " evolvable, rate " + to_string(mutationRates[l]) + "\n";
+		     " is" + (layerEvolvable[l]?"":" not") + " evolvable, rate " + to_string(componentMutationRates[l]) + "\n";
 		S += layers[l]->description();
 	}
 	return S;

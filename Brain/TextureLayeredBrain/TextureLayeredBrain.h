@@ -11,9 +11,9 @@ private:
 
 	// Major constants & state vars
 	unsigned numLayers;
-	std::vector<std::shared_ptr<DETextureBrain>> layers;
+	std::vector<std::shared_ptr<AbstractBrain>> layers;
 	std::vector<bool> layerEvolvable;
-	std::vector<double> mutationRates;
+	std::vector<double> componentMutationRates;
 
 	// Infrastructure
 	const bool visualize;
