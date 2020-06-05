@@ -205,7 +205,8 @@ DataMap DETextureBrain::getStats(string& prefix) {
 		unsharedGates = filters[0][0][0].size();
 	dataMap.set(prefix + "independentMarkovBrainGates", unsharedGates);
 
-	// TODO: comment out after debugging, this is a useless part of output that creates considerable noise
+/*
+	// Might become useful if I start mixing gates at some point
 	map<string,int> gatecounts;
 	gatecounts["DeterministicTextureGates"] = 0;
 	gatecounts["ProbabilisticTextureGates"] = 0;
@@ -232,6 +233,7 @@ DataMap DETextureBrain::getStats(string& prefix) {
 	}
 	dataMap.set(prefix + "markovBrainDeterministicTextureGates", gatecounts["DeterministicTextureGates"]);
 	dataMap.set(prefix + "markovBrainProbabilisticTextureGates", gatecounts["ProbabilisticTextureGates"]);
+*/
 
 	dataMap.set(prefix + "originationStory", originationStory);
 	return dataMap;
