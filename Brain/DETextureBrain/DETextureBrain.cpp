@@ -105,8 +105,6 @@ DETextureBrain::DETextureBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Param
 	// columns to be added to ave file
 	popFileColumns.clear();
 	popFileColumns.push_back("markovBrainGates");
-	popFileColumns.push_back("markovBrainDeterministicTextureGates");
-	popFileColumns.push_back("markovBrainProbabilisticTextureGates");
 }
 
 DETextureBrain::~DETextureBrain() {
