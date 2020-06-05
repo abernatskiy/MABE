@@ -186,6 +186,7 @@ ShapeMentalImage::ShapeMentalImage(shared_ptr<string> curAstNamePtr,
 	currentAsteroidNamePtr(curAstNamePtr),
 	datasetParserPtr(dsParserPtr),
 	numMatches(0),
+	numMatchedBits(0),
 	mVisualize(Global::modePL->get() == "visualize") {
 
 	readLabelCache();
@@ -193,6 +194,7 @@ ShapeMentalImage::ShapeMentalImage(shared_ptr<string> curAstNamePtr,
 
 void ShapeMentalImage::reset(int visualize) { // called in the beginning of each evaluation cycle
 	numMatches = 0;
+	numMatchedBits = 0;
 
 	stateStrings.clear();
 	labeledStateStrings.clear();
@@ -206,9 +208,13 @@ void ShapeMentalImage::reset(int visualize) { // called in the beginning of each
 void ShapeMentalImage::recordRunningScoresWithinState(shared_ptr<Organism> org, int stateTime, int statePeriod) {
 	if(stateTime == statePeriod-1) {
 		string curLabelString = labelCache[*currentAsteroidNamePtr];
-		string curStateString = textureToHexStr(reinterpret_cast<Texture*>(brain->getDataForMotors()));
-		if(curLabelString==curStateString)
-			numMatches++;
+
+		Texture* outTexture = reinterpret_cast<Texture*>(brain->getDataForMotors());
+		string curStateString = textureToHexStr(outTexture);
+		unsigned outTextureSize = outTexture->num_elements();
+		unsigned curMatchingBits = outTextureSize - hexStringHammingDistance(curStateString, curLabelString);
+		numMatches += (outTextureSize==curMatchingBits);
+		numMatchedBits += curMatchingBits;
 
 //		cout << curLabelString << " " << readableRepr(*reinterpret_cast<Texture*>(brain->getDataForMotors())) << endl;
 
@@ -230,6 +236,7 @@ void ShapeMentalImage::recordSampleScores(shared_ptr<Organism> org,
 	sampleScoresMap->append("numPatterns", static_cast<double>(stateStrings.size()));
 	sampleScoresMap->append("numLabeledPatterns", static_cast<double>(labeledStateStrings.size()));
 	sampleScoresMap->append("exactMatches", static_cast<double>(numMatches));
+	sampleScoresMap->append("matchedBits", static_cast<double>(numMatchedBits));
 	sampleScoresMap->append("patternLabelInformation", computeSharedEntropyWeGonnaCelebrate(jointCounts, patternCounts, labelCounts, numSamples));
 	sampleScoresMap->append("averageLabelConditionalEntropy", computeAverageLabelConditionalEntropyWeGonnaCelebrate(jointCounts, labelCounts, numSamples));
 
@@ -264,6 +271,7 @@ void ShapeMentalImage::evaluateOrganism(shared_ptr<Organism> org, shared_ptr<Dat
 	org->dataMap.append("numPatterns", sampleScoresMap->getAverage("numPatterns"));
 	org->dataMap.append("numLabeledPatterns", sampleScoresMap->getAverage("numLabeledPatterns"));
 	org->dataMap.append("exactMatches", sampleScoresMap->getAverage("exactMatches"));
+	org->dataMap.append("matchedBits", sampleScoresMap->getAverage("matchedBits"));
 	org->dataMap.append("patternLabelInformation", sampleScoresMap->getAverage("patternLabelInformation"));
 	org->dataMap.append("averageLabelConditionalEntropy", sampleScoresMap->getAverage("averageLabelConditionalEntropy"));
 }

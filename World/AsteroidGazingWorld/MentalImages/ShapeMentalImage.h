@@ -17,6 +17,7 @@ private:
 
 	// Parts for state counting
 	unsigned numMatches;
+	unsigned numMatchedBits;
 	std::set<std::string> stateStrings;
 	std::set<std::string> labeledStateStrings;
 
