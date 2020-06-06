@@ -134,7 +134,7 @@ shared_ptr<AbstractBrain> TextureLayeredBrain::makeCopy(shared_ptr<ParametersTab
 	if(PT_!=PT) throw invalid_argument("TextureLayeredBrain::makeCopy was called with a parameters table that is different from the one the original used. Are you sure you want to do that?");
 	auto newBrain = make_shared<TextureLayeredBrain>(0, 0, PT);
 	for(unsigned l=0; l<numLayers; l++)
-		newBrain->layers[l] = layers[l]->makeCopy(PT);
+		newBrain->layers[l] = layers[l]->makeCopy(layerPTs[l]);
 	return newBrain;
 }
 
