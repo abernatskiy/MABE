@@ -126,15 +126,18 @@ TextureLayeredBrain::TextureLayeredBrain(int _nrInNodes, int _nrOutNodes, shared
 
 void TextureLayeredBrain::update(mt19937* rng) {
 	for(auto layer : layers)
-		layer->update();
+		layer->update(rng);
 }
 
 shared_ptr<AbstractBrain> TextureLayeredBrain::makeCopy(shared_ptr<ParametersTable> PT_) {
 	if(PT_==nullptr) throw invalid_argument("TextureLayeredBrain::makeCopy caught a nullptr");
 	if(PT_!=PT) throw invalid_argument("TextureLayeredBrain::makeCopy was called with a parameters table that is different from the one the original used. Are you sure you want to do that?");
 	auto newBrain = make_shared<TextureLayeredBrain>(0, 0, PT);
-	for(unsigned l=0; l<numLayers; l++)
+	for(unsigned l=0; l<numLayers; l++) {
 		newBrain->layers[l] = layers[l]->makeCopy(layerPTs[l]);
+		if(l>0)
+			newBrain->layers[l]->attachToSensors(newBrain->layers[l-1]->getDataForMotors());
+	}
 	return newBrain;
 }
 
@@ -160,6 +163,11 @@ void TextureLayeredBrain::mutate() {
 			break;
 
 	layers[l]->mutate();
+
+	// Attachment of the outputs is updated when the layers mutate,
+	// but attachment of inputs is not. Here it's done manually
+	for(size_t i=1; i<numLayers; i++)
+		layers[i]->attachToSensors(layers[i-1]->getDataForMotors());
 }
 
 void TextureLayeredBrain::resetBrain() {
