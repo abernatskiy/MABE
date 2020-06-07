@@ -133,10 +133,11 @@ shared_ptr<AbstractBrain> TextureLayeredBrain::makeCopy(shared_ptr<ParametersTab
 	if(PT_==nullptr) throw invalid_argument("TextureLayeredBrain::makeCopy caught a nullptr");
 	if(PT_!=PT) throw invalid_argument("TextureLayeredBrain::makeCopy was called with a parameters table that is different from the one the original used. Are you sure you want to do that?");
 	auto newBrain = make_shared<TextureLayeredBrain>(0, 0, PT);
+	newBrain->layers.clear();
 	for(unsigned l=0; l<numLayers; l++) {
-		newBrain->layers[l] = layers[l]->makeCopy(layerPTs[l]);
+		newBrain->layers.push_back(layers[l]->makeCopy(layerPTs[l]));
 		if(l>0)
-			newBrain->layers[l]->attachToSensors(newBrain->layers[l-1]->getDataForMotors());
+			newBrain->layers.back()->attachToSensors(newBrain->layers[l-1]->getDataForMotors());
 	}
 	return newBrain;
 }
@@ -161,6 +162,8 @@ void TextureLayeredBrain::mutate() {
 	for(l=0; l<numLayers; l++)
 		if(r<mutationThresholds[l])
 			break;
+	if(l==numLayers)
+		l--;
 
 	layers[l]->mutate();
 
