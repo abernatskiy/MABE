@@ -231,19 +231,20 @@ DataMap TextureLayeredBrain::serialize(string& name) {
 }
 
 void TextureLayeredBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<string,string>& orgData, string& name) {
-	string brainJSONsStr = orgData[string("TEXTURE_BRAIN_") + name + "_json"];
-	if(brainJSONsStr.front()!='\'' || brainJSONsStr.back()!='\'') {
-		cout << "First or last character of the TextureLayeredBrain JSON string field in the log is not a single quote" << endl;
-		cout << "The string: " << brainJSONsStr << endl;
-		exit(EXIT_FAILURE);
-	}
+	string brainJSONsStr = orgData[string("BRAIN_") + name + "_json"];
+
+	if(brainJSONsStr.front()!='\'' || brainJSONsStr.back()!='\'')
+		throw invalid_argument(string("First or last character of the TextureLayeredBrain JSON string field in the log is not a single quote.\nThe string: ") + brainJSONsStr);
+
 	brainJSONsStr = brainJSONsStr.substr(1, brainJSONsStr.size()-2);
 
 	nlohmann::json brainsJSONs = nlohmann::json::parse(brainJSONsStr);
 
 	for(unsigned l=0; l<numLayers; l++) {
 		string name = string("brain") + to_string(l);
-		unordered_map<string,string> surrogateOrgData { { string("TEXTURE_BRAIN_")+name+"_json", string("'") + brainsJSONs[l].dump() + string("'") } };
+		unordered_map<string,string> surrogateOrgData { { string("BRAIN_")+name+"_json", string("'") + brainsJSONs[l].dump() + string("'") } };
 		layers[l]->deserialize(PT, surrogateOrgData, name);
+		if(l>0)
+			layers[l]->attachToSensors(layers[l-1]->getDataForMotors());
 	}
 }
