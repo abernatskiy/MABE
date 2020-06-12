@@ -226,6 +226,7 @@ ShapeMentalImage::ShapeMentalImage(shared_ptr<string> curAstNamePtr,
 	datasetParserPtr(dsParserPtr),
 	numMatches(0),
 	numMatchedBits(0),
+	numErasures(0),
 	mVisualize(Global::modePL->get() == "visualize") {
 
 	readLabelCache();
@@ -242,6 +243,8 @@ void ShapeMentalImage::reset(int visualize) { // called in the beginning of each
 	patternCounts.clear();
 	jointCounts.clear();
 	numSamples = 0;
+
+	numErasures = 0;
 }
 
 void ShapeMentalImage::recordRunningScoresWithinState(shared_ptr<Organism> org, int stateTime, int statePeriod) {
@@ -264,6 +267,10 @@ void ShapeMentalImage::recordRunningScoresWithinState(shared_ptr<Organism> org, 
 		incrementMapField(patternCounts, curStateString);
 		incrementMapField(jointCounts, make_pair(curLabelString, curStateString));
 		numSamples++;
+
+		nlohmann::json brainStats = brain->getPostEvaluationStats();
+		long stateErasures = stol(brainStats["erasures"].get<string>());
+		numErasures += stateErasures;
 	}
 }
 
@@ -280,6 +287,7 @@ void ShapeMentalImage::recordSampleScores(shared_ptr<Organism> org,
 	sampleScoresMap->append("matchedBits", static_cast<double>(numMatchedBits));
 	sampleScoresMap->append("patternLabelInformation", computeSharedEntropyWeGonnaCelebrate(jointCounts, patternCounts, labelCounts, numSamples));
 	sampleScoresMap->append("averageLabelConditionalEntropy", computeAverageLabelConditionalEntropyWeGonnaCelebrate(jointCounts, labelCounts, numSamples));
+	sampleScoresMap->append("erasures", static_cast<double>(numErasures));
 
 /*
 	if(mVisualize) {
@@ -315,6 +323,7 @@ void ShapeMentalImage::evaluateOrganism(shared_ptr<Organism> org, shared_ptr<Dat
 	org->dataMap.append("matchedBits", sampleScoresMap->getAverage("matchedBits"));
 	org->dataMap.append("patternLabelInformation", sampleScoresMap->getAverage("patternLabelInformation"));
 	org->dataMap.append("averageLabelConditionalEntropy", sampleScoresMap->getAverage("averageLabelConditionalEntropy"));
+	org->dataMap.append("erasures", sampleScoresMap->getAverage("erasures"));
 }
 
 void* ShapeMentalImage::logTimeSeries(const string& label) {

@@ -14,6 +14,7 @@ class AbstractTextureGate {
 protected:
 	std::vector<uint8_t*> inputs;
 	std::vector<uint8_t*> outputs;
+	long* erasureCounterPtr;
 
 public:
 	// look: this class has public data!
@@ -27,7 +28,8 @@ public:
 	AbstractTextureGate() = default;
 	AbstractTextureGate(unsigned ID,
 	                    std::vector<TextureIndex> inputsFilterIndices,
-	                    std::vector<TextureIndex> outputsFilterIndices);
+	                    std::vector<TextureIndex> outputsFilterIndices,
+	                    long* erasureCounterPtr);
 	virtual ~AbstractTextureGate() = default;
 
 	void updateInputs(Texture* inputPtr);
@@ -36,6 +38,7 @@ public:
 	void setOutputsShift(TextureIndex shift);
 
 	void reset() {}; // make this virtual if stateful gates are needed
+	void setErasureCounterPtr(long* ecp) { erasureCounterPtr = ecp; }; // used in makeCopy() and deserialize() of Brains
 
 	virtual void update(std::mt19937* rng=nullptr) = 0; // might use a thread-specific RNG
 	virtual std::shared_ptr<AbstractTextureGate> makeCopy(unsigned copyID) const = 0;
@@ -49,12 +52,14 @@ public:
 
 inline AbstractTextureGate::AbstractTextureGate(unsigned newID,
                                          std::vector<TextureIndex> newInputsFilterIndices,
-                                         std::vector<TextureIndex> newOutputsFilterIndices) :
+                                         std::vector<TextureIndex> newOutputsFilterIndices,
+                                         long* erasCountPtr) :
 	ID(newID),
 	inputsFilterIndices(newInputsFilterIndices),
 	outputsFilterIndices(newOutputsFilterIndices),
 	inputs(newInputsFilterIndices.size(), nullptr),
-	outputs(newOutputsFilterIndices.size(), nullptr) {}
+	outputs(newOutputsFilterIndices.size(), nullptr),
+	erasureCounterPtr(erasCountPtr) {}
 
 inline void AbstractTextureGate::updateInputs(Texture* inputPtr) {
 	if(!inputPtr) throw std::invalid_argument("AbstractTextureGate::updateInputs caught nullptr");

@@ -34,10 +34,11 @@ private:
 	// Major state vars
 	Texture* input; // owned by "upstream" (sensors/brain layer below it)
 	Texture* output; // owned by this class
-	boost::multi_array<std::vector<std::shared_ptr<AbstractTextureGate>>,3> filters;
 	// keep in mind that this class is responsible for maintaining the output pointers of the gates in a valid state
 	// it follows that every time this class resets a gate, generates a new one or modifies one's output connections, it must call gate->updateOutputs(output)
 	// the inputs do not require such care as they are updated by attachToSensors() before every evalution
+	boost::multi_array<std::vector<std::shared_ptr<AbstractTextureGate>>,3> filters;
+	long numErasures; // a stat variable
 
 	// Private methods
 	std::tuple<size_t,size_t,size_t> computeOutputShape();
@@ -114,6 +115,7 @@ public:
 	void resetBrain() override;
 	void attachToSensors(void*) override; // sets the input address and updates the pointers in gates
 	void* getDataForMotors() override { return output; };
+	nlohmann::json getPostEvaluationStats() override;
 	std::unordered_set<std::string> requiredGenomes() override { return {}; };
 
 	// Infrastructure

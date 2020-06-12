@@ -209,4 +209,6 @@ public:
 	virtual void attachToSensors(void* sensorsData) {};
 
 	virtual void* getDataForMotors() { return nullptr; };
+
+	virtual nlohmann::json getPostEvaluationStats() { return nlohmann::json::object(); };
 };

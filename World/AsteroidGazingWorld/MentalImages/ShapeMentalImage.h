@@ -28,6 +28,7 @@ private:
 	unsigned numSamples;
 
 	// Auxiliary parts
+	long long numErasures;
 	std::map<std::string,std::string> labelCache;
 	const bool mVisualize;
 

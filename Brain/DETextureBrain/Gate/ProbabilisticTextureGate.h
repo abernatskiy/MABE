@@ -11,7 +11,8 @@ public:
 	ProbabilisticTextureGate() = default;
 	ProbabilisticTextureGate(unsigned ID,
 	                         std::vector<TextureIndex> inputsFilterIndices,
-	                         std::vector<TextureIndex> outputsFilterIndices); // uses process-wide RNG to initialize the table
+	                         std::vector<TextureIndex> outputsFilterIndices,
+	                         long* erasureCounterPtr); // uses process-wide RNG to initialize the table
 	~ProbabilisticTextureGate() = default;
 
 	void update(std::mt19937* rng=nullptr) override;

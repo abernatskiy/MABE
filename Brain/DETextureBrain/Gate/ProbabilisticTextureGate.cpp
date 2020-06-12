@@ -14,8 +14,9 @@ using namespace std;
 
 ProbabilisticTextureGate::ProbabilisticTextureGate(unsigned newID,
                                                    vector<TextureIndex> newInputsFilterIndices,
-                                                   vector<TextureIndex> newOutputsFilterIndices) :
-	AbstractTextureGate(newID, newInputsFilterIndices, newOutputsFilterIndices),
+                                                   vector<TextureIndex> newOutputsFilterIndices,
+                                                   long* erasCounterPtr) :
+	AbstractTextureGate(newID, newInputsFilterIndices, newOutputsFilterIndices, erasCounterPtr),
 	numInputPatterns(1),
 	numOutputPatterns(1) {
 
@@ -42,7 +43,7 @@ ProbabilisticTextureGate::ProbabilisticTextureGate(unsigned newID,
 }
 
 shared_ptr<AbstractTextureGate> ProbabilisticTextureGate::makeCopy(unsigned copyID) const {
-	auto newGate = make_shared<ProbabilisticTextureGate>(copyID, inputsFilterIndices, outputsFilterIndices);
+	auto newGate = make_shared<ProbabilisticTextureGate>(copyID, inputsFilterIndices, outputsFilterIndices, erasureCounterPtr);
 	newGate->setInputsShift(inputsShift);
 	newGate->setOutputsShift(outputsShift);
 	newGate->table = table;
@@ -107,8 +108,11 @@ void ProbabilisticTextureGate::update(std::mt19937* rng) {
 	}
 	if(outPat==numOutputPatterns) outPat--;
 
-	for(size_t o=0; o<outputs.size(); o++)
+	for(size_t o=0; o<outputs.size(); o++) {
+		if(*outputs[o])
+			(*erasureCounterPtr)++;
 		*outputs[o] |= (outPat >> o) && 1;
+	}
 }
 
 nlohmann::json ProbabilisticTextureGate::serialize() const {

@@ -11,8 +11,9 @@ using namespace std;
 
 DeterministicTextureGate::DeterministicTextureGate(unsigned newID,
                                                    vector<TextureIndex> newInputsFilterIndices,
-                                                   vector<TextureIndex> newOutputsFilterIndices) :
-	AbstractTextureGate(newID, newInputsFilterIndices, newOutputsFilterIndices) {
+                                                   vector<TextureIndex> newOutputsFilterIndices,
+                                                   long* erasCounterPtr) :
+	AbstractTextureGate(newID, newInputsFilterIndices, newOutputsFilterIndices, erasCounterPtr) {
 
 	// inputs and outputs are initialized to the correct size in the base class constructor,
 	// so I can freely use their .size()s to validate the gate and make an appropriate table
@@ -32,7 +33,7 @@ DeterministicTextureGate::DeterministicTextureGate(unsigned newID,
 }
 
 shared_ptr<AbstractTextureGate> DeterministicTextureGate::makeCopy(unsigned copyID) const {
-	auto newGate = make_shared<DeterministicTextureGate>(copyID, inputsFilterIndices, outputsFilterIndices);
+	auto newGate = make_shared<DeterministicTextureGate>(copyID, inputsFilterIndices, outputsFilterIndices, erasureCounterPtr);
 	newGate->setInputsShift(inputsShift);
 	newGate->setOutputsShift(outputsShift);
 	newGate->table = table;
@@ -92,8 +93,11 @@ void DeterministicTextureGate::update(std::mt19937* rng) {
 		inPat |= (*inputs[i]); // add "!= 0" to allow inputs outside of {0,1}
 	}
 
-	for(size_t o=0; o<outputs.size(); o++)
+	for(size_t o=0; o<outputs.size(); o++) {
+		if(*outputs[o])
+			(*erasureCounterPtr)++;
 		*outputs[o] |= table[inPat][o];
+	}
 }
 
 nlohmann::json DeterministicTextureGate::serialize() const {

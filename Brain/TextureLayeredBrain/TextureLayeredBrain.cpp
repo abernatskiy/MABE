@@ -187,6 +187,15 @@ void* TextureLayeredBrain::getDataForMotors() {
 	return layers.back()->getDataForMotors();
 }
 
+nlohmann::json TextureLayeredBrain::getPostEvaluationStats() {
+	long numErasures = 0;
+	for(auto& l : layers)
+		numErasures += stol(l->getPostEvaluationStats()["erasures"].get<string>());
+	nlohmann::json stats = nlohmann::json::object();
+	stats["erasures"] = to_string(numErasures);
+	return stats;
+}
+
 string TextureLayeredBrain::description() {
   string S = "Layered Brain with " + to_string(numLayers) + " layers\n";
 	for(unsigned l=0; l<numLayers; l++) {

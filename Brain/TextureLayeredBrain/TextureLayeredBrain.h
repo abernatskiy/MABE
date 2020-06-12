@@ -35,6 +35,7 @@ public:
 	void resetBrain() override;
 	void attachToSensors(void*) override;
 	void* getDataForMotors() override;
+	nlohmann::json getPostEvaluationStats() override;
 	std::unordered_set<std::string> requiredGenomes() override { return {}; }
 
 	// Infrastructure
