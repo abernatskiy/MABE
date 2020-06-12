@@ -64,6 +64,45 @@ void printPatternConditionals(const map<pair<string,string>,NumType>& joint) {
 	}
 }
 
+template<class NumType>
+void printLabelConditionals(const map<pair<string,string>,NumType>& joint) {
+	map<string,map<string,NumType>> patternConditionals;
+	for(const auto& mpair : joint) {
+		string pattern = mpair.first.first; // beware - this is a lazy transformation of the function above, labels are patterns and vice versa
+		auto itCurConditional = patternConditionals.find(pattern);
+		if(itCurConditional==patternConditionals.end()) {
+			patternConditionals[pattern] = {};
+			itCurConditional = patternConditionals.find(pattern);
+		}
+		string label = mpair.first.second; // beware - this is a lazy transformation of the function above, labels are patterns and vice versa
+		auto itCurField = itCurConditional->second.find(label);
+		if(itCurField==itCurConditional->second.end()) {
+			itCurConditional->second.emplace(label, 0);
+			itCurField = itCurConditional->second.find(label);
+		}
+		itCurField->second += mpair.second;
+	}
+
+	NumType totalMeasurements = 0;
+	for(const auto& patpair : patternConditionals)
+		for(const auto& labpair : patpair.second)
+			totalMeasurements += labpair.second;
+
+	cout.precision(2);
+	cout << std::scientific;
+
+	for(const auto& patpair : patternConditionals) {
+		NumType patternMeasurements = 0;
+		for(const auto& labpair : patpair.second)
+			patternMeasurements += labpair.second;
+
+		cout << patpair.first << " (w" << (static_cast<double>(patternMeasurements)/static_cast<double>(totalMeasurements)) << ") :";
+		for(const auto& labpair : patpair.second)
+			cout << " " << labpair.first << "-" << (static_cast<double>(labpair.second)/static_cast<double>(patternMeasurements));
+		cout << endl;
+	}
+}
+
 double computeSharedEntropyWeGonnaCelebrate(const map<pair<string,string>,unsigned>& jointCounts,
                             const map<string,unsigned>& patternCounts,
                             const map<string,unsigned>& labelCounts,
@@ -216,7 +255,7 @@ void ShapeMentalImage::recordRunningScoresWithinState(shared_ptr<Organism> org, 
 		numMatches += (outTextureSize==curMatchingBits);
 		numMatchedBits += curMatchingBits;
 
-//		cout << curLabelString << " " << readableRepr(*reinterpret_cast<Texture*>(brain->getDataForMotors())) << endl;
+//		cout << *currentAsteroidNamePtr << " : " << curLabelString << " " << readableRepr(*reinterpret_cast<Texture*>(brain->getDataForMotors())) << endl;
 
 		stateStrings.insert(curStateString);
 		labeledStateStrings.insert(curStateString + curLabelString);
@@ -233,6 +272,8 @@ void ShapeMentalImage::recordSampleScores(shared_ptr<Organism> org,
                                           shared_ptr<DataMap> runningScoresMap,
                                           int evalTime,
                                           int visualize) {
+
+//	printLabelConditionals(jointCounts);
 	sampleScoresMap->append("numPatterns", static_cast<double>(stateStrings.size()));
 	sampleScoresMap->append("numLabeledPatterns", static_cast<double>(labeledStateStrings.size()));
 	sampleScoresMap->append("exactMatches", static_cast<double>(numMatches));
