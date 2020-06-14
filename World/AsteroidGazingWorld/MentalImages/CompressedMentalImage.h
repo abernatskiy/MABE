@@ -34,6 +34,8 @@ private:
 	std::map<std::pair<std::string,std::string>,unsigned> jointCounts;
 	unsigned numSamples;
 
+	long long numErasures;
+
 	// Auxiliary parts
 	std::vector<double> sensorActivityStateScores;
 
