@@ -263,7 +263,8 @@ CompressedMentalImage::CompressedMentalImage(shared_ptr<string> curAstNamePtr,
 	numNeighbors(nNeighbors),
 	leakBaseMultiplier(leakBaseMult),
 	leakDecayRadius(leakDecayRad),
-	inputIsATexture(textureInput) {
+	inputIsATexture(textureInput),
+	numErasures(0) {
 
 	if(leakDecayRadius==0) {
 		cerr << "Leak decay radius cannot be zero" << endl;
@@ -286,6 +287,8 @@ void CompressedMentalImage::reset(int visualize) { // called in the beginning of
 	patternCounts.clear();
 	jointCounts.clear();
 	numSamples = 0;
+
+	numErasures = 0;
 
 	sensorActivityStateScores.clear();
 //	answerGiven = false;
@@ -345,6 +348,10 @@ void CompressedMentalImage::recordRunningScoresWithinState(shared_ptr<Organism> 
 		incrementMapField(jointCounts, make_pair(curLabelString, curStateString));
 		numSamples++;
 
+		nlohmann::json brainStats = brain->getPostEvaluationStats();
+		long stateErasures = stol(brainStats["erasures"].get<string>());
+		numErasures += stateErasures;
+
 		sensorActivityStateScores.push_back(static_cast<double>(sensorsPtr->numSaccades())/static_cast<double>(statePeriod));
 //		answerReceived = true;
 	}
@@ -369,6 +376,7 @@ void CompressedMentalImage::recordSampleScores(shared_ptr<Organism> org,
 	sampleScoresMap->append("lostLabels", static_cast<double>(lostLabels));
 	sampleScoresMap->append("numPatterns", static_cast<double>(stateStrings.size()));
 	sampleScoresMap->append("numLabeledPatterns", static_cast<double>(labeledStateStrings.size()));
+	sampleScoresMap->append("erasures", static_cast<double>(numErasures));
 
 	if(computeFastRepellingPLInfo) sampleScoresMap->append("fastRepellingPatternLabelInformation", computeFastRepellingSharedEntropy());
 //	sampleScoresMap->append("repellingPatternLabelInformation", computeRepellingSharedEntropy());
@@ -408,6 +416,7 @@ void CompressedMentalImage::evaluateOrganism(shared_ptr<Organism> org, shared_pt
 	org->dataMap.append("lostLabels", sampleScoresMap->getAverage("lostLabels"));
 	org->dataMap.append("numPatterns", sampleScoresMap->getAverage("numPatterns"));
 	org->dataMap.append("numLabeledPatterns", sampleScoresMap->getAverage("numLabeledPatterns"));
+	org->dataMap.append("erasures", sampleScoresMap->getAverage("erasures"));
 
 	if(computeFastRepellingPLInfo) org->dataMap.append("fastRepellingPatternLabelInformation", sampleScoresMap->getAverage("fastRepellingPatternLabelInformation"));
 //	org->dataMap.append("repellingPatternLabelInformation", sampleScoresMap->getAverage("repellingPatternLabelInformation"));
