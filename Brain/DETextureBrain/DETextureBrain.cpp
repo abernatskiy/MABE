@@ -114,7 +114,15 @@ DETextureBrain::~DETextureBrain() {
 
 void DETextureBrain::update(mt19937* rng) {
 	validateInput();
+
+	for(size_t fx=0; fx<outputSizeX; fx++)
+		for(size_t fy=0; fy<outputSizeY; fy++)
+			for(size_t ft=0; ft<outputSizeT; ft++)
+				for(size_t ch=0; ch<outBitsPerPixel; ch++)
+					(*output)[fx][fy][ft][ch] = 128;
+
 //	cout << "output at the beginning is " << endl << readableRepr(*output) << endl;
+
 	for(size_t fx=0; fx<outputSizeX; fx++)
 		for(size_t fy=0; fy<outputSizeY; fy++)
 			for(size_t ft=0; ft<outputSizeT; ft++)
@@ -122,6 +130,13 @@ void DETextureBrain::update(mt19937* rng) {
 					gate->update(rng);
 //					cout << "after updaing gate " << gate->ID << endl << readableRepr(*output) << endl;
 				}
+
+	for(size_t fx=0; fx<outputSizeX; fx++)
+		for(size_t fy=0; fy<outputSizeY; fy++)
+			for(size_t ft=0; ft<outputSizeT; ft++)
+				for(size_t ch=0; ch<outBitsPerPixel; ch++)
+					(*output)[fx][fy][ft][ch] = ((*output)[fx][fy][ft][ch] > 128);
+
 //	cout << "output after the brain has updated:" << endl << readableRepr(*output) << endl;
 }
 

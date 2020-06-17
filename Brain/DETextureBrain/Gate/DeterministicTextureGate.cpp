@@ -94,9 +94,16 @@ void DeterministicTextureGate::update(std::mt19937* rng) {
 	}
 
 	for(size_t o=0; o<outputs.size(); o++) {
-		if(*outputs[o])
-			(*erasureCounterPtr)++;
-		*outputs[o] |= table[inPat][o];
+//		if(*outputs[o])
+//			(*erasureCounterPtr)++;
+		if(table[inPat][o])
+			(*outputs[o])++;
+		else
+			(*outputs[o])--;
+		if(*outputs[o]==255)
+			throw logic_error("Integrator overflow");
+		if(*outputs[o]==0)
+			throw logic_error("Integrator underflow");
 	}
 }
 
