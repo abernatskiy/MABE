@@ -14,6 +14,7 @@ private:
 	std::vector<std::shared_ptr<AbstractBrain>> layers;
 	std::vector<bool> layerEvolvable;
 	std::vector<double> componentMutationRates;
+	std::vector<void*> layerTextures; // is in inverted order to ease the interpretation by receiver
 
 	// Infrastructure
 	const bool visualize;

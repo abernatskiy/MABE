@@ -304,8 +304,10 @@ void CompressedMentalImage::resetAfterWorldStateChange(int visualize) { // calle
 void CompressedMentalImage::updateWithInputs(vector<double> inputs) {
 //	if(answerGiven)
 //		return;
-	if(inputIsATexture)
-		curStateString = textureToHexStr(reinterpret_cast<Texture*>(brain->getDataForMotors()));
+	if(inputIsATexture) {
+		auto outTexturesPtr = reinterpret_cast<vector<void*>*>(brain->getDataForMotors());
+		curStateString = textureToHexStr(reinterpret_cast<Texture*>(outTexturesPtr->front()));
+	}
 	else
 		curStateString = bitRangeToHexStr(inputs.begin(), inputs.size());
 

@@ -118,6 +118,10 @@ TextureLayeredBrain::TextureLayeredBrain(int _nrInNodes, int _nrOutNodes, shared
 			layers[i]->attachToSensors(layers[i-1]->getDataForMotors());
 	}
 
+	for(int i=numLayers-1; i>=0; i--)
+		layerTextures.push_back(layers[i]->getDataForMotors());
+	layerTextures.push_back(nullptr); // the last field is for the original texture received from sensors
+
 	// columns to be added to ave file
 	popFileColumns.clear();
 //	popFileColumns.push_back("markovBrainGates");
@@ -139,6 +143,10 @@ shared_ptr<AbstractBrain> TextureLayeredBrain::makeCopy(shared_ptr<ParametersTab
 		if(l>0)
 			newBrain->layers.back()->attachToSensors(newBrain->layers[l-1]->getDataForMotors());
 	}
+	newBrain->layerTextures.clear();
+	for(int i=numLayers-1; i>=0; i--)
+		newBrain->layerTextures.push_back(layers[i]->getDataForMotors());
+	newBrain->layerTextures.push_back(nullptr); // the last field is for the original texture received from sensors
 	return newBrain;
 }
 
@@ -181,10 +189,11 @@ void TextureLayeredBrain::resetBrain() {
 
 void TextureLayeredBrain::attachToSensors(void* inputPtr) {
 	layers[0]->attachToSensors(inputPtr);
+	layerTextures.back() = inputPtr;
 }
 
 void* TextureLayeredBrain::getDataForMotors() {
-	return layers.back()->getDataForMotors();
+	return &layerTextures;
 }
 
 nlohmann::json TextureLayeredBrain::getPostEvaluationStats() {

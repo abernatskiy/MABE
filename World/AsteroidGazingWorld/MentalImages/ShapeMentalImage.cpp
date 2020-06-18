@@ -251,14 +251,17 @@ void ShapeMentalImage::recordRunningScoresWithinState(shared_ptr<Organism> org, 
 	if(stateTime == statePeriod-1) {
 		string curLabelString = labelCache[*currentAsteroidNamePtr];
 
-		Texture* outTexture = reinterpret_cast<Texture*>(brain->getDataForMotors());
+		vector<void*>* outTextures = reinterpret_cast<vector<void*>*>(brain->getDataForMotors());
+		Texture* outTexture = reinterpret_cast<Texture*>(outTextures->front());
 		string curStateString = textureToHexStr(outTexture);
+//		cout << *currentAsteroidNamePtr << ": " << curLabelString << " " << curStateString << endl;
+
 		unsigned outTextureSize = outTexture->num_elements();
 		unsigned curMatchingBits = outTextureSize - hexStringHammingDistance(curStateString, curLabelString);
 		numMatches += (outTextureSize==curMatchingBits);
 		numMatchedBits += curMatchingBits;
 
-//		cout << *currentAsteroidNamePtr << " : " << curLabelString << " " << readableRepr(*reinterpret_cast<Texture*>(brain->getDataForMotors())) << endl;
+//		cout << *currentAsteroidNamePtr << ": " << curLabelString << " " << readableRepr(*outTexture) << endl;
 
 		stateStrings.insert(curStateString);
 		labeledStateStrings.insert(curStateString + curLabelString);
