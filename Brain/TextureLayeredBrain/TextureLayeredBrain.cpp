@@ -145,7 +145,7 @@ shared_ptr<AbstractBrain> TextureLayeredBrain::makeCopy(shared_ptr<ParametersTab
 	}
 	newBrain->layerTextures.clear();
 	for(int i=numLayers-1; i>=0; i--)
-		newBrain->layerTextures.push_back(layers[i]->getDataForMotors());
+		newBrain->layerTextures.push_back(newBrain->layers[i]->getDataForMotors());
 	newBrain->layerTextures.push_back(nullptr); // the last field is for the original texture received from sensors
 	return newBrain;
 }
