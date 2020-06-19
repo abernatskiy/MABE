@@ -304,38 +304,30 @@ void CompressedMentalImage::resetAfterWorldStateChange(int visualize) { // calle
 void CompressedMentalImage::updateWithInputs(vector<double> inputs) {
 //	if(answerGiven)
 //		return;
-	if(inputIsATexture) {
-		auto outTexturesPtr = reinterpret_cast<vector<void*>*>(brain->getDataForMotors());
-		curStateString = textureToHexStr(reinterpret_cast<Texture*>(outTexturesPtr->front()));
-	}
-	else
-		curStateString = bitRangeToHexStr(inputs.begin(), inputs.size());
-
-	// stateTS.push_back(stateStr);
+	if(!inputIsATexture)
+		curInput = inputs;
 }
 
 void CompressedMentalImage::recordRunningScoresWithinState(shared_ptr<Organism> org, int stateTime, int statePeriod) {
 //	if(answerReceived)
 //		return;
 
-	if(stateTime == 0)
+	if(stateTime == statePeriod-1) {
 		readLabel();
 
-//	cout << "stateTime = " << stateTime << " statePeriod = " << statePeriod;
-//	cout << " label = " << curLabelString << " state = " << curStateString;
-//	cout << endl;
+		curStateStrings.clear();
+		if(inputIsATexture) {
+			auto outTexturesPtr = reinterpret_cast<vector<void*>*>(brain->getDataForMotors());
+			for(auto vTexturePtr : *outTexturesPtr)
+				curStateStrings.push_back(textureToHexStr(reinterpret_cast<Texture*>(vTexturePtr)));
+		}
+		else
+			curStateStrings.push_back(bitRangeToHexStr(curInput.begin(), curInput.size()));
 
-	// Debug "throws"
-	if(curStateString.empty()) {
-		cerr << "Mental image evaluator got an empty state string, exiting" << endl;
-		exit(EXIT_FAILURE);
-	}
-
-	if(stateTime == statePeriod-1) {
 		unsigned curNumStates = stateStrings.size();
 		unsigned curNumLabeledStates = labeledStateStrings.size();
-		stateStrings.insert(curStateString);
-		labeledStateStrings.insert(curStateString + curLabelString);
+		stateStrings.insert(curStateStrings.front());
+		labeledStateStrings.insert(curStateStrings.front() + curLabelString);
 		if(stateStrings.size()==curNumStates) {
 			lostStates++;
 //			cout << "Incremented lost states, now it is " << lostStates << endl;
@@ -346,8 +338,16 @@ void CompressedMentalImage::recordRunningScoresWithinState(shared_ptr<Organism> 
 		}
 
 		incrementMapField(labelCounts, curLabelString);
-		incrementMapField(patternCounts, curStateString);
-		incrementMapField(jointCounts, make_pair(curLabelString, curStateString));
+
+		unsigned numTextures = curStateStrings.size();
+		if(patternCounts.size()<numTextures)
+			patternCounts.resize(numTextures);
+		if(jointCounts.size()<numTextures)
+			jointCounts.resize(numTextures);
+		for(unsigned i=0; i<numTextures; i++) {
+			incrementMapField(patternCounts[i], curStateStrings[i]);
+			incrementMapField(jointCounts[i], make_pair(curLabelString, curStateStrings[i]));
+		}
 		numSamples++;
 
 		nlohmann::json brainStats = brain->getPostEvaluationStats();
@@ -380,13 +380,24 @@ void CompressedMentalImage::recordSampleScores(shared_ptr<Organism> org,
 	sampleScoresMap->append("numLabeledPatterns", static_cast<double>(labeledStateStrings.size()));
 	sampleScoresMap->append("erasures", static_cast<double>(numErasures));
 
-	if(computeFastRepellingPLInfo) sampleScoresMap->append("fastRepellingPatternLabelInformation", computeFastRepellingSharedEntropy());
+//	if(computeFastRepellingPLInfo) sampleScoresMap->append("fastRepellingPatternLabelInformation", computeFastRepellingSharedEntropy());
 //	sampleScoresMap->append("repellingPatternLabelInformation", computeRepellingSharedEntropy());
 //	sampleScoresMap->append("fuzzyPatternLabelInformation", computeFuzzySharedEntropy(jointCounts, patternCounts, labelCounts, numSamples, hngen));
-	sampleScoresMap->append("patternLabelInformation", computeSharedEntropy(jointCounts, patternCounts, labelCounts, numSamples));
-	sampleScoresMap->append("averageLabelConditionalEntropy", computeAverageLabelConditionalEntropy(jointCounts, labelCounts, numSamples));
+
+	for(unsigned iri=0; iri<jointCounts.size(); iri++) {
+		string infoName = "plInfo_layer" + to_string(iri);
+		double info = computeSharedEntropy(jointCounts.at(iri), patternCounts.at(iri), labelCounts, numSamples);
+		sampleScoresMap->append(infoName, info);
+
+		string entroName = "lcpe_layer" + to_string(iri);
+		//cout << "Computing lcpe for layer " << iri << endl;
+		//printPatternConditionals(rangesJointCounts.at(iri));
+		double entro = computeAverageLabelConditionalEntropy(jointCounts.at(iri), labelCounts, numSamples);
+		sampleScoresMap->append(entroName, entro);
+	}
+
 	if(mVisualize) {
-		map<string,string> currentDecipherer = makeNaiveClassifier(jointCounts, patternCounts);
+		map<string,string> currentDecipherer = makeNaiveClassifier(jointCounts.front(), patternCounts.front());
 
 //		saveClassifier(currentDecipherer, "decipherer.log");
 //		map<string,string> decipherer = loadClassifier("decipherer.log");
@@ -395,7 +406,7 @@ void CompressedMentalImage::recordSampleScores(shared_ptr<Organism> org,
 		long unsigned successfulTrials = 0;
 		long unsigned totalTrials = 0;
 		long unsigned unknownPattern = 0;
-		for(const auto& jppair : jointCounts) {
+		for(const auto& jppair : jointCounts.front()) {
 			string label, pattern;
 			tie(label, pattern) = jppair.first;
 //			if(decipherer.find(pattern)==decipherer.end())
@@ -420,11 +431,29 @@ void CompressedMentalImage::evaluateOrganism(shared_ptr<Organism> org, shared_pt
 	org->dataMap.append("numLabeledPatterns", sampleScoresMap->getAverage("numLabeledPatterns"));
 	org->dataMap.append("erasures", sampleScoresMap->getAverage("erasures"));
 
-	if(computeFastRepellingPLInfo) org->dataMap.append("fastRepellingPatternLabelInformation", sampleScoresMap->getAverage("fastRepellingPatternLabelInformation"));
+//	if(computeFastRepellingPLInfo) org->dataMap.append("fastRepellingPatternLabelInformation", sampleScoresMap->getAverage("fastRepellingPatternLabelInformation"));
 //	org->dataMap.append("repellingPatternLabelInformation", sampleScoresMap->getAverage("repellingPatternLabelInformation"));
 //	org->dataMap.append("fuzzyPatternLabelInformation", sampleScoresMap->getAverage("fuzzyPatternLabelInformation"));
-	org->dataMap.append("patternLabelInformation", sampleScoresMap->getAverage("patternLabelInformation"));
-	org->dataMap.append("averageLabelConditionalEntropy", sampleScoresMap->getAverage("averageLabelConditionalEntropy"));
+	double irs = 0.;
+	double ers = 0.;
+	for(unsigned iri=0; iri<jointCounts.size(); iri++) {
+		string infoName = "plInfo_layer" + to_string(iri);
+		// updateOrgDatamap(org, infoName, sampleScoresMap->getAverage(infoName));
+		org->dataMap.append(infoName, sampleScoresMap->getAverage(infoName));
+
+		string entroName = "lcpe_layer" + to_string(iri);
+		// updateOrgDatamap(org, entroName, sampleScoresMap->getAverage(entroName));
+		org->dataMap.append(entroName, sampleScoresMap->getAverage(entroName));
+
+		if(iri!=jointCounts.size()-1) {
+			irs += sampleScoresMap->getAverage(infoName);
+			ers += sampleScoresMap->getAverage(entroName);
+		}
+	}
+	// updateOrgDatamap(org, "plInfo_allLayers", irs);
+	// updateOrgDatamap(org, "lcpe_allLayers", ers);
+	org->dataMap.append("plInfo_allProcessedLayers", irs);
+	org->dataMap.append("lcpe_allProcessedLayers", ers);
 
 	double sensorActivity = sampleScoresMap->getAverage("sensorActivity");
 	unsigned tieredSensorActivity = static_cast<unsigned>(sensorActivity*10);
@@ -470,14 +499,14 @@ double CompressedMentalImage::computeRepellingSharedEntropy() {
 
 	map<pair<string,string>,double> repellingJoint;
 	double normalizationConstant = 0.;
-	for(const auto& jcpair : jointCounts) {
+	for(const auto& jcpair : jointCounts.front()) {
 		string label, pattern;
 		tie(label, pattern) = jcpair.first;
 
 		incrementMapField(repellingJoint, jcpair.first, static_cast<double>(jcpair.second));
 		normalizationConstant += static_cast<double>(jcpair.second);
 
-		for(const auto& otherJCPair : jointCounts) {
+		for(const auto& otherJCPair : jointCounts.front()) {
 			string otherLabel, otherPattern;
 			tie(otherLabel, otherPattern) = otherJCPair.first;
 			if(otherPattern==pattern && otherLabel==label) continue;
@@ -520,11 +549,11 @@ double CompressedMentalImage::computeFastRepellingSharedEntropy() {
 	for(const auto& lpair : labelCounts)
 		labelDistribution[lpair.first] = static_cast<double>(lpair.second)/static_cast<double>(numSamples);
 
-	neighborsdb.index(jointCounts);
+	neighborsdb.index(jointCounts.front());
 	map<pair<string,string>,double> repellingJoint;
 	double normalizationConstant = 0.;
 
-	for(const auto& jcpair : jointCounts) {
+	for(const auto& jcpair : jointCounts.front()) {
 		string label, pattern;
 		tie(label, pattern) = jcpair.first;
 

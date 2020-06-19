@@ -19,10 +19,11 @@ private:
 	std::shared_ptr<AsteroidsDatasetParser> datasetParserPtr;
 	std::shared_ptr<AbstractSensors> sensorsPtr;
 
-	std::string curStateString;
+	std::vector<double> curInput;
+	std::vector<std::string> curStateStrings;
 	std::string curLabelString;
 
-	// Parts for state counting
+	// Parts for state counting (only the topmost layer)
 	std::set<std::string> stateStrings;
 	std::set<std::string> labeledStateStrings;
 	long unsigned lostStates;
@@ -30,8 +31,8 @@ private:
 
 	// Parts for information-theoretic machinery
 	std::map<std::string,unsigned> labelCounts;
-	std::map<std::string,unsigned> patternCounts;
-	std::map<std::pair<std::string,std::string>,unsigned> jointCounts;
+	std::vector<std::map<std::string,unsigned>> patternCounts;
+	std::vector<std::map<std::pair<std::string,std::string>,unsigned>> jointCounts;
 	unsigned numSamples;
 
 	long long numErasures;
