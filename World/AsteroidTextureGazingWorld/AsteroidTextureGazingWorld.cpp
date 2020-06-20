@@ -97,7 +97,8 @@ AsteroidTextureGazingWorld::AsteroidTextureGazingWorld(shared_ptr<ParametersTabl
 	                                                 fastRepellingPLInfoNumNeighborsPL->get(PT_),
 	                                                 leakBaseMultiplierPL->get(PT_),
 	                                                 leakDecayRadiusPL->get(PT_),
-	                                                 true);
+	                                                 true,
+	                                                 overwriteEvaluationsPL->get(PT_));
 */
 	makeMotors();
 };
