@@ -8,6 +8,7 @@
 class AbstractMentalImage {
 protected:
 	std::shared_ptr<AbstractBrain> brain;
+	bool overwriteEvaluations;
 
 public:
 	virtual void attachToBrain(std::shared_ptr<AbstractBrain> br) { brain = br; };
@@ -20,4 +21,11 @@ public:
 	virtual void evaluateOrganism(std::shared_ptr<Organism> org, std::shared_ptr<DataMap> sampleScoresMap, int visualize) = 0;
 	virtual int numInputs() = 0;
 	virtual void* logTimeSeries(const std::string& label) { return nullptr; }; // optionally returns a pointer to an arbitrary data structure for global processing
+
+	void updateOrgDatamap(std::shared_ptr<Organism> org, std::string entryName, double entryValue) {
+		if(overwriteEvaluations)
+			org->dataMap.set(entryName, std::vector<double>({entryValue}));
+		else
+			org->dataMap.append(entryName, entryValue);
+	};
 };

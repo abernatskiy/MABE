@@ -155,8 +155,9 @@ DistancesMentalImage::DistancesMentalImage(std::shared_ptr<std::string> curAstNa
 	infoRanges(layerByLayerRanges()),
 	numSamples(0),
 	mVisualize(Global::modePL->get() == "visualize"),
-	numBits(totalInputs()),
-	overwriteEvaluations(overwriteEvals) {
+	numBits(totalInputs()) {
+
+	overwriteEvaluations = overwriteEvals;
 
 	// std::cout << "Total inputs: " << numBits << std::endl;
 	// std::cout << "Information processing ranges:"; for(auto ipr : infoRanges) { unsigned st, en; std::tie(st, en) = ipr; std::cout << " (" << st << "," << en << ")"; }; std::cout << std::endl;
@@ -346,13 +347,6 @@ void DistancesMentalImage::updateDistanceStats() {
 
 		l++;
 	}
-}
-
-void DistancesMentalImage::updateOrgDatamap(std::shared_ptr<Organism> org, std::string entryName, double entryValue) {
-	if(overwriteEvaluations)
-		org->dataMap.set(entryName, std::vector<double>({entryValue}));
-	else
-		org->dataMap.append(entryName, entryValue);
 }
 
 void DistancesMentalImage::recomputeLayerStateStrings(std::vector<double> inputs) {

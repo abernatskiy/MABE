@@ -251,7 +251,8 @@ CompressedMentalImage::CompressedMentalImage(shared_ptr<string> curAstNamePtr,
                                              unsigned nNeighbors,
                                              double leakBaseMult,
                                              double leakDecayRad,
-                                             bool textureInput) :
+                                             bool textureInput,
+                                             bool overwriteEvals) :
 	currentAsteroidNamePtr(curAstNamePtr),
 	datasetParserPtr(dsParserPtr),
 	sensorsPtr(sPtr),
@@ -265,6 +266,8 @@ CompressedMentalImage::CompressedMentalImage(shared_ptr<string> curAstNamePtr,
 	leakDecayRadius(leakDecayRad),
 	inputIsATexture(textureInput),
 	numErasures(0) {
+
+	overwriteEvaluations = overwriteEvals;
 
 	if(leakDecayRadius==0) {
 		cerr << "Leak decay radius cannot be zero" << endl;
@@ -425,40 +428,36 @@ void CompressedMentalImage::recordSampleScores(shared_ptr<Organism> org,
 
 void CompressedMentalImage::evaluateOrganism(shared_ptr<Organism> org, shared_ptr<DataMap> sampleScoresMap, int visualize) {
 //	cout << "Writing evals for org " << org->ID << endl;
-	org->dataMap.append("lostStates", sampleScoresMap->getAverage("lostStates"));
-	org->dataMap.append("lostLabels", sampleScoresMap->getAverage("lostLabels"));
-	org->dataMap.append("numPatterns", sampleScoresMap->getAverage("numPatterns"));
-	org->dataMap.append("numLabeledPatterns", sampleScoresMap->getAverage("numLabeledPatterns"));
-	org->dataMap.append("erasures", sampleScoresMap->getAverage("erasures"));
+	updateOrgDatamap(org, "lostStates", sampleScoresMap->getAverage("lostStates"));
+	updateOrgDatamap(org, "lostLabels", sampleScoresMap->getAverage("lostLabels"));
+	updateOrgDatamap(org, "numPatterns", sampleScoresMap->getAverage("numPatterns"));
+	updateOrgDatamap(org, "numLabeledPatterns", sampleScoresMap->getAverage("numLabeledPatterns"));
+	updateOrgDatamap(org, "erasures", sampleScoresMap->getAverage("erasures"));
 
 //	if(computeFastRepellingPLInfo) org->dataMap.append("fastRepellingPatternLabelInformation", sampleScoresMap->getAverage("fastRepellingPatternLabelInformation"));
-//	org->dataMap.append("repellingPatternLabelInformation", sampleScoresMap->getAverage("repellingPatternLabelInformation"));
-//	org->dataMap.append("fuzzyPatternLabelInformation", sampleScoresMap->getAverage("fuzzyPatternLabelInformation"));
+//	updateOrgDatamap(org, "repellingPatternLabelInformation", sampleScoresMap->getAverage("repellingPatternLabelInformation"));
+//	updateOrgDatamap(org, "fuzzyPatternLabelInformation", sampleScoresMap->getAverage("fuzzyPatternLabelInformation"));
 	double irs = 0.;
 	double ers = 0.;
 	for(unsigned iri=0; iri<jointCounts.size(); iri++) {
 		string infoName = "plInfo_layer" + to_string(iri);
-		// updateOrgDatamap(org, infoName, sampleScoresMap->getAverage(infoName));
-		org->dataMap.append(infoName, sampleScoresMap->getAverage(infoName));
+		updateOrgDatamap(org, infoName, sampleScoresMap->getAverage(infoName));
 
 		string entroName = "lcpe_layer" + to_string(iri);
-		// updateOrgDatamap(org, entroName, sampleScoresMap->getAverage(entroName));
-		org->dataMap.append(entroName, sampleScoresMap->getAverage(entroName));
+		updateOrgDatamap(org, entroName, sampleScoresMap->getAverage(entroName));
 
 		if(iri!=jointCounts.size()-1) {
 			irs += sampleScoresMap->getAverage(infoName);
 			ers += sampleScoresMap->getAverage(entroName);
 		}
 	}
-	// updateOrgDatamap(org, "plInfo_allLayers", irs);
-	// updateOrgDatamap(org, "lcpe_allLayers", ers);
-	org->dataMap.append("plInfo_allProcessedLayers", irs);
-	org->dataMap.append("lcpe_allProcessedLayers", ers);
+	updateOrgDatamap(org, "plInfo_allProcessedLayers", irs);
+	updateOrgDatamap(org, "lcpe_allProcessedLayers", ers);
 
 	double sensorActivity = sampleScoresMap->getAverage("sensorActivity");
 	unsigned tieredSensorActivity = static_cast<unsigned>(sensorActivity*10);
-	org->dataMap.append("sensorActivity", sensorActivity);
-	org->dataMap.append("tieredSensorActivity", static_cast<double>(tieredSensorActivity));
+	updateOrgDatamap(org, "sensorActivity", sensorActivity);
+	updateOrgDatamap(org, "tieredSensorActivity", static_cast<double>(tieredSensorActivity));
 }
 
 int CompressedMentalImage::numInputs() {

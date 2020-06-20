@@ -73,7 +73,8 @@ public:
 	                      unsigned numNeighbors,
 	                      double leakBaseMultiplier,
 	                      double leakDecayRadius,
-	                      bool inputIsATexture=false);
+	                      bool inputIsATexture=false,
+	                      bool overwriteEvaluations=false);
 
 	void reset(int visualize) override;
 	void resetAfterWorldStateChange(int visualize) override;

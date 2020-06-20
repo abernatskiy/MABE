@@ -41,9 +41,6 @@ private:
 
 	const unsigned numBits;
 
-	const bool overwriteEvaluations;
-	void updateOrgDatamap(std::shared_ptr<Organism> org, std::string entryName, double entryValue);
-
 	void recomputeLayerStateStrings(std::vector<double> inputs);
 
 public:
