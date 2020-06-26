@@ -95,6 +95,8 @@ TextureLayeredBrain::TextureLayeredBrain(int _nrInNodes, int _nrOutNodes, shared
 			                                                "BRAIN_DETEXTURE-convolutionRegime" };
 			for(const auto& param : forwardedIntParamNames)
 				layerPTs[i]->setParameter(param, PT_->lookupInt(param));
+			for(const auto& param : { "BRAIN_DETEXTURE-enableInputRewirings" })
+				layerPTs[i]->setParameter(param, PT_->lookupBool(param));
 			///// Parameter forwarding END /////
 		}
 	}
@@ -218,12 +220,18 @@ string TextureLayeredBrain::description() {
 DataMap TextureLayeredBrain::getStats(string& prefix) {
 	DataMap dataMap;
 	int totGates = 0;
+	int totl1 = 0;
+	int totl2 = 0;
 	for(unsigned l=0; l<numLayers; l++) {
 		string fullPrefix = prefix + (prefix==""?"":"_") + "brain" + to_string(l) + "_";
 		dataMap.merge(layers[l]->getStats(fullPrefix));
 		totGates += dataMap.getInt(fullPrefix + "markovBrainGates");
+		totl1 += dataMap.getInt(fullPrefix + "outputDensityL1");
+		totl2 += dataMap.getInt(fullPrefix + "outputDensityL2sq");
 	}
 	dataMap.set("markovBrainGates", totGates);
+	dataMap.set("outputDensityL1", totl1);
+	dataMap.set("outputDensityL2sq", totl2);
 	return dataMap;
 }
 
