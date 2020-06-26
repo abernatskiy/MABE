@@ -261,6 +261,32 @@ DataMap DETextureBrain::getStats(string& prefix) {
 	dataMap.set(prefix + "markovBrainProbabilisticTextureGates", gatecounts["ProbabilisticTextureGates"]);
 */
 
+	Texture outputDensity(boost::extents[outputSizeX][outputSizeY][outputSizeT][outBitsPerPixel]);
+	for(size_t fx=0; fx<outputSizeX; fx++)
+		for(size_t fy=0; fy<outputSizeY; fy++)
+			for(size_t ft=0; ft<outputSizeT; ft++)
+				for(size_t ch=0; ch<outBitsPerPixel; ch++)
+					outputDensity[fx][fy][ft][ch] = 0;
+	for(size_t fx=0; fx<outputSizeX; fx++)
+		for(size_t fy=0; fy<outputSizeY; fy++)
+			for(size_t ft=0; ft<outputSizeT; ft++)
+				for(auto gate : filters[fx][fy][ft])
+					for(TextureIndex ti : gate->outputsFilterIndices)
+						outputDensity(ti+gate->outputsShift)++;
+	long unsigned l1 = 0;
+	long unsigned l2 = 0;
+	for(size_t fx=0; fx<outputSizeX; fx++)
+		for(size_t fy=0; fy<outputSizeY; fy++)
+			for(size_t ft=0; ft<outputSizeT; ft++)
+				for(size_t ch=0; ch<outBitsPerPixel; ch++) {
+					l1 += outputDensity[fx][fy][ft][ch];
+					l2 += outputDensity[fx][fy][ft][ch]*outputDensity[fx][fy][ft][ch];
+				}
+	if(l1>INT_MAX) throw out_of_range("Output density l1 norm is out of range");
+	if(l2>INT_MAX) throw out_of_range("Output density l2 norm squared is out of range");
+	dataMap.set(prefix + "outputDensityL1", static_cast<int>(l1));
+	dataMap.set(prefix + "outputDensityL2sq", static_cast<int>(l2));
+
 	dataMap.set(prefix + "originationStory", originationStory);
 	return dataMap;
 }
