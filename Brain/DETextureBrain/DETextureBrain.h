@@ -88,6 +88,7 @@ private:
 	static std::shared_ptr<ParameterLink<double>> connectionToTableChangeRatioPL;
 	static std::shared_ptr<ParameterLink<int>> minGateCountPL;
 	static std::shared_ptr<ParameterLink<double>> structurewideMutationProbabilityPL;
+	static std::shared_ptr<ParameterLink<bool>> enableInputRewiringsPL;
 
 public:
 	// Public methods

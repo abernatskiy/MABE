@@ -69,6 +69,8 @@ shared_ptr<ParameterLink<int>> DETextureBrain::outBitsPerPixelPL = Parameters::r
                                                                                                   "number of binary channels in each output pixel (default 3)");
 shared_ptr<ParameterLink<int>> DETextureBrain::convolutionRegimePL = Parameters::register_parameter("BRAIN_DETEXTURE-convolutionRegime", 0,
                                                                                                     "integer specifying how the brain should treat the spatial structure of the texture: 0 - local filters, 1 - local filters with shared logic; to get a fully connected behavior, set filter dimensions to be equial to the input size");
+shared_ptr<ParameterLink<bool>> DETextureBrain::enableInputRewiringsPL = Parameters::register_parameter("BRAIN_DETEXTURE-enableInputRewirings", false,
+                                                                                                        "a boolean flag specifying whether gate inputs should be rewired during mutations. Disabled by default. Note: structurewide mutations ignore this flag.");
 
 /********** Public definitions **********/
 
@@ -600,32 +602,25 @@ void DETextureBrain::randomlyRewireRandomlySelectedGate() {
 		gidx = Random::getIndex(filterSize);
 		shared_ptr<AbstractTextureGate> theGate = filters[rfx][rfy][rft][gidx];
 
-		size_t gateInputSize = theGate->inputsFilterIndices.size();
 		size_t gateOutputSize = theGate->outputsFilterIndices.size();
+		size_t gateInputSize = enableInputRewiringsPL->get(PT) ? theGate->inputsFilterIndices.size() : 0;
 		size_t connectionIdx = Random::getIndex(gateInputSize+gateOutputSize);
-		if(connectionIdx<gateInputSize)
-			theGate->inputsFilterIndices[connectionIdx] = getRandomFilterInputIndex();
-		else {
-			connectionIdx -= gateInputSize;
+		if(connectionIdx<gateOutputSize) {
 			theGate->outputsFilterIndices[connectionIdx] = getRandomFilterOutputIndex();
 			theGate->updateOutputs(output);
+		}
+		else {
+			connectionIdx -= gateOutputSize;
+			theGate->inputsFilterIndices[connectionIdx] = getRandomFilterInputIndex();
 		}
 	}
 	if(convolutionRegime==SHARED_REGIME) {
 		size_t gidx = Random::getIndex(filters[0][0][0].size());
 		shared_ptr<AbstractTextureGate> theGate = filters[0][0][0][gidx];
-		size_t gateInputSize = theGate->inputsFilterIndices.size();
 		size_t gateOutputSize = theGate->outputsFilterIndices.size();
+		size_t gateInputSize = enableInputRewiringsPL->get(PT) ? theGate->inputsFilterIndices.size() : 0;
 		size_t connectionIdx = Random::getIndex(gateInputSize+gateOutputSize);
-		if(connectionIdx<gateInputSize) {
-			TextureIndex newInputAddress = getRandomFilterInputIndex();
-			for(size_t fx=0; fx<outputSizeX; fx++)
-				for(size_t fy=0; fy<outputSizeY; fy++)
-					for(size_t ft=0; ft<outputSizeT; ft++)
-						filters[fx][fy][ft][gidx]->inputsFilterIndices[connectionIdx] = newInputAddress;
-		}
-		else {
-			connectionIdx -= gateInputSize;
+		if(connectionIdx<gateOutputSize) {
 			TextureIndex newOutputAddress = getRandomFilterOutputIndex();
 			for(size_t fx=0; fx<outputSizeX; fx++)
 				for(size_t fy=0; fy<outputSizeY; fy++)
@@ -633,6 +628,14 @@ void DETextureBrain::randomlyRewireRandomlySelectedGate() {
 						filters[fx][fy][ft][gidx]->outputsFilterIndices[connectionIdx] = newOutputAddress;
 						filters[fx][fy][ft][gidx]->updateOutputs(output);
 					}
+		}
+		else {
+			connectionIdx -= gateOutputSize;
+			TextureIndex newInputAddress = getRandomFilterInputIndex();
+			for(size_t fx=0; fx<outputSizeX; fx++)
+				for(size_t fy=0; fy<outputSizeY; fy++)
+					for(size_t ft=0; ft<outputSizeT; ft++)
+						filters[fx][fy][ft][gidx]->inputsFilterIndices[connectionIdx] = newInputAddress;
 		}
 	}
 }
