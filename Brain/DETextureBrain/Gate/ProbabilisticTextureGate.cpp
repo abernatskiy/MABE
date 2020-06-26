@@ -111,7 +111,7 @@ void ProbabilisticTextureGate::update(std::mt19937* rng) {
 	for(size_t o=0; o<outputs.size(); o++) {
 //		if(*outputs[o])
 //			(*erasureCounterPtr)++;
-		if(table[inPat][o])
+		if(outPat & (1 << o))
 			(*outputs[o])++;
 		else
 			(*outputs[o])--;
@@ -124,9 +124,6 @@ void ProbabilisticTextureGate::update(std::mt19937* rng) {
 
 nlohmann::json ProbabilisticTextureGate::serialize() const {
 	nlohmann::json out = AbstractTextureGate::serialize();
-
-	out["numInputPatterns"] = numInputPatterns;
-	out["numOutputPatterns"] = numOutputPatterns;
 
 	out["table"] = nlohmann::json::array();
 	for(const auto& row : table) {
@@ -141,8 +138,10 @@ nlohmann::json ProbabilisticTextureGate::serialize() const {
 
 void ProbabilisticTextureGate::deserialize(const nlohmann::json& in) {
 	AbstractTextureGate::deserialize(in);
-	numInputPatterns = in["numInputPatterns"];
-	numOutputPatterns = in["numOutputPatterns"];
+
+	numInputPatterns = 1 << inputs.size();
+	numOutputPatterns = 1 << outputs.size();
+
 	table.clear();
 	for(const auto& row : in["table"]) {
 		table.push_back({});
