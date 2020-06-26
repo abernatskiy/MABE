@@ -22,12 +22,17 @@ private:
 	std::vector<double> curInput;
 	std::vector<std::string> curStateStrings;
 	std::string curLabelString;
+	int curLabel;
 
 	// Parts for state counting (only the topmost layer)
 	std::set<std::string> stateStrings;
 	std::set<std::string> labeledStateStrings;
 	long unsigned lostStates;
 	long unsigned lostLabels;
+
+	// Parts for counting matches in a fixed encoding setting
+	long unsigned matchedBits;
+	unsigned matchedPatterns;
 
 	// Parts for information-theoretic machinery
 	std::map<std::string,unsigned> labelCounts;

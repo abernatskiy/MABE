@@ -97,7 +97,6 @@ double computeFuzzySharedEntropy(const map<pair<string,string>,unsigned>& jointC
 		fjpair.second /= normalizationConstant;
 //	printMap(fuzzyJoint); cout << endl;
 
-
 	map<string,double> fuzzyPatterns;
 	for(const auto& fjpair : fuzzyJoint)
 		incrementMapField(fuzzyPatterns, fjpair.first.second, fjpair.second);
@@ -238,6 +237,38 @@ string labelOfClosestNeighbor(string pattern, const map<string,string>& patterns
 	return outPattern;
 }
 
+tuple<unsigned, long unsigned> oneHotMatches(int curLabel, Texture& pattern, size_t popsize=1) {
+	// the first returned value is one if the pattern matched the label exactly and zero otherwise
+	// the second returned value is the number of matched bits
+	if(curLabel<0 || curLabel>=10) throw invalid_argument("Bit matching function caught an invalid label " + to_string(curLabel));
+	if(pattern.shape()[0]!=1 ||
+	   pattern.shape()[1]!=1 ||
+	   pattern.shape()[2]!=1 ) throw invalid_argument("Bit matches are counted for a texture with spatiotemporal dimensions greater than one");
+	if(pattern.shape()[3]!=10*popsize) throw invalid_argument("Bit matches are counted with a texture with a number of channels other than ten time the number of populations, w.r.t. one hot encoding, exiting");
+
+//	cout << "matching " << curLabel << " and texture" << endl << readableRepr(pattern)";
+
+	unsigned bitMatches = 0;
+	unsigned popMatches = 0;
+	for(size_t bi=0; bi<10; bi++) { // bit index
+		int consensus = 0;
+		for(size_t pi=0; pi<popsize; pi++) {
+			// Positive output favored
+			consensus += pattern[0][0][0][bi*popsize+pi]==0 ? -1 : 1;
+			bitMatches += curLabel==bi ? pattern[0][0][0][bi*popsize+pi]!=0 : pattern[0][0][0][bi*popsize+pi]==0;
+
+			// Negative output favored
+			// consensus += pattern[0][0][0][bi*popsize+pi]==0 ? 1 : -1;
+			// bitMatches += curLabel==bi ? pattern[0][0][0][bi*popsize+pi]==0 : pattern[0][0][0][bi*popsize+pi]!=0;
+		}
+		popMatches += curLabel==bi ? consensus>0 : consensus<=0;
+	}
+
+//	cout << endl << "result: " << bitMatches << "bit" << endl;
+
+	return tuple<unsigned, long unsigned>(popMatches==10, bitMatches);
+}
+
 /********************************************************************/
 /********** Public CompressedMentalImage class definitions **********/
 /********************************************************************/
@@ -256,6 +287,11 @@ CompressedMentalImage::CompressedMentalImage(shared_ptr<string> curAstNamePtr,
 	currentAsteroidNamePtr(curAstNamePtr),
 	datasetParserPtr(dsParserPtr),
 	sensorsPtr(sPtr),
+	curLabel(-1),
+	lostStates(0),
+	lostLabels(0),
+	matchedBits(0),
+	matchedPatterns(0),
 	mVisualize(Global::modePL->get() == "visualize"),
 	numBits(nBits),
 	computeFastRepellingPLInfo(computeFRPLInfo),
@@ -285,6 +321,9 @@ void CompressedMentalImage::reset(int visualize) { // called in the beginning of
 	labeledStateStrings.clear();
 	lostStates = 0;
 	lostLabels = 0;
+
+	matchedBits = 0;
+	matchedPatterns = 0;
 
 	labelCounts.clear();
 	patternCounts.clear();
@@ -321,8 +360,16 @@ void CompressedMentalImage::recordRunningScoresWithinState(shared_ptr<Organism> 
 		curStateStrings.clear();
 		if(inputIsATexture) {
 			auto outTexturesPtr = reinterpret_cast<vector<void*>*>(brain->getDataForMotors());
-			for(auto vTexturePtr : *outTexturesPtr)
-				curStateStrings.push_back(textureToHexStr(reinterpret_cast<Texture*>(vTexturePtr)));
+			for(size_t i=0; i<outTexturesPtr->size(); i++) {
+				auto texturePtr = reinterpret_cast<Texture*>(outTexturesPtr->at(i));
+				curStateStrings.push_back(textureToHexStr(texturePtr));
+//				if(i==0) {
+//					const unsigned labelPopulationSize = 1;
+//					tuple<unsigned, long unsigned> matchCounts = oneHotMatches(curLabel, *texturePtr, labelPopulationSize);
+//					matchedPatterns += get<0>(matchCounts);
+//					matchedBits += get<1>(matchCounts);
+//				}
+			}
 		}
 		else
 			curStateStrings.push_back(bitRangeToHexStr(curInput.begin(), curInput.size()));
@@ -379,6 +426,8 @@ void CompressedMentalImage::recordSampleScores(shared_ptr<Organism> org,
 	totSensoryActivity /= static_cast<double>(sensorActivityStateScores.size());
 	sampleScoresMap->append("lostStates", static_cast<double>(lostStates));
 	sampleScoresMap->append("lostLabels", static_cast<double>(lostLabels));
+	sampleScoresMap->append("matchedBits", static_cast<double>(matchedBits));
+	sampleScoresMap->append("matchedPatterns", static_cast<double>(matchedPatterns));
 	sampleScoresMap->append("numPatterns", static_cast<double>(stateStrings.size()));
 	sampleScoresMap->append("numLabeledPatterns", static_cast<double>(labeledStateStrings.size()));
 	sampleScoresMap->append("erasures", static_cast<double>(numErasures));
@@ -430,6 +479,8 @@ void CompressedMentalImage::evaluateOrganism(shared_ptr<Organism> org, shared_pt
 //	cout << "Writing evals for org " << org->ID << endl;
 	updateOrgDatamap(org, "lostStates", sampleScoresMap->getAverage("lostStates"));
 	updateOrgDatamap(org, "lostLabels", sampleScoresMap->getAverage("lostLabels"));
+	updateOrgDatamap(org, "matchedBits", sampleScoresMap->getAverage("matchedBits"));
+	updateOrgDatamap(org, "matchedPatterns", sampleScoresMap->getAverage("matchedPatterns"));
 	updateOrgDatamap(org, "numPatterns", sampleScoresMap->getAverage("numPatterns"));
 	updateOrgDatamap(org, "numLabeledPatterns", sampleScoresMap->getAverage("numLabeledPatterns"));
 	updateOrgDatamap(org, "erasures", sampleScoresMap->getAverage("erasures"));
@@ -483,7 +534,8 @@ void* CompressedMentalImage::logTimeSeries(const string& label) {
 
 void CompressedMentalImage::readLabel() {
 	const vector<vector<double>>& commands = datasetParserPtr->cachingGetDescription(*currentAsteroidNamePtr);
-	curLabelString = to_string(static_cast<int>(commands[0][0]));
+	curLabel = static_cast<int>(commands[0][0]);
+	curLabelString = to_string(curLabel);
 }
 
 double CompressedMentalImage::computeRepellingSharedEntropy() {
