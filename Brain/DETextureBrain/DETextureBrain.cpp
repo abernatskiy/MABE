@@ -71,6 +71,8 @@ shared_ptr<ParameterLink<int>> DETextureBrain::convolutionRegimePL = Parameters:
                                                                                                     "integer specifying how the brain should treat the spatial structure of the texture: 0 - local filters, 1 - local filters with shared logic; to get a fully connected behavior, set filter dimensions to be equial to the input size");
 shared_ptr<ParameterLink<bool>> DETextureBrain::enableInputRewiringsPL = Parameters::register_parameter("BRAIN_DETEXTURE-enableInputRewirings", false,
                                                                                                         "a boolean flag specifying whether gate inputs should be rewired during mutations. Disabled by default. Note: structurewide mutations ignore this flag.");
+shared_ptr<ParameterLink<bool>> DETextureBrain::filtersOutputsAreSharedPL = Parameters::register_parameter("BRAIN_DETEXTURE-filtersOutputsAreShared", false,
+                                                                                                           "a boolean flag specifying whether all outputs should share the same output. Disabled by default");
 
 /********** Public definitions **********/
 
@@ -78,6 +80,7 @@ DETextureBrain::DETextureBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Param
 	AbstractBrain(_nrInNodes, _nrOutNodes, PT_),
 	minGates(minGateCountPL->get(PT_)),
 	convolutionRegime(convolutionRegimePL->get(PT_)),
+	filtersOutputsAreShared(filtersOutputsAreSharedPL->get(PT_)),
 	input(nullptr),
 	output(nullptr),
 	numErasures(0),
@@ -95,10 +98,20 @@ DETextureBrain::DETextureBrain(int _nrInNodes, int _nrOutNodes, shared_ptr<Param
 	inBitsPerPixel = inBitsPerPixelPL->get(PT_);
 	validateDimensions();
 
-	tie(outputSizeX, outputSizeY, outputSizeT) = computeOutputShape();
+	tie(filterGridSizeX, filterGridSizeY, filterGridSizeT) = computeFilterGridShape();
+	if(filtersOutputsAreShared) {
+		outputSizeX = 1;
+		outputSizeY = 1;
+		outputSizeT = 1;
+	}
+	else {
+		outputSizeX = filterGridSizeX;
+		outputSizeY = filterGridSizeY;
+		outputSizeT = filterGridSizeT;
+	}
 	outBitsPerPixel = outBitsPerPixelPL->get(PT_);
 
-	filters.resize(boost::extents[outputSizeX][outputSizeY][outputSizeT]);
+	filters.resize(boost::extents[filterGridSizeX][filterGridSizeY][filterGridSizeT]);
 
 	output = new Texture(boost::extents[outputSizeX][outputSizeY][outputSizeT][outBitsPerPixel]);
 	resetOutputTexture();
@@ -125,9 +138,9 @@ void DETextureBrain::update(mt19937* rng) {
 
 //	cout << "output at the beginning is " << endl << readableRepr(*output) << endl;
 
-	for(size_t fx=0; fx<outputSizeX; fx++)
-		for(size_t fy=0; fy<outputSizeY; fy++)
-			for(size_t ft=0; ft<outputSizeT; ft++)
+	for(size_t fx=0; fx<filterGridSizeX; fx++)
+		for(size_t fy=0; fy<filterGridSizeY; fy++)
+			for(size_t ft=0; ft<filterGridSizeT; ft++)
 				for(auto gate : filters[fx][fy][ft]) {
 					gate->update(rng);
 //					cout << "after updaing gate " << gate->ID << endl << readableRepr(*output) << endl;
@@ -147,9 +160,9 @@ shared_ptr<AbstractBrain> DETextureBrain::makeCopy(shared_ptr<ParametersTable> P
 	if(PT_!=PT) throw invalid_argument("DETextureBrain::makeCopy was called with a parameters table that is different from the one the original used. Are you sure you want to do that?");
 
 	auto newBrain = make_shared<DETextureBrain>(nrInputValues, nrOutputValues, PT);
-	for(size_t fx=0; fx<outputSizeX; fx++)
-		for(size_t fy=0; fy<outputSizeY; fy++)
-			for(size_t ft=0; ft<outputSizeT; ft++)
+	for(size_t fx=0; fx<filterGridSizeX; fx++)
+		for(size_t fy=0; fy<filterGridSizeY; fy++)
+			for(size_t ft=0; ft<filterGridSizeT; ft++)
 				for(auto gate : filters[fx][fy][ft]) {
 					shared_ptr<AbstractTextureGate> gateCopyPtr = gate->makeCopy(gate->ID);
 					gateCopyPtr->updateOutputs(newBrain->output);
@@ -179,9 +192,9 @@ void DETextureBrain::mutate() {
 void DETextureBrain::resetBrain() {
 	AbstractBrain::resetBrain(); // probably safe to comment out: all it does is resetting the zero-length IO vector<double>s
 	resetOutputTexture();
-	for(size_t fx=0; fx<outputSizeX; fx++)
-		for(size_t fy=0; fy<outputSizeY; fy++)
-			for(size_t ft=0; ft<outputSizeT; ft++)
+	for(size_t fx=0; fx<filterGridSizeX; fx++)
+		for(size_t fy=0; fy<filterGridSizeY; fy++)
+			for(size_t ft=0; ft<filterGridSizeT; ft++)
 				for(auto gate : filters[fx][fy][ft])
 					gate->reset();
 	numErasures = 0;
@@ -191,9 +204,9 @@ void DETextureBrain::resetBrain() {
 void DETextureBrain::attachToSensors(void* inputPtr) {
 //	cout << "Attaching brain " << this << " to sensors using data pointer " << inputPtr << endl;
 	input = reinterpret_cast<Texture*>(inputPtr);
-	for(size_t fx=0; fx<outputSizeX; fx++)
-		for(size_t fy=0; fy<outputSizeY; fy++)
-			for(size_t ft=0; ft<outputSizeT; ft++)
+	for(size_t fx=0; fx<filterGridSizeX; fx++)
+		for(size_t fy=0; fy<filterGridSizeY; fy++)
+			for(size_t ft=0; ft<filterGridSizeT; ft++)
 				for(auto gate : filters[fx][fy][ft])
 					gate->updateInputs(input);
 }
@@ -210,11 +223,12 @@ string DETextureBrain::description() {
 	   << "input dimensions  : x=" << inputSizeX << " y=" << inputSizeY << " t=" << inputSizeT << " depth=" << inBitsPerPixel << "bit" << endl
 	   << "filter dimensions : x=" << filterSizeX << " y=" << filterSizeY << " t=" << filterSizeT << endl
 	   << "stride            : x=" << strideX << " y=" << strideY << " t=" << strideT << endl
+	   << "filter grid       : x=" << filterGridSizeX << " y=" << filterGridSizeY << " t=" << filterGridSizeT << endl
 	   << "output dimensions : x=" << outputSizeX << " y=" << outputSizeY << " t=" << outputSizeT << " depth=" << outBitsPerPixel << "bit" << endl
 	   << "descriptions of gates:" << endl;
-	for(size_t fx=0; fx<outputSizeX; fx++)
-		for(size_t fy=0; fy<outputSizeY; fy++)
-			for(size_t ft=0; ft<outputSizeT; ft++) {
+	for(size_t fx=0; fx<filterGridSizeX; fx++)
+		for(size_t fy=0; fy<filterGridSizeY; fy++)
+			for(size_t ft=0; ft<filterGridSizeT; ft++) {
 				ss << "Gates at filter (" << fx << ", " << fy << ", " << ft << "):" << endl;
 				for(auto gate : filters[fx][fy][ft])
 					ss << gate->description();
@@ -239,9 +253,9 @@ DataMap DETextureBrain::getStats(string& prefix) {
 	gatecounts["DeterministicTextureGates"] = 0;
 	gatecounts["ProbabilisticTextureGates"] = 0;
 	if(convolutionRegime==UNSHARED_REGIME) {
-		for(size_t fx=0; fx<outputSizeX; fx++)
-			for(size_t fy=0; fy<outputSizeY; fy++)
-				for(size_t ft=0; ft<outputSizeT; ft++)
+		for(size_t fx=0; fx<filterGridSizeX; fx++)
+			for(size_t fy=0; fy<filterGridSizeY; fy++)
+				for(size_t ft=0; ft<filterGridSizeT; ft++)
 					for(auto gate : filters[fx][fy][ft]) {
 						if(gate->gateType()=="DeterministicTexture")
 							gatecounts["DeterministicTextureGates"]++;
@@ -262,16 +276,15 @@ DataMap DETextureBrain::getStats(string& prefix) {
 	dataMap.set(prefix + "markovBrainDeterministicTextureGates", gatecounts["DeterministicTextureGates"]);
 	dataMap.set(prefix + "markovBrainProbabilisticTextureGates", gatecounts["ProbabilisticTextureGates"]);
 */
-
 	Texture outputDensity(boost::extents[outputSizeX][outputSizeY][outputSizeT][outBitsPerPixel]);
 	for(size_t fx=0; fx<outputSizeX; fx++)
 		for(size_t fy=0; fy<outputSizeY; fy++)
 			for(size_t ft=0; ft<outputSizeT; ft++)
 				for(size_t ch=0; ch<outBitsPerPixel; ch++)
 					outputDensity[fx][fy][ft][ch] = 0;
-	for(size_t fx=0; fx<outputSizeX; fx++)
-		for(size_t fy=0; fy<outputSizeY; fy++)
-			for(size_t ft=0; ft<outputSizeT; ft++)
+	for(size_t fx=0; fx<filterGridSizeX; fx++)
+		for(size_t fy=0; fy<filterGridSizeY; fy++)
+			for(size_t ft=0; ft<filterGridSizeT; ft++)
 				for(auto gate : filters[fx][fy][ft])
 					for(TextureIndex ti : gate->outputsFilterIndices)
 						outputDensity(ti+gate->outputsShift)++;
@@ -304,11 +317,11 @@ DataMap DETextureBrain::serialize(string& name) {
 
 	json filtersJSON = json::array();
 	if(convolutionRegime==UNSHARED_REGIME) {
-		for(size_t fx=0; fx<outputSizeX; fx++) {
+		for(size_t fx=0; fx<filterGridSizeX; fx++) {
 			json xSliceJSON = json::array();
-			for(size_t fy=0; fy<outputSizeY; fy++) {
+			for(size_t fy=0; fy<filterGridSizeY; fy++) {
 				json xySliceJSON = json::array();
-				for(size_t ft=0; ft<outputSizeT; ft++) {
+				for(size_t ft=0; ft<filterGridSizeT; ft++) {
 					json singleFilterJSON = json::array();
 					for(auto gate : filters[fx][fy][ft])
 						singleFilterJSON.push_back(gate->serialize());
@@ -328,6 +341,7 @@ DataMap DETextureBrain::serialize(string& name) {
 	brainJSON["inputShape"] = json::array({inputSizeX, inputSizeY, inputSizeT, inBitsPerPixel});
 	brainJSON["filterShape"] =json::array({filterSizeX, filterSizeY, filterSizeT});
 	brainJSON["stride"] = json::array({strideX, strideY, strideT});
+	brainJSON["filterGridShape"] = json::array({filterGridSizeX, filterGridSizeY, filterGridSizeT});
 	brainJSON["outputShape"] = json::array({outputSizeX, outputSizeY, outputSizeT, outBitsPerPixel});
 	brainJSON["originationStory"] = originationStory;
 
@@ -357,6 +371,7 @@ void DETextureBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<s
 	const map<string,vector<size_t>> dimsToCheck = { {"inputShape", {inputSizeX, inputSizeY, inputSizeT, inBitsPerPixel}},
 	                                                 {"filterShape", {filterSizeX, filterSizeY, filterSizeT}},
 	                                                 {"stride", {strideX, strideY, strideT}},
+	                                                 {"filterGridShape", {filterGridSizeX, filterGridSizeY, filterGridSizeT}},
 	                                                 {"outputShape", {outputSizeX, outputSizeY, outputSizeT, outBitsPerPixel}} };
 	vector<string> dimNames = {"X-dimension", "Y-dimension", "T-dimension", "depth"};
 
@@ -386,9 +401,9 @@ void DETextureBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<s
 		gate->setErasureCounterPtr(&(this->numErasures));
 		return gate;
 	};
-	for(size_t fx=0; fx<outputSizeX; fx++)
-		for(size_t fy=0; fy<outputSizeY; fy++)
-			for(size_t ft=0; ft<outputSizeT; ft++) {
+	for(size_t fx=0; fx<filterGridSizeX; fx++)
+		for(size_t fy=0; fy<filterGridSizeY; fy++)
+			for(size_t ft=0; ft<filterGridSizeT; ft++) {
 				filters[fx][fy][ft].clear();
 				if(convolutionRegime==UNSHARED_REGIME) {
 					for(auto gateJSON : filtersJSON[fx][fy][ft]) {
@@ -401,7 +416,10 @@ void DETextureBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<s
 					for(auto gateJSON : filtersJSON) {
 						shared_ptr<AbstractTextureGate> gate = deserializeGate(gateJSON);
 						gate->setInputsShift({{fx*strideX, fy*strideY, ft*strideT, 0}});
-						gate->setOutputsShift({{fx, fy, ft, 0}});
+						if(filtersOutputsAreShared)
+							gate->setOutputsShift({{0, 0, 0, 0}});
+						else
+							gate->setOutputsShift({{fx, fy, ft, 0}});
 						gate->updateOutputs(output);
 						filters[fx][fy][ft].push_back(gate);
 					}
@@ -411,7 +429,7 @@ void DETextureBrain::deserialize(shared_ptr<ParametersTable> PT, unordered_map<s
 
 /********** Private definitions **********/
 
-tuple<size_t,size_t,size_t> DETextureBrain::computeOutputShape() {
+tuple<size_t,size_t,size_t> DETextureBrain::computeFilterGridShape() {
 	size_t outx = (inputSizeX-filterSizeX) / strideX + 1;
 	size_t outy = (inputSizeY-filterSizeY) / strideY + 1;
 	size_t outt = (inputSizeT-filterSizeT) / strideT + 1;
@@ -421,9 +439,9 @@ tuple<size_t,size_t,size_t> DETextureBrain::computeOutputShape() {
 unsigned DETextureBrain::totalNumberOfGates() {
 	if(convolutionRegime==UNSHARED_REGIME) {
 		unsigned numGates = 0;
-		for(size_t fx=0; fx<outputSizeX; fx++)
-			for(size_t fy=0; fy<outputSizeY; fy++)
-				for(size_t ft=0; ft<outputSizeT; ft++)
+		for(size_t fx=0; fx<filterGridSizeX; fx++)
+			for(size_t fy=0; fy<filterGridSizeY; fy++)
+				for(size_t ft=0; ft<filterGridSizeT; ft++)
 					numGates += filters[fx][fy][ft].size();
 		return numGates;
 	}
@@ -437,9 +455,9 @@ void DETextureBrain::resetOutputTexture() {
 
 void DETextureBrain::mutateStructurewide() {
 	if(convolutionRegime==UNSHARED_REGIME) {
-		for(size_t fx=0; fx<outputSizeX; fx++)
-			for(size_t fy=0; fy<outputSizeY; fy++)
-				for(size_t ft=0; ft<outputSizeT; ft++)
+		for(size_t fx=0; fx<filterGridSizeX; fx++)
+			for(size_t fy=0; fy<filterGridSizeY; fy++)
+				for(size_t ft=0; ft<filterGridSizeT; ft++)
 					for(auto gate : filters[fx][fy][ft]) {
 						if(Random::getDouble(1.)<structurewideMutationProbability)
 							gate->mutateInternalStructure();
@@ -461,9 +479,9 @@ void DETextureBrain::mutateStructurewide() {
 		for(size_t gi=0; gi<filters[0][0][0].size(); gi++) {
 			if(Random::getDouble(1.)<structurewideMutationProbability) {
 				filters[0][0][0][gi]->mutateInternalStructure();
-				for(size_t fx=0; fx<outputSizeX; fx++)
-					for(size_t fy=0; fy<outputSizeY; fy++)
-						for(size_t ft=0; ft<outputSizeT; ft++) {
+				for(size_t fx=0; fx<filterGridSizeX; fx++)
+					for(size_t fy=0; fy<filterGridSizeY; fy++)
+						for(size_t ft=0; ft<filterGridSizeT; ft++) {
 							shared_ptr<AbstractTextureGate> newGate = filters[0][0][0][gi]->makeCopy(filters[0][0][0][gi]->ID);
 							newGate->setInputsShift(filters[fx][fy][ft][gi]->inputsShift);
 							newGate->setOutputsShift(filters[fx][fy][ft][gi]->outputsShift);
@@ -478,17 +496,17 @@ void DETextureBrain::mutateStructurewide() {
 				size_t connectionIdx = Random::getIndex(gateInputSize+gateOutputSize);
 				if(connectionIdx<gateInputSize) {
 					TextureIndex newInputAddress = getRandomFilterInputIndex();
-					for(size_t fx=0; fx<outputSizeX; fx++)
-						for(size_t fy=0; fy<outputSizeY; fy++)
-							for(size_t ft=0; ft<outputSizeT; ft++)
+					for(size_t fx=0; fx<filterGridSizeX; fx++)
+						for(size_t fy=0; fy<filterGridSizeY; fy++)
+							for(size_t ft=0; ft<filterGridSizeT; ft++)
 								filters[fx][fy][ft][gi]->inputsFilterIndices[connectionIdx] = newInputAddress;
 				}
 				else {
 					connectionIdx -= gateInputSize;
 					TextureIndex newOutputAddress = getRandomFilterOutputIndex();
-					for(size_t fx=0; fx<outputSizeX; fx++)
-						for(size_t fy=0; fy<outputSizeY; fy++)
-							for(size_t ft=0; ft<outputSizeT; ft++) {
+					for(size_t fx=0; fx<filterGridSizeX; fx++)
+						for(size_t fy=0; fy<filterGridSizeY; fy++)
+							for(size_t ft=0; ft<filterGridSizeT; ft++) {
 								filters[fx][fy][ft][gi]->outputsFilterIndices[connectionIdx] = newOutputAddress;
 								filters[fx][fy][ft][gi]->updateOutputs(output);
 							}
@@ -553,9 +571,9 @@ void DETextureBrain::mainMutate() {
 }
 
 void DETextureBrain::randomize() {
-	for(size_t fx=0; fx<outputSizeX; fx++)
-		for(size_t fy=0; fy<outputSizeY; fy++)
-			for(size_t ft=0; ft<outputSizeT; ft++)
+	for(size_t fx=0; fx<filterGridSizeX; fx++)
+		for(size_t fy=0; fy<filterGridSizeY; fy++)
+			for(size_t ft=0; ft<filterGridSizeT; ft++)
 				filters[fx][fy][ft].clear();
 
 	for(unsigned g=0; g<initialGateCountPL->get(PT); g++)
@@ -578,9 +596,9 @@ void DETextureBrain::internallyMutateRandomlySelectedGate() {
 		size_t gidx = Random::getIndex(filters[0][0][0].size());
 		shared_ptr<AbstractTextureGate> theGate = filters[0][0][0][gidx];
 		theGate->mutateInternalStructure();
-		for(size_t fx=0; fx<outputSizeX; fx++)
-			for(size_t fy=0; fy<outputSizeY; fy++)
-				for(size_t ft=0; ft<outputSizeT; ft++) {
+		for(size_t fx=0; fx<filterGridSizeX; fx++)
+			for(size_t fy=0; fy<filterGridSizeY; fy++)
+				for(size_t ft=0; ft<filterGridSizeT; ft++) {
 					shared_ptr<AbstractTextureGate> newGate = theGate->makeCopy(theGate->ID);
 					newGate->setInputsShift(filters[fx][fy][ft][gidx]->inputsShift);
 					newGate->setOutputsShift(filters[fx][fy][ft][gidx]->outputsShift);
@@ -622,9 +640,9 @@ void DETextureBrain::randomlyRewireRandomlySelectedGate() {
 		size_t connectionIdx = Random::getIndex(gateInputSize+gateOutputSize);
 		if(connectionIdx<gateOutputSize) {
 			TextureIndex newOutputAddress = getRandomFilterOutputIndex();
-			for(size_t fx=0; fx<outputSizeX; fx++)
-				for(size_t fy=0; fy<outputSizeY; fy++)
-					for(size_t ft=0; ft<outputSizeT; ft++) {
+			for(size_t fx=0; fx<filterGridSizeX; fx++)
+				for(size_t fy=0; fy<filterGridSizeY; fy++)
+					for(size_t ft=0; ft<filterGridSizeT; ft++) {
 						filters[fx][fy][ft][gidx]->outputsFilterIndices[connectionIdx] = newOutputAddress;
 						filters[fx][fy][ft][gidx]->updateOutputs(output);
 					}
@@ -632,9 +650,9 @@ void DETextureBrain::randomlyRewireRandomlySelectedGate() {
 		else {
 			connectionIdx -= gateOutputSize;
 			TextureIndex newInputAddress = getRandomFilterInputIndex();
-			for(size_t fx=0; fx<outputSizeX; fx++)
-				for(size_t fy=0; fy<outputSizeY; fy++)
-					for(size_t ft=0; ft<outputSizeT; ft++)
+			for(size_t fx=0; fx<filterGridSizeX; fx++)
+				for(size_t fy=0; fy<filterGridSizeY; fy++)
+					for(size_t ft=0; ft<filterGridSizeT; ft++)
 						filters[fx][fy][ft][gidx]->inputsFilterIndices[connectionIdx] = newInputAddress;
 		}
 	}
@@ -654,7 +672,10 @@ void DETextureBrain::addCopyOfRandomlySelectedGate() {
 		size_t sidx = Random::getIndex(filterSize);
 		shared_ptr<AbstractTextureGate> newGate = filters[rsfx][rsfy][rsft][sidx]->makeCopy(getLowestAvailableGateID());
 		newGate->setInputsShift({{rdfx*strideX, rdfy*strideY, rdft*strideT, 0}});
-		newGate->setOutputsShift({{rdfx, rdfy, rdft, 0}});
+		if(filtersOutputsAreShared)
+			newGate->setOutputsShift({{0, 0, 0, 0}});
+		else
+			newGate->setOutputsShift({{rdfx, rdfy, rdft, 0}});
 		newGate->updateOutputs(output);
 		filters[rdfx][rdfy][rdft].push_back(newGate);
 	}
@@ -662,12 +683,15 @@ void DETextureBrain::addCopyOfRandomlySelectedGate() {
 		// always neutral
 		size_t sidx = Random::getIndex(filters[0][0][0].size());
 		unsigned newGateID = getLowestAvailableGateID();
-		for(size_t fx=0; fx<outputSizeX; fx++)
-			for(size_t fy=0; fy<outputSizeY; fy++)
-				for(size_t ft=0; ft<outputSizeT; ft++) {
+		for(size_t fx=0; fx<filterGridSizeX; fx++)
+			for(size_t fy=0; fy<filterGridSizeY; fy++)
+				for(size_t ft=0; ft<filterGridSizeT; ft++) {
 					shared_ptr<AbstractTextureGate> newGate = filters[0][0][0][sidx]->makeCopy(newGateID);
 					newGate->setInputsShift({{fx*strideX, fy*strideY, ft*strideT, 0}});
-					newGate->setOutputsShift({{fx, fy, ft, 0}});
+					if(filtersOutputsAreShared)
+						newGate->setOutputsShift({{0, 0, 0, 0}});
+					else
+						newGate->setOutputsShift({{fx, fy, ft, 0}});
 					newGate->updateOutputs(output);
 					filters[fx][fy][ft].push_back(newGate);
 				}
@@ -689,17 +713,23 @@ void DETextureBrain::addRandomGate() {
 		size_t rfx, rfy, rft; // random filter <dimension>
 		tie(rfx, rfy, rft) = getRandomFilterIndex();
 		newGate->setInputsShift({{rfx*strideX, rfy*strideY, rft*strideT, 0}});
-		newGate->setOutputsShift({{rfx, rfy, rft, 0}});
+		if(filtersOutputsAreShared)
+			newGate->setOutputsShift({{0, 0, 0, 0}});
+		else
+			newGate->setOutputsShift({{rfx, rfy, rft, 0}});
 		newGate->updateOutputs(output);
 		filters[rfx][rfy][rft].push_back(newGate);
 	}
 	if(convolutionRegime==SHARED_REGIME) {
-		for(size_t fx=0; fx<outputSizeX; fx++)
-			for(size_t fy=0; fy<outputSizeY; fy++)
-				for(size_t ft=0; ft<outputSizeT; ft++) {
+		for(size_t fx=0; fx<filterGridSizeX; fx++)
+			for(size_t fy=0; fy<filterGridSizeY; fy++)
+				for(size_t ft=0; ft<filterGridSizeT; ft++) {
 					shared_ptr<AbstractTextureGate> newLocalGate = newGate->makeCopy(newGate->ID);
 					newLocalGate->setInputsShift({{fx*strideX, fy*strideY, ft*strideT, 0}});
-					newLocalGate->setOutputsShift({{fx, fy, ft, 0}});
+					if(filtersOutputsAreShared)
+						newLocalGate->setOutputsShift({{0, 0, 0, 0}});
+					else
+						newLocalGate->setOutputsShift({{fx, fy, ft, 0}});
 					newLocalGate->updateOutputs(output);
 					filters[fx][fy][ft].push_back(newLocalGate);
 				}
@@ -720,17 +750,17 @@ void DETextureBrain::deleteRandomlySelectedGate() {
 	}
 	if(convolutionRegime==SHARED_REGIME) {
 		size_t rgidx = Random::getIndex(filters[0][0][0].size());
-		for(size_t fx=0; fx<outputSizeX; fx++)
-			for(size_t fy=0; fy<outputSizeY; fy++)
-				for(size_t ft=0; ft<outputSizeT; ft++)
+		for(size_t fx=0; fx<filterGridSizeX; fx++)
+			for(size_t fy=0; fy<filterGridSizeY; fy++)
+				for(size_t ft=0; ft<filterGridSizeT; ft++)
 					filters[fx][fy][ft].erase(filters[fx][fy][ft].begin() + rgidx);
 	}
 }
 
 tuple<size_t,size_t,size_t> DETextureBrain::getRandomFilterIndex() {
-	return tuple<size_t,size_t,size_t>(Random::getIndex(outputSizeX),
-	                                   Random::getIndex(outputSizeY),
-	                                   Random::getIndex(outputSizeT));
+	return tuple<size_t,size_t,size_t>(Random::getIndex(filterGridSizeX),
+	                                   Random::getIndex(filterGridSizeY),
+	                                   Random::getIndex(filterGridSizeT));
 }
 
 TextureIndex DETextureBrain::getRandomFilterInputIndex() {
@@ -752,9 +782,9 @@ unsigned DETextureBrain::getLowestAvailableGateID() {
 
 	if(convolutionRegime==UNSHARED_REGIME) {
 		idAvailable.resize(totalNumberOfGates(), false);
-		for(size_t fx=0; fx<outputSizeX; fx++)
-			for(size_t fy=0; fy<outputSizeY; fy++)
-				for(size_t ft=0; ft<outputSizeT; ft++)
+		for(size_t fx=0; fx<filterGridSizeX; fx++)
+			for(size_t fy=0; fy<filterGridSizeY; fy++)
+				for(size_t ft=0; ft<filterGridSizeT; ft++)
 					for(auto gate : filters[fx][fy][ft])
 						idAvailable[gate->ID] = true;
 	}
@@ -823,13 +853,24 @@ void DETextureBrain::validateInput() {
 
 void DETextureBrain::validateBrain() {
 	if(convolutionRegime==UNSHARED_REGIME) {
-		for(size_t fx=0; fx<outputSizeX; fx++)
-			for(size_t fy=0; fy<outputSizeY; fy++)
-				for(size_t ft=0; ft<outputSizeT; ft++)
+		for(size_t fx=0; fx<filterGridSizeX; fx++)
+			for(size_t fy=0; fy<filterGridSizeY; fy++)
+				for(size_t ft=0; ft<filterGridSizeT; ft++)
 					for(size_t i=0; i<filters[fx][fy][ft].size(); i++) {
 						TextureIndex curInShift, curOutShift;
 						curInShift[0] = fx*strideX; curInShift[1] = fy*strideY; curInShift[2] = ft*strideT; curInShift[3] = 0;
-						curOutShift[0] = fx; curOutShift[1] = fy; curOutShift[2] = ft; curOutShift[3] = 0;
+						if(filtersOutputsAreShared) {
+							curOutShift[0] = 0;
+							curOutShift[1] = 0;
+							curOutShift[2] = 0;
+							curOutShift[3] = 0;
+						}
+						else {
+							curOutShift[0] = fx;
+							curOutShift[1] = fy;
+							curOutShift[2] = ft;
+							curOutShift[3] = 0;
+						}
 
 						shared_ptr<UsedDerivedTextureGate> curGate = dynamic_pointer_cast<UsedDerivedTextureGate>(filters[fx][fy][ft][i]);
 
@@ -848,12 +889,23 @@ void DETextureBrain::validateBrain() {
 	else {
 		for(size_t i=0; i<filters[0][0][0].size(); i++) {
 			shared_ptr<UsedDerivedTextureGate> baseGate = dynamic_pointer_cast<UsedDerivedTextureGate>(filters[0][0][0][i]);
-			for(size_t fx=0; fx<outputSizeX; fx++)
-				for(size_t fy=0; fy<outputSizeY; fy++)
-					for(size_t ft=0; ft<outputSizeT; ft++) {
+			for(size_t fx=0; fx<filterGridSizeX; fx++)
+				for(size_t fy=0; fy<filterGridSizeY; fy++)
+					for(size_t ft=0; ft<filterGridSizeT; ft++) {
 						TextureIndex curInShift, curOutShift;
 						curInShift[0] = fx*strideX; curInShift[1] = fy*strideY; curInShift[2] = ft*strideT; curInShift[3] = 0;
-						curOutShift[0] = fx; curOutShift[1] = fy; curOutShift[2] = ft; curOutShift[3] = 0;
+						if(filtersOutputsAreShared) {
+							curOutShift[0] = 0;
+							curOutShift[1] = 0;
+							curOutShift[2] = 0;
+							curOutShift[3] = 0;
+						}
+						else {
+							curOutShift[0] = fx;
+							curOutShift[1] = fy;
+							curOutShift[2] = ft;
+							curOutShift[3] = 0;
+						}
 
 						shared_ptr<UsedDerivedTextureGate> curGate = dynamic_pointer_cast<UsedDerivedTextureGate>(filters[fx][fy][ft][i]);
 

@@ -27,9 +27,11 @@ private:
 	size_t inputSizeX, inputSizeY, inputSizeT;
 	size_t filterSizeX, filterSizeY, filterSizeT;
 	size_t strideX, strideY, strideT;
+	size_t filterGridSizeX, filterGridSizeY, filterGridSizeT;
 	size_t outputSizeX, outputSizeY, outputSizeT;
 	size_t inBitsPerPixel, outBitsPerPixel;
 	const int convolutionRegime;
+	const bool filtersOutputsAreShared;
 
 	// Major state vars
 	Texture* input; // owned by "upstream" (sensors/brain layer below it)
@@ -41,7 +43,7 @@ private:
 	long numErasures; // a stat variable
 
 	// Private methods
-	std::tuple<size_t,size_t,size_t> computeOutputShape();
+	std::tuple<size_t,size_t,size_t> computeFilterGridShape();
 	unsigned totalNumberOfGates();
 	unsigned totalNumberOfFilters() { return outputSizeX*outputSizeY*outputSizeT; };
 	void resetOutputTexture();
@@ -89,6 +91,7 @@ private:
 	static std::shared_ptr<ParameterLink<int>> minGateCountPL;
 	static std::shared_ptr<ParameterLink<double>> structurewideMutationProbabilityPL;
 	static std::shared_ptr<ParameterLink<bool>> enableInputRewiringsPL;
+	static std::shared_ptr<ParameterLink<bool>> filtersOutputsAreSharedPL;
 
 public:
 	// Public methods

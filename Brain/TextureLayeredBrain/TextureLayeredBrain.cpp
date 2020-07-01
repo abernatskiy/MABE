@@ -95,7 +95,8 @@ TextureLayeredBrain::TextureLayeredBrain(int _nrInNodes, int _nrOutNodes, shared
 			                                                "BRAIN_DETEXTURE-convolutionRegime" };
 			for(const auto& param : forwardedIntParamNames)
 				layerPTs[i]->setParameter(param, PT_->lookupInt(param));
-			for(const auto& param : { "BRAIN_DETEXTURE-enableInputRewirings" })
+			for(const auto& param : { "BRAIN_DETEXTURE-enableInputRewirings",
+			                          "BRAIN_DETEXTURE-filtersOutputsAreShared" })
 				layerPTs[i]->setParameter(param, PT_->lookupBool(param));
 			///// Parameter forwarding END /////
 		}
