@@ -73,6 +73,13 @@ std::shared_ptr<ParameterLink<bool>>
             "ARCHIVIST_DEFAULT-writeSnapshotOrganismsFiles", false,
             "if true, snapshot organisms files will be written (with all "
             "organisms for entire population)");
+std::shared_ptr<ParameterLink<double>>
+    DefaultArchivist::SS_Arch_exitOnPerformanceLevelPL =
+        Parameters::register_parameter(
+            "ARCHIVIST_DEFAULT-exitOnPerformanceLevel", std::numeric_limits<double>::infinity(),
+            "if set and less than infinity, the archivist will request termination "
+            "once an individual wih  at least this value of the maxFileFunction "
+            "appears in the population");
 
 DefaultArchivist::DefaultArchivist(std::shared_ptr<ParametersTable> PT_,
                                    const std::string & group_prefix)
@@ -118,6 +125,7 @@ DefaultArchivist::DefaultArchivist(std::shared_ptr<ParametersTable> PT_,
   writeSnapshotDataFiles = SS_Arch_writeDataFilesPL->get(PT);
   writeSnapshotGenomeFiles = SS_Arch_writeOrganismsFilesPL->get(PT);
 
+  exitOnPerformanceLevel = SS_Arch_exitOnPerformanceLevelPL->get(PT);
 
   if (writePopFile || writeMaxFile ) 
     realtimeSequence =
@@ -445,7 +453,41 @@ bool DefaultArchivist::archive(
     return finished_;
 
   finished_ = Global::update >= Global::updatesPL->get();
- 
+
+  if(exitOnPerformanceLevel < std::numeric_limits<double>::infinity() && max_formula_ != nullptr) {
+
+    std::shared_ptr<Organism> best_org;
+    auto score = std::numeric_limits<double>::lowest();
+    for (auto const &org : population)
+      if (org->timeOfBirth < Global::update || save_new_orgs_) {
+        auto sc = max_formula_->eval(org->dataMap, org->PT)[0];
+        if (sc > score) {
+          score = sc;
+          best_org = org;
+        }
+      }
+
+    if (score == std::numeric_limits<double>::lowest()) {
+      std::cout
+          << " Error: could not find Max score organism to save to MaxFile"
+          << std::endl;
+      exit(1);
+    }
+
+    if (score >= exitOnPerformanceLevel) {
+      std::cout << std::endl
+          << "Target perfomance level of " << exitOnPerformanceLevel
+          << " has been reached" << std::endl;
+      writeRealTimeFiles(population);
+      if (writeSnapshotDataFiles)
+        saveSnapshotData(population);
+      if (writeSnapshotGenomeFiles)
+        saveSnapshotOrganisms(population);
+      finished_ = true;
+      return finished_;
+    }
+  }
+
   if (flush == 1) 
     return finished_;
 
