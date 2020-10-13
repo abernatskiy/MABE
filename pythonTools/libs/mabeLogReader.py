@@ -1,3 +1,6 @@
+from pathlib import Path
+import re
+
 class MABELogReader:
 	'''Memory efficient MABE log reader'''
 	def __init__(self, fileName):
@@ -34,3 +37,29 @@ class MABELogReader:
 					outColumns[i].append(cv)
 				line = logFile.readline()
 		return outColumns
+
+def grabBestBrain(mabeOutPath, maxGens=None):
+	'''Returns the string representation of the best brain from the latest snapshot.
+	   If maxGens is set, returns None if the last generation number is greater or
+     equal to maxGens.
+	'''
+	mabeOutPath = Path(mabeOutPath)
+	maxFileReader = MABELogReader(mabeOutPath / 'max.csv')
+	tmpTS = maxFileReader.getAttributeTimeSeries(['ID', 'update'], dtype=int)
+	bestID = tmpTS[0][-1]
+	lastUpdate = tmpTS[1][-1]
+
+	if not maxGens is None and lastUpdate>=maxGens:
+		return None
+
+	#print(f'grabBestBrain: best individual at {mabeOutPath} occured at generation {lastUpdate} and its ID was {bestID}')
+
+	lastSnapshotPath = mabeOutPath / f'snapshot_organisms_{lastUpdate}.csv'
+	bestOrgStr = None
+	with open(lastSnapshotPath, 'r') as snapshotFile:
+		for orgLine in snapshotFile:
+			lineMatch = re.match(f'(.*),{bestID}', orgLine)
+			if not lineMatch is None:
+				return lineMatch.group(1)
+
+	raise ValueError(f'Individual {bestID} not found in snapshot {lastSnapshotPath}')
