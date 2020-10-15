@@ -41,6 +41,7 @@ public:
   bool writeSnapshotGenomeFiles;  // if true, write genome file
 
   double exitOnPerformanceLevel;
+  std::shared_ptr<Abstract_MTree> exitPerformanceFormula;
 
   std::vector<int> realtimeSequence; // how often to write out data
   std::vector<int> realtimeDataSequence;
@@ -120,10 +121,15 @@ public:
   static std::shared_ptr<ParameterLink<bool>>
       SS_Arch_writeOrganismsFilesPL; // if true, write genome file
   static std::shared_ptr<ParameterLink<double>>
-      SS_Arch_exitOnPerformanceLevelPL; // if less than infinity, archivist
-                                        // will request termination once the
-                                        // value of the max file function
-                                        // reaches this level
+      Arch_exitOnPerformanceLevelPL; // if less than infinity, archivist
+                                     // will request termination once the
+                                     // value of the max file function
+                                     // reaches this level
+  static std::shared_ptr<ParameterLink<std::string>>
+      Arch_exitPerformanceCriterionMTreePL; // if less than infinity, archivist
+                                            // will request termination once the
+                                            // value of the max file function
+                                            // reaches this level
 
   DefaultArchivist(std::shared_ptr<ParametersTable> /*PT*/ = nullptr,
                    const std::string & /*_groupPrefix*/ = "");

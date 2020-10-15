@@ -74,12 +74,17 @@ std::shared_ptr<ParameterLink<bool>>
             "if true, snapshot organisms files will be written (with all "
             "organisms for entire population)");
 std::shared_ptr<ParameterLink<double>>
-    DefaultArchivist::SS_Arch_exitOnPerformanceLevelPL =
+    DefaultArchivist::Arch_exitOnPerformanceLevelPL =
         Parameters::register_parameter(
             "ARCHIVIST_DEFAULT-exitOnPerformanceLevel", std::numeric_limits<double>::infinity(),
             "if set and less than infinity, the archivist will request termination "
-            "once an individual wih  at least this value of the maxFileFunction "
-            "appears in the population");
+            "once an individual wih at least this value of the exitPerformanceCriterionMTree "
+            "(which in this case must be specified) appears in the population");
+std::shared_ptr<ParameterLink<std::string>>
+    DefaultArchivist::Arch_exitPerformanceCriterionMTreePL =
+        Parameters::register_parameter(
+            "ARCHIVIST_DEFAULT-exitPerformanceCriterionMTree", std::string(""),
+            "MTree of the termination criterion");
 
 DefaultArchivist::DefaultArchivist(std::shared_ptr<ParametersTable> PT_,
                                    const std::string & group_prefix)
@@ -124,8 +129,6 @@ DefaultArchivist::DefaultArchivist(std::shared_ptr<ParametersTable> PT_,
 
   writeSnapshotDataFiles = SS_Arch_writeDataFilesPL->get(PT);
   writeSnapshotGenomeFiles = SS_Arch_writeOrganismsFilesPL->get(PT);
-
-  exitOnPerformanceLevel = SS_Arch_exitOnPerformanceLevelPL->get(PT);
 
   if (writePopFile || writeMaxFile ) 
     realtimeSequence =
@@ -181,6 +184,16 @@ DefaultArchivist::DefaultArchivist(std::vector<std::string> & popFileColumns,
           DataMap::knownOutputBehaviors[key.substr(seperatorCharPos + 1)];
     else // add key normally, because it has no special flags specified
       unique_column_name_to_output_behaviors_[key] |= DataMap::AVE;
+  }
+
+  exitOnPerformanceLevel = Arch_exitOnPerformanceLevelPL->get(PT);
+  if(exitOnPerformanceLevel<std::numeric_limits<double>::infinity()) {
+    if(Arch_exitPerformanceCriterionMTreePL->get(PT)=="") {
+      std::cerr << "Error: performance level MTree must be specified if exit is requested on performance level" << std::endl;
+      exit(1);
+    }
+    exitPerformanceFormula = stringToMTree(Arch_exitPerformanceCriterionMTreePL->get(PT));
+    max_formula_ = exitPerformanceFormula;
   }
 }
 
