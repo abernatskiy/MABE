@@ -10,7 +10,7 @@
 
 #include "DefaultArchivist.h"
 
-#include<limits>
+#include <limits>
 
 ////// ARCHIVIST-outputMethod is actually set by Modules.h //////
 std::shared_ptr<ParameterLink<std::string>>
@@ -487,7 +487,7 @@ bool DefaultArchivist::archive(
       exit(1);
     }
 
-    if (score >= exitOnPerformanceLevel) {
+    if (exitOnPerformanceLevel-score <= 1e-15 ) {
       std::cout << std::endl
           << "Target perfomance level of " << exitOnPerformanceLevel
           << " has been reached" << std::endl;
