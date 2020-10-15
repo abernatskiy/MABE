@@ -497,7 +497,7 @@ void CompressedMentalImage::evaluateOrganism(shared_ptr<Organism> org, shared_pt
 		string entroName = "lcpe_layer" + to_string(iri);
 		updateOrgDatamap(org, entroName, sampleScoresMap->getAverage(entroName));
 
-		if(iri!=jointCounts.size()-1) {
+		if(iri>0) {
 			irs += sampleScoresMap->getAverage(infoName);
 			ers += sampleScoresMap->getAverage(entroName);
 		}
