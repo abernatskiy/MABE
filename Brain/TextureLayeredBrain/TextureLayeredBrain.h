@@ -18,6 +18,7 @@ private:
 
 	// Infrastructure
 	const bool visualize;
+	static std::shared_ptr<ParameterLink<double>> totalMutationProbabilityPL;
 
 public:
 	// Public methods

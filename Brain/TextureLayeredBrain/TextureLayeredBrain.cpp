@@ -26,6 +26,15 @@ vector<double> getDefaultMutationRatesOneMoreTime(const vector<string>& componen
 }
 
 /****************************************/
+/****** ParameterLink definitions *******/
+/****************************************/
+
+shared_ptr<ParameterLink<double>> TextureLayeredBrain::totalMutationProbabilityPL =
+	Parameters::register_parameter("BRAIN_TEXTURE_LAYERED-totalMutationProbability", 1.0,
+	"probability any mutation whatsoever occurs upon the call to mutate(), default: 1.0");
+
+
+/****************************************/
 /********** Public definitions **********/
 /****************************************/
 
@@ -163,6 +172,10 @@ shared_ptr<AbstractBrain> TextureLayeredBrain::makeBrainFromMany(vector<shared_p
 }
 
 void TextureLayeredBrain::mutate() {
+	double r0 = Random::getDouble(1.);
+	if(r0>totalMutationProbabilityPL->get(PT))
+		return;
+
 	vector<double> mutationThresholds;
 	mutationThresholds.push_back(componentMutationRates[0]);
 	for(size_t l=1; l<numLayers; l++)
